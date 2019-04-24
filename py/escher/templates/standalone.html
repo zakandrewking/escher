@@ -45,6 +45,10 @@
        {% if embedded_css_b64 != None %}
        data.embedded_css = b64DecodeUnicode('{{ embedded_css_b64 }}');
        {% endif %}
+       {% if options_json_b64 != None %}
+       const newOptions = JSON.parse(b64DecodeUnicode('{{options_json_b64}}'));
+       data.options = Object.assign({}, data.options, newOptions);
+       {% endif %}
        return data;
      }
     </script>

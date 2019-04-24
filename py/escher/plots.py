@@ -8,7 +8,8 @@ from escher.version import __version__
 import cobra
 from cobra import Model
 import ipywidgets as widgets
-from traitlets import Unicode, Int, Instance, Dict, observe, validate
+from traitlets import (Unicode, Int, Instance, Dict, Bool, List, Float,
+                       observe, validate)
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -216,12 +217,18 @@ class Builder(widgets.DOMWidget):
     details on each of these are provided in the JavaScript API documentation:
 
         - use_3d_transform
+        - menu
+        - scroll_behavior
+        - use_3d_transform
+        - enable_editing
+        - enable_keys
         - enable_search
-        - fill_screen
         - zoom_to_element
         - full_screen_button
+        - disabled_buttons
+        - semantic_zoom
         - starting_reaction
-        - unique_map_id
+        - never_ask_before_quit
         - primary_metabolite_radius
         - secondary_metabolite_radius
         - marker_radius
@@ -230,12 +237,15 @@ class Builder(widgets.DOMWidget):
         - show_gene_reaction_rules
         - hide_all_labels
         - canvas_size_and_loc
+        - reaction_data
         - reaction_styles
         - reaction_compare_style
         - reaction_scale
         - reaction_no_data_color
         - reaction_no_data_size
+        - gene_data
         - and_method_in_gene_reaction_rule
+        - metabolite_data
         - metabolite_styles
         - metabolite_compare_style
         - metabolite_scale
@@ -246,6 +256,15 @@ class Builder(widgets.DOMWidget):
         - allow_building_duplicate_reactions
         - cofactors
         - enable_tooltips
+        - enable_keys_with_tooltip
+        - reaction_scale_preset
+        - metabolite_scale_preset
+        - primary_metabolite_radius
+        - secondary_metabolite_radius
+        - marker_radius
+        - gene_font_size
+        - reaction_no_data_size
+        - metabolite_no_data_size
 
     All arguments can also be set by assigning the property of an an existing
     Builder object, e.g.:
@@ -297,10 +316,104 @@ class Builder(widgets.DOMWidget):
         else:
             return None
 
-    reaction_data = Dict(None, allow_none=True).tag(sync=True)
-    metabolite_data = Dict(None, allow_none=True).tag(sync=True)
-    gene_data = Dict(None, allow_none=True).tag(sync=True)
-    scroll_behavior = Unicode('pan').tag(sync=True)
+    # set up the options
+
+    menu = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    scroll_behavior = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    use_3d_transform = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_editing = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_keys = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_search = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    zoom_to_element = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    full_screen_button = Dict(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    disabled_buttons = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    semantic_zoom = List(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    starting_reaction = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    never_ask_before_quit = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    primary_metabolite_radius = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    secondary_metabolite_radius = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    marker_radius = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    gene_font_size = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    hide_secondary_metabolites = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    show_gene_reaction_rules = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    hide_all_labels = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    canvas_size_and_loc = Dict(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_data = Dict(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_styles = List(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_compare_style = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_scale = List(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_no_data_color = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_no_data_size = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    gene_data = Dict(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    and_method_in_gene_reaction_rule = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_data = Dict(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_styles = List(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_compare_style = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_scale = List(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_no_data_color = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_no_data_size = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    identifiers_on_map = Unicode(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    highlight_missing = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    allow_building_duplicate_reactions = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    cofactors = List(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_tooltips = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_keys_with_tooltip = Bool(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_scale_preset = Dict(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_scale_preset = Dict(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    primary_metabolite_radius = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    secondary_metabolite_radius = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    marker_radius = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    gene_font_size = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_no_data_size = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_no_data_size = Float(None, allow_none=True)\
+        .tag(sync=True, option=True)
 
     # builder traitlets that are indirectly synced to the widget
 
@@ -359,9 +472,7 @@ class Builder(widgets.DOMWidget):
             metabolite_data: dict = None,
             gene_data: dict = None,
             scroll_behavior: str = 'none',
-            # menu: str='zoom',
-            # enable_editing: bool=False,
-            # **kwargs,
+            **kwargs,
     ) -> None:
         super().__init__()
 
@@ -395,64 +506,22 @@ class Builder(widgets.DOMWidget):
         self.gene_data = gene_data
         self.scroll_behavior = scroll_behavior
 
-        # # set up the options
-        # self.options = [
-        #     'use_3d_transform',
-        #     'enable_search',
-        #     'fill_screen',
-        #     'zoom_to_element',
-        #     'full_screen_button',
-        #     'starting_reaction',
-        #     'unique_map_id',
-        #     'primary_metabolite_radius',
-        #     'secondary_metabolite_radius',
-        #     'marker_radius',
-        #     'gene_font_size',
-        #     'hide_secondary_metabolites',
-        #     'show_gene_reaction_rules',
-        #     'hide_all_labels',
-        #     'canvas_size_and_loc',
-        #     'reaction_styles',
-        #     'reaction_compare_style',
-        #     'reaction_scale',
-        #     'reaction_no_data_color',
-        #     'reaction_no_data_size',
-        #     'and_method_in_gene_reaction_rule',
-        #     'metabolite_styles',
-        #     'metabolite_compare_style',
-        #     'metabolite_scale',
-        #     'metabolite_no_data_color',
-        #     'metabolite_no_data_size',
-        #     'identifiers_on_map',
-        #     'highlight_missing',
-        #     'allow_building_duplicate_reactions',
-        #     'cofactors',
-        #     'enable_tooltips',
-        # ]
+        unavailable_options = {
+            'fill_screen': """The fill_option screen is set automatically by
+            the Escher Python package""",
+            'tooltip_component': """The tooltip_component cannot be customized
+          with the Python API""",
+            'first_load_callback': """The first_load_callback cannot be
+          customized with the Python API""",
+            'unique_map_id': """The option unique_map_id is deprecated""",
+            'ignore_bootstrap': """The option unique_map_id is deprecated""",
+        }
 
-        # def get_getter_setter(o):
-        #     """Use a closure."""
-        #     # create local fget and fset functions
-        #     fget = lambda self: getattr(self, '_%s' % o)
-        #     fset = lambda self, value: setattr(self, '_%s' % o, value)
-        #     return fget, fset
-        # for option in self.options:
-        #     fget, fset = get_getter_setter(option)
-        #     # make the setter
-        #     setattr(self.__class__, 'set_%s' % option, fset)
-        #     # add property to self
-        #     setattr(self.__class__, option, property(fget))
-        #     # add corresponding local variable
-        #     setattr(self, '_%s' % option, None)
+        for key, val in kwargs.items():
+            if key in unavailable_options:
+                warn(val)
 
-        # # set the kwargs
-        # for key, val in kwargs.items():
-        #     try:
-        #         getattr(self, 'set_%s' % key)(val)
-        #     except AttributeError:
-        #         print('Unrecognized keywork argument %s' % key)
-
-    def display_in_notebook(self):
+    def display_in_notebook(self, *args, **kwargs):
         """Deprecated.
 
         The Builder is now a Jupyter Widget, so you can return the Builder
@@ -470,10 +539,7 @@ class Builder(widgets.DOMWidget):
                          'Builder in a cell to see it, or use the IPython '
                          'display function (see Escher docs for details)'))
 
-    def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50,
-                           js_source='web', menu='all', scroll_behavior='pan',
-                           enable_editing=True, enable_keys=True,
-                           minified_js=True, never_ask_before_quit=False):
+    def display_in_browser(self, *args, **kwargs):
         """Deprecated.
 
         We recommend using the Jupyter Widget (which now supports all Escher
@@ -493,10 +559,18 @@ class Builder(widgets.DOMWidget):
 
             The name of the HTML file.
 
+        TODO apply options from self
+
         """
 
-    #     # TODO apply options from self
-    #     options = transform(self.options)
+        #     options = transform(self.options)
+        # get options
+        options = {}
+        for key in self.traits(option=True):
+            val = getattr(self, key)
+            if val is not None:
+                options[key] = val
+        options_json = json.dumps(options)
 
         template = env.get_template('standalone.html')
         embedded_css_b64 = (b64dump(self.embedded_css)
@@ -506,6 +580,7 @@ class Builder(widgets.DOMWidget):
             embedded_css_b64=embedded_css_b64,
             map_data_json_b64=b64dump(self._loaded_map_json),
             model_data_json_b64=b64dump(self._loaded_model_json),
+            options_json_b64=b64dump(options_json),
         )
 
         with open(expanduser(filepath), 'wb') as f:

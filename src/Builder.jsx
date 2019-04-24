@@ -96,7 +96,7 @@ class Builder {
       // map, model, and styles
       starting_reaction: null,
       never_ask_before_quit: false,
-      unique_map_id: null,
+      unique_map_id: null, // deprecated
       primary_metabolite_radius: 20,
       secondary_metabolite_radius: 10,
       marker_radius: 5,

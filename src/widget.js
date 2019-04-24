@@ -29,7 +29,7 @@ export default function initializeJupyterWidget () {
       this.setHeight(sel)
 
       _.defer(() => {
-        const builder = Builder(
+        this.builder = new Builder(
           this.getMapData(),
           this.getModelData(),
           this.model.get('embedded_css'),
@@ -61,6 +61,40 @@ export default function initializeJupyterWidget () {
                 this.model.save_changes()
               })
 
+              // update functions
+              this.model.on('change:height', () => {
+                this.setHeight(sel)
+              })
+              this.model.on('change:_loaded_map_json', () => {
+                builder.load_map(this.getMapData())
+              })
+              this.model.on('change:_loaded_model_json', () => {
+                builder.load_model(this.getModelData())
+              })
+              // this.model.on('change:reaction_data', () => {
+              //   builder.set_reaction_data(this.model.get('reaction_data'))
+              // })
+              // this.model.on('change:metabolite_data', () => {
+              //   builder.set_metabolite_data(this.model.get('metabolite_data'))
+              // })
+              // this.model.on('change:gene_data', () => {
+              //   builder.set_gene_data(this.model.get('gene_data'))
+              // })
+
+              // set the rest of the options
+              Object.keys(builder.settings.streams).map(key => {
+                const alreadySet = [] // 'reaction_data', 'metabolite_data', 'gene_data']
+                if (alreadySet.includes(key)) {
+                  return
+                }
+                if (this.model.keys.includes(key)) {
+                  builder.settings.set(key, this.model.get(key))
+                  this.model.on(`change:${key}`, () => {
+                    builder.settings.set(key, this.model.get(key))
+                  })
+                }
+              })
+
               // get changes from options
               _.mapObject(builder.settings.streams, (stream, key) => {
                 if (key in this.model.attributes) {
@@ -73,40 +107,6 @@ export default function initializeJupyterWidget () {
             }
           }
         )
-
-        // update functions
-        this.model.on('change:height', () => {
-          this.setHeight(sel)
-        })
-        this.model.on('change:_loaded_map_json', () => {
-          builder.load_map(this.getMapData())
-        })
-        this.model.on('change:_loaded_model_json', () => {
-          builder.load_model(this.getModelData())
-        })
-        this.model.on('change:reaction_data', () => {
-          builder.set_reaction_data(this.model.get('reaction_data'))
-        })
-        this.model.on('change:metabolite_data', () => {
-          builder.set_metabolite_data(this.model.get('metabolite_data'))
-        })
-        this.model.on('change:gene_data', () => {
-          builder.set_gene_data(this.model.get('gene_data'))
-        })
-        this.model.on('change:scroll_behavior', () => {
-          builder.settings.set('scroll_behavior', this.model.get('scroll_behavior'))
-          // TODO make this automatic. see:
-          // https://github.com/zakandrewking/escher/blob/45b59cb6c959dde5cece709a6a937944d8a8a1eb/src/Builder.jsx#L286
-          const newBehavior = builder.settings.get('scroll_behavior')
-          builder.zoomContainer.setScrollBehavior(newBehavior)
-        })
-
-        // // for the rest of the options
-        // Object.keys(builder.options).map(key => {
-        //   if (this.model.keys.indexOf(key) > -1) {
-
-        //   }
-        // })
       })
     }
 
@@ -133,15 +133,7 @@ export default function initializeJupyterWidget () {
         _model_module: 'jupyter-escher',
         _view_module: 'jupyter-escher',
         _model_module_version: version,
-        _view_module_version: version,
-        height: 500,
-        _loaded_map_json: null,
-        _loaded_model_json: null,
-        embedded_css: null,
-        reaction_data: null,
-        metabolite_data: null,
-        gene_data: null,
-        scroll_behavior: 'pan'
+        _view_module_version: version
       })
     }
   }
