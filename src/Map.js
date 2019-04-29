@@ -2216,60 +2216,64 @@ export default class Map {
   /**
    * Rescale the canvas and save as svg/png.
    */
-  save_map (obj, callback_before, callback_after, map_type) {
+  saveMap (callbackBefore, callbackAfter, mapType) {
     // Run the before callback
-    obj.callback_manager.run(callback_before)
+    this.callback_manager.run(callbackBefore)
 
     // Turn off zoom and translate so that illustrator likes the map
-    var window_scale = obj.zoomContainer.windowScale
-    var window_translate = obj.zoomContainer.windowTranslate
-    var canvas_size_and_loc = obj.canvas.sizeAndLocation()
-    var mouse_node_size_and_trans = {
-      w: obj.canvas.mouseNode.attr('width'),
-      h: obj.canvas.mouseNode.attr('height'),
-      transform: obj.canvas.mouseNode.attr('transform')
+    const windowScale = this.zoomContainer.windowScale
+    const windowTranslate = this.zoomContainer.windowTranslate
+    const canvasSizeAndLoc = this.canvas.sizeAndLocation()
+    const mouseNodeSizeAndTrans = {
+      w: this.canvas.mouseNode.attr('width'),
+      h: this.canvas.mouseNode.attr('height'),
+      transform: this.canvas.mouseNode.attr('transform')
     }
 
-    obj.zoomContainer._goToSvg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
-      obj.svg.attr('width', canvas_size_and_loc.width)
-      obj.svg.attr('height', canvas_size_and_loc.height)
-      obj.canvas.mouseNode.attr('width', '0px')
-      obj.canvas.mouseNode.attr('height', '0px')
-      obj.canvas.mouseNode.attr('transform', null)
+    this.zoomContainer._goToSvg(
+      1.0,
+      { x: -canvasSizeAndLoc.x, y: -canvasSizeAndLoc.y },
+      () => {
+        this.svg.attr('width', canvasSizeAndLoc.width)
+        this.svg.attr('height', canvasSizeAndLoc.height)
+        this.canvas.mouseNode.attr('width', '0px')
+        this.canvas.mouseNode.attr('height', '0px')
+        this.canvas.mouseNode.attr('transform', null)
 
-      // hide the segment control points
-      var hidden_sel = obj.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas,.bezier,#rotation-center,.direction-arrow,.start-reaction-target')
-          .style('visibility', 'hidden')
+        // hide the segment control points
+        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas,.bezier,#rotation-center,.direction-arrow,.start-reaction-target')
+            .style('visibility', 'hidden')
 
-      // do the export
-      if(map_type == 'svg') {
-        utils.download_svg('saved_map', obj.svg, true)
-      } else if(map_type == 'png') {
-        utils.download_png('saved_map', obj.svg)
+        // do the export
+        if( mapType === 'svg') {
+          utils.downloadSvg('saved_map', this.svg, true)
+        } else if (mapType === 'png') {
+          utils.downloadPng('saved_map', this.svg)
+        }
+
+        // revert everything
+        this.zoomContainer._goToSvg(windowScale, windowTranslate, () => {
+          this.svg.attr('width', null)
+          this.svg.attr('height', null)
+          this.canvas.mouseNode.attr('width', mouseNodeSizeAndTrans.w)
+          this.canvas.mouseNode.attr('height', mouseNodeSizeAndTrans.h)
+          this.canvas.mouseNode.attr('transform', mouseNodeSizeAndTrans.transform)
+          // unhide the segment control points
+          hidden_sel.style('visibility', null)
+
+          // run the after callback
+          this.callback_manager.run(callbackAfter)
+        })
       }
-
-      // revert everything
-      obj.zoomContainer._goToSvg(window_scale, window_translate, function() {
-        obj.svg.attr('width', null)
-        obj.svg.attr('height', null)
-        obj.canvas.mouseNode.attr('width', mouse_node_size_and_trans.w)
-        obj.canvas.mouseNode.attr('height', mouse_node_size_and_trans.h)
-        obj.canvas.mouseNode.attr('transform', mouse_node_size_and_trans.transform)
-        // unhide the segment control points
-        hidden_sel.style('visibility', null)
-
-        // run the after callback
-        obj.callback_manager.run(callback_after)
-      }.bind(obj))
-    }.bind(obj))
+    )
   }
 
-  save_svg () {
-    save_map(this, 'before_svg_export', 'after_svg_export', 'svg')
+  saveSvg () {
+    this.saveMap('before_svg_export', 'after_svg_export', 'svg')
   }
 
-  save_png () {
-    save_map(this, 'before_png_export', 'after_png_export', 'png')
+  savePng () {
+    this.saveMap('before_png_export', 'after_png_export', 'png')
   }
 
   /**

@@ -613,8 +613,8 @@ class Builder {
         this.map.save()
       },
       loadMap: (file) => this.load_map(file),
-      saveSvg: () => this.map.save_svg(),
-      savePng: () => this.map.save_png(),
+      saveSvg: () => this.map.saveSvg(),
+      savePng: () => this.map.savePng(),
       clearMap: () => { this.clearMap() },
       loadModel: file => this.load_model(file, true),
       clearModel: () => {
@@ -1056,15 +1056,15 @@ class Builder {
         target: map,
         fn: map.save
       },
-      save_svg: {
+      saveSvg: {
         key: 'ctrl+shift+s',
         target: map,
-        fn: map.save_svg
+        fn: map.saveSvg
       },
-      save_png: {
+      savePng: {
         key: 'ctrl+shift+p',
         target: map,
-        fn: map.save_png
+        fn: map.savePng
       },
       load: {
         key: 'ctrl+o',
