@@ -1,7 +1,6 @@
 language: python
 python:
   - "3.6"
-  - "3.7"
 # Latest node
 before_install:
   - nvm install 8.3.0
