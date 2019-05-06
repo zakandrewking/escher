@@ -401,10 +401,10 @@ export default class Map {
     return (this.cobra_model !== null)
   }
 
+  /**
+   * Draw the all reactions, nodes, & text labels.
+   */
   draw_everything () {
-    /** Draw the all reactions, nodes, & text labels.
-
-     */
     this.draw_all_reactions(true, true); // also draw beziers
     this.draw_all_nodes(true)
     this.draw_all_text_labels()
@@ -503,15 +503,11 @@ export default class Map {
     }
   }
 
-  /** Draw all nodes, and clear deleted nodes.
-
-      Arguments
-      ---------
-
-      clear_deleted: (Optional, Default: true) Boolean, if true, then also
-      clear deleted nodes.
-
-  */
+  /**
+   * Draw all nodes, and clear deleted nodes.
+   * @param clear_deleted: (Optional, Default: true) Boolean, if true, then also
+   * @param clear deleted nodes.
+   */
   draw_all_nodes (clear_deleted) {
     if (clear_deleted === undefined) clear_deleted = true
 

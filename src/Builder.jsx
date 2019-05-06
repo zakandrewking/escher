@@ -856,6 +856,11 @@ class Builder {
       this.settings.set('reaction_data', data)
     }
 
+    // clear gene data
+    if (data) {
+      this.settings._options.gene_data = null
+    }
+
     var messageFn = this._reactionCheckAddAbs()
 
     this._updateData(true, true, ['reaction'])
@@ -865,14 +870,16 @@ class Builder {
 
     const disabledButtons = this.settings.get('disabled_buttons') || []
     const buttonName = 'Clear reaction data'
+    const geneButtonName = 'Clear gene data'
     const index = disabledButtons.indexOf(buttonName)
     if (data && index !== -1) {
-      this.settings.set('disabled_buttons', [
-        ...disabledButtons.slice(0, index),
-        ...disabledButtons.slice(index + 1)
-      ])
-    } else if (data && index === -1) {
-      this.settings.set('disabled_buttons', [...disabledButtons, buttonName])
+      disabledButtons.splice(index, 1)
+      const gInd = disabledButtons.indexOf(geneButtonName)
+      if (gInd === -1) disabledButtons.push(geneButtonName)
+      this.settings.set('disabled_buttons', disabledButtons)
+    } else if (!data && index === -1) {
+      disabledButtons.push(buttonName)
+      this.settings.set('disabled_buttons', disabledButtons)
     }
   }
 
@@ -891,16 +898,26 @@ class Builder {
       this.settings.set('gene_data', data)
     }
 
+    // clear reaction data
+    if (data) {
+      this.settings._options.reaction_data = null
+    }
+
     this._updateData(true, true, ['reaction'])
     this.map.set_status('')
 
-    const disabledButtonsArray = this.settings.get('disabled_buttons') || []
-    const index = disabledButtonsArray.indexOf('Clear gene data')
-    if (index > -1) {
-      disabledButtonsArray.splice(index, 1)
-      this.settings.set('disabled_buttons', disabledButtonsArray)
-    } else if (index === -1 && data) {
-      this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear gene data'])
+    const disabledButtons = this.settings.get('disabled_buttons') || []
+    const index = disabledButtons.indexOf('Clear gene data')
+    const buttonName = 'Clear gene data'
+    const reactionButtonName = 'Clear reaction data'
+    if (index > -1 && data) {
+      disabledButtons.splice(index, 1)
+      const rInd = disabledButtons.indexOf('Clear reaction data')
+      if (rInd === -1) disabledButtons.push(reactionButtonName)
+      this.settings.set('disabled_buttons', disabledButtons)
+    } else if (index === -1 && !data) {
+      disabledButtons.push(buttonName)
+      this.settings.set('disabled_buttons', disabledButtons)
     }
   }
 
@@ -917,13 +934,15 @@ class Builder {
     this._updateData(true, true, ['metabolite'])
     this.map.set_status('')
 
-    const disabledButtonsArray = this.settings.get('disabled_buttons') || []
-    const index = disabledButtonsArray.indexOf('Clear metabolite data')
-    if (index > -1) {
-      disabledButtonsArray.splice(index, 1)
-      this.settings.set('disabled_buttons', disabledButtonsArray)
-    } else if (index === -1 && data) {
-      this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear metabolite data'])
+    const disabledButtons = this.settings.get('disabled_buttons') || []
+    const buttonName = 'Clear metabolite data'
+    const index = disabledButtons.indexOf(buttonName)
+    if (index > -1 && data) {
+      disabledButtons.splice(index, 1)
+      this.settings.set('disabled_buttons', disabledButtons)
+    } else if (index === -1 && !data) {
+      disabledButtons.push(buttonName)
+      this.settings.set('disabled_buttons', disabledButtons)
     }
   }
 
@@ -1117,18 +1136,15 @@ class Builder {
       },
       load_reaction_data: { fn: null }, // defined by button
       clear_reaction_data: {
-        target: this,
-        fn: function () { this.set_reaction_data(null) }
+        fn: () => this.set_reaction_data(null)
       },
       load_metabolite_data: { fn: null }, // defined by button
       clear_metabolite_data: {
-        target: this,
-        fn: function () { this.set_metabolite_data(null) }
+        fn: () => this.set_metabolite_data(null)
       },
       load_gene_data: { fn: null }, // defined by button
       clear_gene_data: {
-        target: this,
-        fn: function () { this.set_gene_data(null, true) }
+        fn: () => this.set_gene_data(null, true)
       },
       zoom_in_ctrl: {
         key: 'ctrl+=',
