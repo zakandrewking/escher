@@ -494,7 +494,7 @@ class Builder {
       } else if (mapData !== null) {
         this.map.zoom_extent_canvas()
       } else {
-        if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
+        if (this.settings.get('starting_reaction') && this.cobra_model !== null) {
           // Draw default reaction if no map is provided
           const size = this.zoomContainer.getSize()
           const startCoords = { x: size.width / 2, y: size.height / 4 }

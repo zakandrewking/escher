@@ -13,7 +13,7 @@ try {
 const version = ESCHER_VERSION
 
 /**
- *
+ * Jupyter widget implementation for the Escher Builder.
  */
 export default function initializeJupyterWidget () {
   if (!base) {
@@ -87,10 +87,18 @@ export default function initializeJupyterWidget () {
                 if (alreadySet.includes(key)) {
                   return
                 }
-                if (this.model.keys.includes(key)) {
-                  builder.settings.set(key, this.model.get(key))
+                if (this.model.keys().includes(key)) {
+                  const val = this.model.get(key)
+                  // ignore null because that means to use the default
+                  if (val !== null) builder.settings.set(key, val)
+
+                  // reactive updates
                   this.model.on(`change:${key}`, () => {
-                    builder.settings.set(key, this.model.get(key))
+                    const val = this.model.get(key)
+                    // ignore null because that means to use the default
+                    if (val !== null) {
+                      builder.settings.set(key, val)
+                    }
                   })
                 }
               })
@@ -101,6 +109,12 @@ export default function initializeJupyterWidget () {
                   stream.onValue(value => {
                     this.model.set(key, value)
                     this.model.save_changes()
+                    // default to drawing everything, unless it's a common
+                    // option where that's not necessary
+                    const noDraw = ['scroll_behavior']
+                    if (!noDraw.includes(key)) {
+                      builder.map.draw_everything()
+                    }
                   })
                 }
               })

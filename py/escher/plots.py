@@ -8,7 +8,7 @@ from escher.version import __version__
 import cobra
 from cobra import Model
 import ipywidgets as widgets
-from traitlets import (Unicode, Int, Instance, Dict, Bool, List, Float,
+from traitlets import (Unicode, Int, Instance, Dict, Bool, List, Float, Any,
                        observe, validate)
 import os
 from os.path import join, isfile, expanduser
@@ -74,10 +74,12 @@ def _json_for_name(name: str, kind: str):
         raise Exception('Could not connect to the Escher server')
     match = match_in_index(name, server_index(), kind)
     if len(match) == 0:
-        raise Exception('Could not find the %s %s on the server' % (kind, name))
+        raise Exception(f'Could not find the {kind} {name} on the server')
     org, name = match[0]
-    url = (get_url(kind + '_download') +
-           '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']]))
+    url = (
+        get_url(kind + '_download') +
+        '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']])
+    )
     print('Downloading %s from %s' % (kind.title(), url))
     try:
         download = urlopen(url)
@@ -266,6 +268,9 @@ class Builder(widgets.DOMWidget):
         - reaction_no_data_size
         - metabolite_no_data_size
 
+    If any of these is set to None, the default (or most-recent) value is used.
+    To turn off a setting, use False instead.
+
     All arguments can also be set by assigning the property of an an existing
     Builder object, e.g.:
 
@@ -284,9 +289,22 @@ class Builder(widgets.DOMWidget):
     _view_module_version = Unicode(__version__).tag(sync=True)
     _model_module_version = Unicode(__version__).tag(sync=True)
 
-    # editable attributes
+    # Python package options
 
     height = Int(500).tag(sync=True)
+
+    embedded_css = Unicode(None, allow_none=True).tag(sync=True)
+
+    @validate('embedded_css')
+    def _validate_embedded_css(self, proposal):
+        css = proposal['value']
+        if css:
+            return css.replace('\n', '')
+        else:
+            return None
+
+    # synced data
+
     _loaded_map_json = Unicode(None, allow_none=True).tag(sync=True)
 
     @observe('_loaded_map_json')
@@ -306,21 +324,58 @@ class Builder(widgets.DOMWidget):
             self.model_name = None
             self.model_json = None
 
-    embedded_css = Unicode(None, allow_none=True).tag(sync=True)
+    # Python options that are indirectly synced to the widget
 
-    @validate('embedded_css')
-    def _validate_embedded_css(self, proposal):
-        css = proposal['value']
-        if css:
-            return css.replace('\n', '')
+    map_name = Unicode(None, allow_none=True)
+
+    @observe('map_name')
+    def _observe_map_name(self, change):
+        if change.new:
+            self._loaded_map_json = map_json_for_name(change.new)
         else:
-            return None
+            self._loaded_map_json = None
 
-    # set up the options
+    map_json = Unicode(None, allow_none=True)
+
+    @observe('map_json')
+    def _observe_map_json(self, change):
+        if change.new:
+            self._loaded_map_json = _load_resource(change.new, 'map_json')
+        else:
+            self._loaded_map_json = None
+
+    model = Instance(Model, allow_none=True)
+
+    @observe('model')
+    def _observe_model(self, change):
+        if change.new:
+            self._loaded_model_json = cobra.io.to_json(change.new)
+        else:
+            self._loaded_model_json = None
+
+    model_name = Unicode(None, allow_none=True)
+
+    @observe('model_name')
+    def _observe_model_name(self, change):
+        if change.new:
+            self._loaded_model_json = model_json_for_name(change.new)
+        else:
+            self._loaded_model_json = None
+
+    model_json = Unicode(None, allow_none=True)
+
+    @observe('model_json')
+    def _observe_model_json(self, change):
+        if change.new:
+            self._loaded_model_json = _load_resource(change.new, 'model_json')
+        else:
+            self._loaded_model_json = None
+
+    # Synced options passed as an object to JavaScript Builder
 
     menu = Unicode(None, allow_none=True)\
         .tag(sync=True, option=True)
-    scroll_behavior = Unicode(None, allow_none=True)\
+    scroll_behavior = Unicode('none', allow_none=False)\
         .tag(sync=True, option=True)
     use_3d_transform = Bool(None, allow_none=True)\
         .tag(sync=True, option=True)
@@ -330,15 +385,15 @@ class Builder(widgets.DOMWidget):
         .tag(sync=True, option=True)
     enable_search = Bool(None, allow_none=True)\
         .tag(sync=True, option=True)
-    zoom_to_element = Unicode(None, allow_none=True)\
+    zoom_to_element = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    full_screen_button = Dict(None, allow_none=True)\
+    full_screen_button = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    disabled_buttons = Unicode(None, allow_none=True)\
+    disabled_buttons = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    semantic_zoom = List(None, allow_none=True)\
+    semantic_zoom = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    starting_reaction = Unicode(None, allow_none=True)\
+    starting_reaction = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
     never_ask_before_quit = Bool(None, allow_none=True)\
         .tag(sync=True, option=True)
@@ -394,7 +449,7 @@ class Builder(widgets.DOMWidget):
         .tag(sync=True, option=True)
     cofactors = List(None, allow_none=True)\
         .tag(sync=True, option=True)
-    enable_tooltips = Bool(None, allow_none=True)\
+    enable_tooltips = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
     enable_keys_with_tooltip = Bool(None, allow_none=True)\
         .tag(sync=True, option=True)
@@ -415,69 +470,17 @@ class Builder(widgets.DOMWidget):
     metabolite_no_data_size = Float(None, allow_none=True)\
         .tag(sync=True, option=True)
 
-    # builder traitlets that are indirectly synced to the widget
-
-    map_name = Unicode(None, allow_none=True)
-    map_json = Unicode(None, allow_none=True)
-    model = Instance(Model, allow_none=True)
-    model_name = Unicode(None, allow_none=True)
-    model_json = Unicode(None, allow_none=True)
-
-    @observe('map_name')
-    def _observe_map_name(self, change):
-        if change.new:
-            self._loaded_map_json = map_json_for_name(change.new)
-        else:
-            self._loaded_map_json = None
-
-    @observe('map_json')
-    def _observe_map_json(self, change):
-        if change.new:
-            self._loaded_map_json = _load_resource(change.new, 'map_json')
-        else:
-            self._loaded_map_json = None
-
-    @observe('model')
-    def _observe_model(self, change):
-        if change.new:
-            self._loaded_model_json = cobra.io.to_json(change.new)
-        else:
-            self._loaded_model_json = None
-
-    @observe('model_name')
-    def _observe_model_name(self, change):
-        if change.new:
-            self._loaded_model_json = model_json_for_name(change.new)
-        else:
-            self._loaded_model_json = None
-
-    @observe('model_json')
-    def _observe_model_json(self, change):
-        if change.new:
-            self._loaded_model_json = _load_resource(change.new, 'model_json')
-        else:
-            self._loaded_model_json = None
-
     def __init__(
             self,
-            #
-            height: int = 500,
             map_name: str = None,
             map_json: str = None,
             model: Model = None,
             model_name: str = None,
             model_json: str = None,
-            embedded_css: str = None,
-            reaction_data: dict = None,
-            metabolite_data: dict = None,
-            gene_data: dict = None,
-            scroll_behavior: str = 'none',
             **kwargs,
     ) -> None:
-        super().__init__()
-
-        # set attributes
-        self.height = height
+        # kwargs will instantiate the traitlets
+        super().__init__(**kwargs)
 
         if map_json:
             if map_name:
@@ -498,13 +501,6 @@ class Builder(widgets.DOMWidget):
             self.model_json = model_json
         else:
             self.model_name = model_name
-
-        self.embedded_css = embedded_css
-
-        self.reaction_data = reaction_data
-        self.metabolite_data = metabolite_data
-        self.gene_data = gene_data
-        self.scroll_behavior = scroll_behavior
 
         unavailable_options = {
             'fill_screen': """The fill_option screen is set automatically by
