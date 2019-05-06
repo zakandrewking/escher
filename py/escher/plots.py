@@ -457,7 +457,7 @@ class Builder(widgets.DOMWidget):
         .tag(sync=True, option=True)
     cofactors = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    enable_tooltips = Any(None, allow_none=True)\
+    enable_tooltips = Any(False, allow_none=True)\
         .tag(sync=True, option=True)
     enable_keys_with_tooltip = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
