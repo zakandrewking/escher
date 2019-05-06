@@ -25,6 +25,7 @@ class MenuBar extends Component {
     const enableKeys = this.props.settings.get('enable_keys')
     const disabledButtons = this.props.settings.get('disabled_buttons')
     const beziersEnabled = this.props.map.beziers_enabled
+    const fullScreenButtonEnabled = this.props.settings.get('full_screen_button')
 
     return (
       <ul className='menu-bar'>
@@ -233,13 +234,18 @@ class MenuBar extends Component {
             disabledButtons={disabledButtons}
           />
           <li name='divider' />
-          <MenuButton
-            name={'Full screen'}
-            onClick={() => this.props.fullScreen()}
-            checkMark={this.props.isFullScreen}
-            disabledButtons={disabledButtons}
-          />
-          <li name='divider' />
+          {/* TODO use preact X to combine the following 2 blocks */}
+          {fullScreenButtonEnabled &&
+            <MenuButton
+              name={'Full screen'}
+              onClick={() => this.props.fullScreen()}
+              checkMark={this.props.isFullScreen}
+              disabledButtons={disabledButtons}
+            />
+          }
+          {fullScreenButtonEnabled &&
+            <li name='divider' />
+          }
           <MenuButton
             name={`Settings${enableKeys ? ' (,)' : ''}`}
             onClick={() => this.props.renderSettingsMenu()}
