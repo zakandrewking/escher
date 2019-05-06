@@ -111,6 +111,7 @@ def test_save_html_embedded_css(tmpdir):
 
 
 def test_Builder_options():
-    b = Builder(embedded_css='')
-    b.set_metabolite_no_data_color('white')
+    b = Builder(metabolite_no_data_color='blue')
+    assert b.metabolite_no_data_color == 'blue'
+    b.metabolite_no_data_color = 'white'
     assert b.metabolite_no_data_color == 'white'
