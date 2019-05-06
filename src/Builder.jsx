@@ -188,7 +188,6 @@ class Builder {
 
     // make data settings reactive
     this.settings.streams.reaction_data.onValue(val => {
-      console.log('set reaction data')
       this.set_reaction_data(val, false)
     })
     this.settings.streams.metabolite_data.onValue(val => {
@@ -834,7 +833,7 @@ class Builder {
   _reactionCheckAddAbs () {
     const currStyle = this.settings.get('reaction_styles')
     if (
-      this.settings.get('reaction_data') !== null &&
+      this.settings.get('reaction_data') &&
       !this.has_custom_reaction_styles &&
       !_.contains(currStyle, 'abs')
     ) {
@@ -867,12 +866,12 @@ class Builder {
     const disabledButtons = this.settings.get('disabled_buttons') || []
     const buttonName = 'Clear reaction data'
     const index = disabledButtons.indexOf(buttonName)
-    if (data !== null && index !== -1) {
+    if (data && index !== -1) {
       this.settings.set('disabled_buttons', [
         ...disabledButtons.slice(0, index),
         ...disabledButtons.slice(index + 1)
       ])
-    } else if (data === null && index === -1) {
+    } else if (data && index === -1) {
       this.settings.set('disabled_buttons', [...disabledButtons, buttonName])
     }
   }
@@ -900,7 +899,7 @@ class Builder {
     if (index > -1) {
       disabledButtonsArray.splice(index, 1)
       this.settings.set('disabled_buttons', disabledButtonsArray)
-    } else if (index === -1 && data === null) {
+    } else if (index === -1 && data) {
       this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear gene data'])
     }
   }
@@ -923,7 +922,7 @@ class Builder {
     if (index > -1) {
       disabledButtonsArray.splice(index, 1)
       this.settings.set('disabled_buttons', disabledButtonsArray)
-    } else if (index === -1 && data === null) {
+    } else if (index === -1 && data) {
       this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear metabolite data'])
     }
   }
@@ -989,15 +988,14 @@ class Builder {
 
     // reaction data
     if (updateReactionData) {
-      if (this.settings.get('reaction_data') !== null && updateMap && this.map !== null) {
+      if (this.settings.get('reaction_data') && updateMap && this.map !== null) {
         reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
                                                        'reaction_data')
-        console.log(reactionDataObject)
         this.map.apply_reaction_data_to_map(reactionDataObject)
         if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
         }
-      } else if (this.settings.get('gene_data') !== null && updateMap && this.map !== null) {
+      } else if (this.settings.get('gene_data') && updateMap && this.map !== null) {
         geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
                                                   this.cobra_model, this.map)
         this.map.apply_gene_data_to_map(geneDataObject)
@@ -1039,7 +1037,7 @@ class Builder {
 
       // reaction data
       if (updateReactionData) {
-        if (this.settings.get('reaction_data') !== null && updateModel && this.cobra_model !== null) {
+        if (this.settings.get('reaction_data') && updateModel && this.cobra_model !== null) {
           // if we haven't already made this
           if (!reactionDataObject) {
             reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
@@ -1048,7 +1046,7 @@ class Builder {
           this.cobra_model.apply_reaction_data(reactionDataObject,
                                                this.settings.get('reaction_styles'),
                                                this.settings.get('reaction_compare_style'))
-        } else if (this.settings.get('gene_data') !== null && updateModel && this.cobra_model !== null) {
+        } else if (this.settings.get('gene_data') && updateModel && this.cobra_model !== null) {
           if (!geneDataObject) {
             geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
                                                       this.cobra_model, this.map)

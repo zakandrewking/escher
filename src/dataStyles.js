@@ -89,16 +89,14 @@ function log2Fold (x, y, takeAbs) {
 
 /**
  * Convert imported data to a style that can be applied to reactions and nodes.
- * data: The data object.
- * name: Either 'reaction_data', 'metabolite_data', or 'gene_data'
- * all_reactions: Required for name == 'gene_data'. Must include all GPRs for
- * the map and model.
+ * @param data - The data object.
+ * @param name - Either 'reaction_data', 'metabolite_data', or 'gene_data'
+ * @param allReactions - Required for name == 'gene_data'. Must include all GPRs
+ *                       for the map and model.
  */
 export function importAndCheck (data, name, allReactions) {
   // check arguments
-  if (data === null) {
-    return null
-  }
+  if (!data) return null
 
   if ([ 'reaction_data', 'metabolite_data', 'gene_data' ].indexOf(name) === -1) {
     throw new Error('Invalid name argument: ' + name)
@@ -122,7 +120,7 @@ export function importAndCheck (data, name, allReactions) {
     return console.warn('Bad data style: ' + name)
   }
   check()
-  data = utils.array_to_object(data)
+  data = utils.arrayToObject(data)
 
   if (name === 'gene_data') {
     if (allReactions === undefined) {

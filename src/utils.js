@@ -27,7 +27,7 @@ module.exports = {
   make_array: make_array,
   make_array_ref: make_array_ref,
   compare_arrays: compare_arrays,
-  array_to_object: array_to_object,
+  arrayToObject: arrayToObject,
   clone: clone,
   extend: extend,
   uniqueConcat: uniqueConcat,
@@ -404,19 +404,19 @@ function compare_arrays(a1, a2) {
   return true
 }
 
-function array_to_object(arr) {
-  /** Convert an array of objects to an object with all keys and values
-      that are arrays of the same length as arr. Fills in spaces with null.
-
-      For example, [ { a: 1 }, { b: 2 }] becomes { a: [1, null], b: [null, 2] }.
-
-  */
+/**
+ * Convert an array of objects to an object with all keys and values
+ * that are arrays of the same length as arr. Fills in spaces with null.
+ *
+ *  For example, [ { a: 1 }, { b: 2 }] becomes { a: [1, null], b: [null, 2] }.
+ */
+function arrayToObject (arr) {
   // new object
-  var obj = {}
+  const obj = {}
   // for each element of the array
-  for (var i = 0, l = arr.length; i < l; i++) {
-    var column = arr[i],
-           keys = Object.keys(column)
+  for (let i = 0, l = arr.length; i < l; i++) {
+    const column = arr[i]
+    const keys = Object.keys(column)
     for (var k = 0, nk = keys.length; k < nk; k++) {
       var id = keys[k]
       if (!(id in obj)) {

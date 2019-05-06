@@ -704,13 +704,13 @@ export default class Map {
    * @param {Array} keys - (Optional) The keys in nodes to apply data to.
    */
   apply_metabolite_data_to_map (data, keys) {
-    var styles = this.settings.get('metabolite_styles')
-    var compare_style = this.settings.get('metabolite_compare_style')
+    const styles = this.settings.get('metabolite_styles')
+    const compare_style = this.settings.get('metabolite_compare_style')
 
-    var has_data = dataStyles.apply_metabolite_data_to_nodes(this.nodes,
-                                                              data, styles,
-                                                              compare_style,
-                                                              keys)
+    const has_data = dataStyles.apply_metabolite_data_to_nodes(this.nodes,
+                                                               data, styles,
+                                                               compare_style,
+                                                               keys)
     this.has_data_on_nodes = has_data
     this.imported_metabolite_data = has_data ? data : null
 

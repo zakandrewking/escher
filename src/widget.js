@@ -85,26 +85,26 @@ export default function initializeJupyterWidget () {
                     const val = this.model.get(key)
                     // ignore null because that means to use the default
                     if (val !== null) {
-                      console.log(key, val)
                       builder.settings.set(key, val)
+                      // default to drawing everything, unless it's a common
+                      // option where that's not necessary
+                      if (!NO_DRAW_OPTIONS.includes(key)) {
+                        builder.map.draw_everything()
+                      }
                     }
                   })
                 }
               })
 
-              // get changes from options
-              _.mapObject(builder.settings.streams, (stream, key) => {
-                if (key in this.model.attributes) {
-                  stream.onValue(value => {
-                    this.model.set(key, value)
+              // get changes from options (only after they have been accepted)
+              _.mapObject(builder.settings.acceptedStreams, (stream, key) => {
+                stream.onValue(val => {
+                  // avoid a loop
+                  if (val !== this.model.get(key)) {
+                    this.model.set(key, val)
                     this.model.save_changes()
-                    // default to drawing everything, unless it's a common
-                    // option where that's not necessary
-                    if (!NO_DRAW_OPTIONS.includes(key)) {
-                      builder.map.draw_everything()
-                    }
-                  })
-                }
+                  }
+                })
               })
             }
           }

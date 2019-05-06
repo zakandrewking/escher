@@ -8,8 +8,7 @@ from escher.version import __version__
 import cobra
 from cobra import Model
 import ipywidgets as widgets
-from traitlets import (Unicode, Int, Instance, Dict, Bool, List, Float, Any,
-                       observe, validate)
+from traitlets import Unicode, Int, Instance, Any, observe, validate
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -373,17 +372,17 @@ class Builder(widgets.DOMWidget):
 
     # Synced options passed as an object to JavaScript Builder
 
-    menu = Unicode(None, allow_none=True)\
+    menu = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    scroll_behavior = Unicode('none', allow_none=False)\
+    scroll_behavior = Any('none', allow_none=False)\
         .tag(sync=True, option=True)
-    use_3d_transform = Bool(None, allow_none=True)\
+    use_3d_transform = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    enable_editing = Bool(None, allow_none=True)\
+    enable_editing = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    enable_keys = Bool(False, allow_none=True)\
+    enable_keys = Any(False, allow_none=True)\
         .tag(sync=True, option=True)
-    enable_search = Bool(None, allow_none=True)\
+    enable_search = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
     zoom_to_element = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
@@ -404,79 +403,79 @@ class Builder(widgets.DOMWidget):
         .tag(sync=True, option=True)
     starting_reaction = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    never_ask_before_quit = Bool(None, allow_none=True)\
+    never_ask_before_quit = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    primary_metabolite_radius = Float(None, allow_none=True)\
+    primary_metabolite_radius = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    secondary_metabolite_radius = Float(None, allow_none=True)\
+    secondary_metabolite_radius = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    marker_radius = Float(None, allow_none=True)\
+    marker_radius = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    gene_font_size = Float(None, allow_none=True)\
+    gene_font_size = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    hide_secondary_metabolites = Bool(None, allow_none=True)\
+    hide_secondary_metabolites = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    show_gene_reaction_rules = Bool(None, allow_none=True)\
+    show_gene_reaction_rules = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    hide_all_labels = Bool(None, allow_none=True)\
+    hide_all_labels = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    canvas_size_and_loc = Dict(None, allow_none=True)\
+    canvas_size_and_loc = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    reaction_data = Dict(None, allow_none=True)\
+    reaction_data = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    reaction_styles = List(None, allow_none=True)\
+    reaction_styles = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    reaction_compare_style = Unicode(None, allow_none=True)\
+    reaction_compare_style = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    reaction_scale = List(None, allow_none=True)\
+    reaction_scale = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    reaction_no_data_color = Unicode(None, allow_none=True)\
+    reaction_no_data_color = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    reaction_no_data_size = Float(None, allow_none=True)\
+    reaction_no_data_size = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    gene_data = Dict(None, allow_none=True)\
+    gene_data = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    and_method_in_gene_reaction_rule = Unicode(None, allow_none=True)\
+    and_method_in_gene_reaction_rule = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    metabolite_data = Dict(None, allow_none=True)\
+    metabolite_data = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    metabolite_styles = List(None, allow_none=True)\
+    metabolite_styles = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    metabolite_compare_style = Unicode(None, allow_none=True)\
+    metabolite_compare_style = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    metabolite_scale = List(None, allow_none=True)\
+    metabolite_scale = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    metabolite_no_data_color = Unicode(None, allow_none=True)\
+    metabolite_no_data_color = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    metabolite_no_data_size = Float(None, allow_none=True)\
+    metabolite_no_data_size = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    identifiers_on_map = Unicode(None, allow_none=True)\
+    identifiers_on_map = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    highlight_missing = Bool(None, allow_none=True)\
+    highlight_missing = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    allow_building_duplicate_reactions = Bool(None, allow_none=True)\
+    allow_building_duplicate_reactions = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    cofactors = List(None, allow_none=True)\
+    cofactors = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
     enable_tooltips = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    enable_keys_with_tooltip = Bool(None, allow_none=True)\
+    enable_keys_with_tooltip = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    reaction_scale_preset = Dict(None, allow_none=True)\
+    reaction_scale_preset = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    metabolite_scale_preset = Dict(None, allow_none=True)\
+    metabolite_scale_preset = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    primary_metabolite_radius = Float(None, allow_none=True)\
+    primary_metabolite_radius = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    secondary_metabolite_radius = Float(None, allow_none=True)\
+    secondary_metabolite_radius = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    marker_radius = Float(None, allow_none=True)\
+    marker_radius = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    gene_font_size = Float(None, allow_none=True)\
+    gene_font_size = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    reaction_no_data_size = Float(None, allow_none=True)\
+    reaction_no_data_size = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    metabolite_no_data_size = Float(None, allow_none=True)\
+    metabolite_no_data_size = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
 
     def __init__(

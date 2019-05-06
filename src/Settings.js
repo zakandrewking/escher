@@ -95,15 +95,18 @@ export default class Settings {
     this.statusBus = new bacon.Bus()
 
     // Create the options
-    ;[ this.busses, this.streams ] = _.chain(optionsWithDefaults)
+    ;[ this.busses, this.streams, this.acceptedStreams ] = _.chain(optionsWithDefaults)
       .mapObject((value, key) => {
         const isConditional = _.contains(conditionalOptions, key)
-        const { bus, stream } = this.createSetting(key, value, isConditional)
-        return [ bus, stream ]
+        const { bus, stream, acceptedStream } = this.createSetting(key, value, isConditional)
+        return [ bus, stream, acceptedStream ]
       })             // { k: [ b, s ], ... }
       .pairs()       // [ [ k, [ b, s ] ], ... ]
-      .map(([ name, [ bus, stream ] ]) => [[ name, bus ], [ name, stream ]])
-                     // [ [ [ k, b ], [ k, s ] ], ... ]
+      .map(([ name, [ bus, stream, acceptedStream ] ]) => [
+        [ name, bus ],
+        [ name, stream ],
+        [ name, acceptedStream ]
+      ]) // [ [ [ k, b ], [ k, s ] ], ... ]
       .unzip()       // [ [ [ k, b ], ... ], [ [ k, s ], ... ] ]
       .map(x => _.object(x)) // [ { k: b, ... }, { k: s, ... } ]
       .value()
@@ -111,7 +114,7 @@ export default class Settings {
 
   /**
    * Set up a new bus and stream for a conditional setting (i.e. one that can be
-   * canceledin the settings menu.
+   * canceled in the settings menu.
    */
   createSetting (name, initialValue, isConditional) {
     // Set up the bus
@@ -122,13 +125,25 @@ export default class Settings {
           ? convertToConditionalStream(bus, this.statusBus)
           : bus.toEventStream()
 
+    // Make a stream for the accepted values only. First get the latest value
+    // after accepting. Also get a latest copy of the correct value if the data
+    // is abandoned.
+    const acceptedStream = stream.sampledBy(
+      this.statusBus.filter(status => status === 'accept' || status === 'abandon')
+    ).merge(
+      // Then merge with all the other changes
+      stream.filter(
+        this.statusBus.map(status => status === 'accept').toProperty(true)
+      )
+    )
+
     // Get the latest
     stream.onValue(v => { this._options[name] = v })
 
     // Push the initial value
     bus.push(initialValue)
 
-    return { bus, stream }
+    return { bus, stream, acceptedStream }
   }
 
   /**
