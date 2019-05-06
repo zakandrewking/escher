@@ -381,14 +381,23 @@ class Builder(widgets.DOMWidget):
         .tag(sync=True, option=True)
     enable_editing = Bool(None, allow_none=True)\
         .tag(sync=True, option=True)
-    enable_keys = Bool(None, allow_none=True)\
+    enable_keys = Bool(False, allow_none=True)\
         .tag(sync=True, option=True)
     enable_search = Bool(None, allow_none=True)\
         .tag(sync=True, option=True)
     zoom_to_element = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    full_screen_button = Any(None, allow_none=True)\
+
+    full_screen_button_default = {
+        'enable_keys': True,
+        'scroll_behavior': 'pan',
+        'enable_editing': True,
+        'menu': 'all',
+        'enable_tooltips': ['label']
+    }
+    full_screen_button = Any(full_screen_button_default, allow_none=True)\
         .tag(sync=True, option=True)
+
     disabled_buttons = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
     semantic_zoom = Any(None, allow_none=True)\

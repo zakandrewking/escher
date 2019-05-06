@@ -471,9 +471,6 @@ class Builder {
       if (!this.settings.get('enable_editing')) {
         newDisabledButtons.push('Show control points')
       }
-      if (this.settings.get('full_screen_button') === false) {
-        newDisabledButtons.push('Toggle full screen')
-      }
       this.settings.set('disabled_buttons', newDisabledButtons)
 
       // Set up selection box
@@ -520,7 +517,7 @@ class Builder {
 
       // confirm before leaving the page
       if (this.settings.get('enable_editing')) {
-        this._setup_confirm_before_exit()
+        this._setupConfirmBeforeExit()
       }
 
       // draw
@@ -665,6 +662,11 @@ class Builder {
     this.settings.streams.menu.onValue(menu => {
       this.passPropsMenuBar({ display: menu === 'all' })
     })
+
+    // redraw when full screen button changes
+    this.settings.streams.full_screen_button.onValue(value => {
+      this.passPropsMenuBar()
+    })
   }
 
   /**
@@ -722,9 +724,15 @@ class Builder {
       buildInput: this.build_input,
       fullScreen: () => this.fullScreen()
     })
+
     // redraw when mode changes
     this.callback_manager.set('set_mode', mode => {
       this.passPropsButtonPanel({ mode })
+    })
+
+    // redraw when full screen button changes
+    this.settings.streams.full_screen_button.onValue(value => {
+      this.passPropsButtonPanel()
     })
   }
 
@@ -1317,15 +1325,10 @@ class Builder {
   /**
    * Ask if the user wants to exit the page (to avoid unplanned refresh).
    */
-  _setup_confirm_before_exit () {
-    window.onbeforeunload = function (e) {
-      // If we haven't been passed the event get the window.event
-      e = e || window.event
-      return (this.settings.get('never_ask_before_quit')
-        ? null
-        : 'You will lose any unsaved changes.'
-      )
-    }.bind(this)
+  _setupConfirmBeforeExit () {
+    window.onbeforeunload = _ => this.settings.get('never_ask_before_quit')
+                               ? null
+                               : 'You will lose any unsaved changes.'
   }
 
   /**
