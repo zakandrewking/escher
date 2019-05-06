@@ -28,7 +28,6 @@ To install the Jupyter Lab extension::
 Dependencies should install automatically, but they are:
 
 - `Jinja2`_
-- `Tornado`_
 - `COBRApy`_, 0.5.0 or later
 
 Launching Escher in Python
@@ -71,7 +70,6 @@ Here are example notebooks to get started with:
 
 .. _`source files`: https://github.com/zakandrewking/escher/releases
 .. _`Jinja2`: http://jinja.pocoo.org
-.. _`Tornado`: http://www.tornadoweb.org/en/stable
 .. _`COBRApy`: https://github.com/opencobra/cobrapy
 .. _`COBRApy and Escher`: http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/COBRApy%20and%20Escher.ipynb
 .. _`JavaScript development and offline maps`: http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/JavaScript%20development%20and%20offline%20maps.ipynb

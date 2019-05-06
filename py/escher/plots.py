@@ -15,8 +15,11 @@ from warnings import warn
 try:
     from urllib.request import urlopen
     from urllib.error import URLError
-except:
+    from urllib.parse import quote as url_escape
+except Exception:
+    # python 2
     from urllib2 import urlopen, URLError
+    from urllib import quote as url_escape
 import json
 import shutil
 import re
@@ -24,7 +27,6 @@ from jinja2 import Environment, PackageLoader, Template
 import codecs
 import random
 import string
-from tornado.escape import url_escape
 import shutil
 from typing import Optional
 
@@ -57,7 +59,6 @@ def list_available_models():
 
 # download maps and models
 
-
 def _json_for_name(name: str, kind: str):
     # check the name
     name = name.replace('.json', '')
@@ -77,7 +78,7 @@ def _json_for_name(name: str, kind: str):
     org, name = match[0]
     url = (
         get_url(kind + '_download') +
-        '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']])
+        '/'.join([url_escape(x) for x in [org, name + '.json']])
     )
     print('Downloading %s from %s' % (kind.title(), url))
     try:

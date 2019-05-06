@@ -61,7 +61,6 @@ setup(
     ],
     install_requires=[
         'Jinja2>=2.7.3,<3',
-        'tornado>=4.0.2,<5',
         'pytest>=4.0.1,<5',
         'cobra>=0.5.0',
         'jsonschema>=2.4.0,<3',
