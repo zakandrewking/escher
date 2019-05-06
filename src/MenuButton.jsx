@@ -9,7 +9,7 @@
 import { h, Component } from 'preact'
 import _ from 'underscore'
 import utils from './utils'
-import dataStyles from './data_styles'
+import * as dataStyles from './dataStyles'
 
 class MenuButton extends Component {
   handleFileInput (target) {

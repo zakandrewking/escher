@@ -12,7 +12,7 @@ import Brush from './Brush'
 import CallbackManager from './CallbackManager'
 import Settings from './Settings'
 import TextEditInput from './TextEditInput'
-import dataStyles from './data_styles'
+import * as dataStyles from './dataStyles'
 import renderWrapper from './renderWrapper'
 import SettingsMenu from './SettingsMenu'
 import MenuBar from './MenuBar'
@@ -185,6 +185,18 @@ class Builder {
     // this.options and this.settings used to have different functions, but now
     // they are aliases
     this.settings = new Settings(optionsWithDefaults, conditional)
+
+    // make data settings reactive
+    this.settings.streams.reaction_data.onValue(val => {
+      console.log('set reaction data')
+      this.set_reaction_data(val, false)
+    })
+    this.settings.streams.metabolite_data.onValue(val => {
+      this.set_metabolite_data(val, false)
+    })
+    this.settings.streams.gene_data.onValue(val => {
+      this.set_gene_data(val, false, false)
+    })
 
     // Warn if scales are too short
     ;['reaction_scale', 'metabolite_scale'].map(scaleType => {
@@ -838,8 +850,12 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_reaction_data (data) { // eslint-disable-line camelcase
-    this.settings.set('reaction_data', data)
+  set_reaction_data (data, setInSettings = true) { // eslint-disable-line camelcase
+    // If the change came from the setting stream already, then don't update the
+    // stream again
+    if (setInSettings) {
+      this.settings.set('reaction_data', data)
+    }
 
     var messageFn = this._reactionCheckAddAbs()
 
@@ -864,12 +880,18 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_gene_data (data, clearGeneReactionRules) { // eslint-disable-line camelcase
+  set_gene_data (data, clearGeneReactionRules, setInSettings = true) { // eslint-disable-line camelcase
     if (clearGeneReactionRules) {
       // default undefined
       this.settings.set('show_gene_reaction_rules', false)
     }
-    this.settings.set('gene_data', data)
+
+    // If the change came from the setting stream already, then don't update the
+    // stream again
+    if (setInSettings) {
+      this.settings.set('gene_data', data)
+    }
+
     this._updateData(true, true, ['reaction'])
     this.map.set_status('')
 
@@ -886,8 +908,13 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_metabolite_data (data) { // eslint-disable-line camelcase
-    this.settings.set('metabolite_data', data)
+  set_metabolite_data (data, setInSettings = true) { // eslint-disable-line camelcase
+    // If the change came from the setting stream already, then don't update the
+    // stream again
+    if (setInSettings) {
+      this.settings.set('metabolite_data', data)
+    }
+
     this._updateData(true, true, ['metabolite'])
     this.map.set_status('')
 
@@ -912,7 +939,7 @@ class Builder {
     }
 
     // this object has reaction keys and values containing associated genes
-    return dataStyles.import_and_check(geneData, 'gene_data', allReactions)
+    return dataStyles.importAndCheck(geneData, 'gene_data', allReactions)
   }
 
   /**
@@ -952,8 +979,8 @@ class Builder {
 
     // metabolite data
     if (updateMetaboliteData && updateMap && this.map !== null) {
-      metaboliteDataObject = dataStyles.import_and_check(this.settings.get('metabolite_data'),
-                                                         'metabolite_data')
+      metaboliteDataObject = dataStyles.importAndCheck(this.settings.get('metabolite_data'),
+                                                       'metabolite_data')
       this.map.apply_metabolite_data_to_map(metaboliteDataObject)
       if (shouldDraw) {
         this.map.draw_all_nodes(false)
@@ -963,8 +990,9 @@ class Builder {
     // reaction data
     if (updateReactionData) {
       if (this.settings.get('reaction_data') !== null && updateMap && this.map !== null) {
-        reactionDataObject = dataStyles.import_and_check(this.settings.get('reaction_data'),
-                                                         'reaction_data')
+        reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
+                                                       'reaction_data')
+        console.log(reactionDataObject)
         this.map.apply_reaction_data_to_map(reactionDataObject)
         if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
@@ -1001,8 +1029,8 @@ class Builder {
       if (updateMetaboliteData && updateModel && this.cobra_model !== null) {
         // if we haven't already made this
         if (!metaboliteDataObject) {
-          metaboliteDataObject = dataStyles.import_and_check(this.settings.get('metabolite_data'),
-                                                             'metabolite_data')
+          metaboliteDataObject = dataStyles.importAndCheck(this.settings.get('metabolite_data'),
+                                                           'metabolite_data')
         }
         this.cobra_model.apply_metabolite_data(metaboliteDataObject,
                                                this.settings.get('metabolite_styles'),
@@ -1014,8 +1042,8 @@ class Builder {
         if (this.settings.get('reaction_data') !== null && updateModel && this.cobra_model !== null) {
           // if we haven't already made this
           if (!reactionDataObject) {
-            reactionDataObject = dataStyles.import_and_check(this.settings.get('reaction_data'),
-                                                             'reaction_data')
+            reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
+                                                           'reaction_data')
           }
           this.cobra_model.apply_reaction_data(reactionDataObject,
                                                this.settings.get('reaction_styles'),

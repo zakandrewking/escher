@@ -12,6 +12,20 @@ try {
 
 const version = ESCHER_VERSION
 
+// These options can be set without explicitly redrawing the map. List is
+// probably not complete.
+const NO_DRAW_OPTIONS = [
+  'menu',
+  'scroll_behavior',
+  'use_3d_transform',
+  'enable_editing',
+  'enable_keys',
+  'full_screen_button',
+  'reaction_data',
+  'metabolite_data',
+  'gene_data'
+]
+
 /**
  * Jupyter widget implementation for the Escher Builder.
  */
@@ -35,10 +49,6 @@ export default function initializeJupyterWidget () {
           this.model.get('embedded_css'),
           sel,
           {
-            // options
-            reaction_data: this.model.get('reaction_data'),
-            metabolite_data: this.model.get('metabolite_data'),
-            gene_data: this.model.get('gene_data'),
             first_load_callback: builder => {
               // reset map json in widget
               builder.callback_manager.set('clear_map', () => {
@@ -62,22 +72,9 @@ export default function initializeJupyterWidget () {
               this.model.on('change:_loaded_model_json', () => {
                 builder.load_model(this.getModelData())
               })
-              // this.model.on('change:reaction_data', () => {
-              //   builder.set_reaction_data(this.model.get('reaction_data'))
-              // })
-              // this.model.on('change:metabolite_data', () => {
-              //   builder.set_metabolite_data(this.model.get('metabolite_data'))
-              // })
-              // this.model.on('change:gene_data', () => {
-              //   builder.set_gene_data(this.model.get('gene_data'))
-              // })
 
               // set the rest of the options
               Object.keys(builder.settings.streams).map(key => {
-                const alreadySet = [] // 'reaction_data', 'metabolite_data', 'gene_data']
-                if (alreadySet.includes(key)) {
-                  return
-                }
                 if (this.model.keys().includes(key)) {
                   const val = this.model.get(key)
                   // ignore null because that means to use the default
@@ -88,6 +85,7 @@ export default function initializeJupyterWidget () {
                     const val = this.model.get(key)
                     // ignore null because that means to use the default
                     if (val !== null) {
+                      console.log(key, val)
                       builder.settings.set(key, val)
                     }
                   })
@@ -102,8 +100,7 @@ export default function initializeJupyterWidget () {
                     this.model.save_changes()
                     // default to drawing everything, unless it's a common
                     // option where that's not necessary
-                    const noDraw = ['scroll_behavior']
-                    if (!noDraw.includes(key)) {
+                    if (!NO_DRAW_OPTIONS.includes(key)) {
                       builder.map.draw_everything()
                     }
                   })

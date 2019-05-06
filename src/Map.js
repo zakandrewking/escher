@@ -7,7 +7,7 @@ import UndoStack from './UndoStack'
 import CallbackManager from './CallbackManager'
 import KeyManager from './KeyManager'
 import Canvas from './Canvas'
-import * as data_styles from './data_styles'
+import * as dataStyles from './dataStyles'
 import SearchIndex from './SearchIndex'
 
 import bacon from 'baconjs'
@@ -686,7 +686,7 @@ export default class Map {
   apply_reaction_data_to_map (data, keys) {
     const styles = this.settings.get('reaction_styles')
     const compareStyle = this.settings.get('reaction_compare_style')
-    const hasData = data_styles.apply_reaction_data_to_reactions(
+    const hasData = dataStyles.apply_reaction_data_to_reactions(
       this.reactions,
       data,
       styles,
@@ -707,7 +707,7 @@ export default class Map {
     var styles = this.settings.get('metabolite_styles')
     var compare_style = this.settings.get('metabolite_compare_style')
 
-    var has_data = data_styles.apply_metabolite_data_to_nodes(this.nodes,
+    var has_data = dataStyles.apply_metabolite_data_to_nodes(this.nodes,
                                                               data, styles,
                                                               compare_style,
                                                               keys)
@@ -729,7 +729,7 @@ export default class Map {
         identifiers_on_map = this.settings.get('identifiers_on_map'),
         and_method_in_gene_reaction_rule = this.settings.get('and_method_in_gene_reaction_rule')
 
-    var has_data = data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
+    var has_data = dataStyles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
                                                             styles, identifiers_on_map,
                                                             compare_style,
                                                             and_method_in_gene_reaction_rule,

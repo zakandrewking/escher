@@ -1,7 +1,7 @@
 /* global global */
 
 const utils = require('../utils')
-const data_styles = require('../data_styles')
+const dataStyles = require('../dataStyles')
 const d3Body = require('./helpers/d3Body')
 
 const describe = require('mocha').describe
@@ -227,7 +227,7 @@ describe('utils.extend', () => {
 describe('utils.load_json_or_csv', () => {
   it('loads JSON', () => {
     utils.load_json_or_csv(null,
-                           data_styles.csv_converter,
+                           dataStyles.csv_converter,
                            function(error, value) {
                              if (error) console.warn(error)
                              assert.deepEqual(value, {'GAPD': 100})
@@ -238,7 +238,7 @@ describe('utils.load_json_or_csv', () => {
   })
   it('loads CSV', () => {
     utils.load_json_or_csv(null,
-                           data_styles.csv_converter,
+                           dataStyles.csv_converter,
                            function(error, value) {
                              if (error) console.warn(error)
                              assert.deepEqual(value, [{'GAPD': '100'}])

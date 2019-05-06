@@ -1,77 +1,90 @@
-/**
- * data_styles
- */
-
-var utils = require('./utils')
-var _ = require('underscore')
-var d3_format = require('d3-format').format
-
-module.exports = {
-  import_and_check: import_and_check,
-  text_for_data: text_for_data,
-  float_for_data: float_for_data,
-  reverse_flux_for_data: reverse_flux_for_data,
-  gene_string_for_data: gene_string_for_data,
-  csv_converter: csv_converter,
-  genes_for_gene_reaction_rule: genes_for_gene_reaction_rule,
-  evaluate_gene_reaction_rule: evaluate_gene_reaction_rule,
-  replace_gene_in_rule: replace_gene_in_rule,
-  apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
-  apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
-  apply_gene_data_to_reactions: apply_gene_data_to_reactions
-}
-
+import * as utils from './utils'
+import _ from 'underscore'
+import { format as d3Format } from 'd3-format'
 
 // globals
-var RETURN_ARG = function(x) { return x; }
-var ESCAPE_REG = /([.*+?^=!:${}()|\[\]\/\\])/g
-var EMPTY_LINES = /\n\s*\n/g
-var TRAILING_NEWLINE = /\n\s*(\)*)\s*$/
-var AND_OR = /([\(\) ])(?:and|or)([\)\( ])/ig
-var ALL_PARENS = /[\(\)]/g
+const RETURN_ARG = x => x
+const ESCAPE_REG = /([.*+?^=!:${}()|[\]/\\])/g
+const EMPTY_LINES = /\n\s*\n/g
+const TRAILING_NEWLINE = /\n\s*(\)*)\s*$/
+const AND_OR = /([() ])(?:and|or)([)( ])/ig
+const ALL_PARENS = /[()]/g
 // capture an expression surrounded by whitespace and a set of parentheses
-var EXCESS_PARENS = /\(\s*(\S+)\s*\)/g
-var OR = /\s+or\s+/i
-var AND = /\s+and\s+/i
+const EXCESS_PARENS = /\(\s*(\S+)\s*\)/g
+const OR = /\s+or\s+/i
+const AND = /\s+and\s+/i
 // find ORs
-var OR_EXPRESSION = /(^|\()(\s*-?[0-9.]+\s+(?:or\s+-?[0-9.]+\s*)+)(\)|$)/ig
+const OR_EXPRESSION = /(^|\()(\s*-?[0-9.]+\s+(?:or\s+-?[0-9.]+\s*)+)(\)|$)/ig
 // find ANDS, respecting order of operations (and before or)
-var AND_EXPRESSION = /(^|\(|or\s)(\s*-?[0-9.]+\s+(?:and\s+-?[0-9.]+\s*)+)(\sor|\)|$)/ig
+const AND_EXPRESSION = /(^|\(|or\s)(\s*-?[0-9.]+\s+(?:and\s+-?[0-9.]+\s*)+)(\sor|\)|$)/ig
 
-function _align_gene_data_to_reactions (data, reactions) {
-  var aligned = {}
-  var null_val = [ null ]
+function parseFloatOrNull (x) {
+  // strict number casting
+  const f = Number(x)
+  // check for null and '', which haven't been caught yet
+  return (isNaN(f) || parseFloat(x) !== f) ? null : f
+}
+
+function alignGeneDataToReactions (data, reactions) {
+  const aligned = {}
+  let nullVal = [ null ]
   // make an array of nulls as the default
-  for (var first_gene_id in data) {
-    null_val = data[first_gene_id].map(function () { return null })
+  for (let firstGeneId in data) {
+    nullVal = data[firstGeneId].map(() => null)
     break
   }
-  for (var reaction_id in reactions) {
-    var reaction = reactions[reaction_id]
-    var bigg_id = reaction.bigg_id
-    var this_gene_data = {}
+  for (let reactionId in reactions) {
+    const reaction = reactions[reactionId]
+    const biggId = reaction.bigg_id
+    const thisGeneData = {}
 
-    reaction.genes.forEach(function (gene) {
+    reaction.genes.forEach(gene => {
       // check both gene id and gene name
       ;[ 'bigg_id', 'name' ].forEach(function (kind) {
-        var d = data[gene[kind]] || utils.clone(null_val)
+        const d = data[gene[kind]] || utils.clone(nullVal)
         // merger with existing data if present
-        var existing_d = this_gene_data[gene.bigg_id]
-        if (typeof existing_d === 'undefined') {
-          this_gene_data[gene.bigg_id] = d
+        const existingD = thisGeneData[gene.bigg_id]
+        if (existingD === undefined) {
+          thisGeneData[gene.bigg_id] = d
         } else {
-          for (var i = 0; i < d.length; i++) {
-            var pnt = d[i]
+          for (let i = 0; i < d.length; i++) {
+            const pnt = d[i]
             if (pnt !== null) {
-              existing_d[i] = pnt
+              existingD[i] = pnt
             }
           }
         }
       })
     })
-    aligned[bigg_id] = this_gene_data
+    aligned[biggId] = thisGeneData
   }
   return aligned
+}
+
+function checkFinite (x) {
+  return isFinite(x) ? x : null
+}
+
+function abs (x, takeAbs) {
+  return takeAbs ? Math.abs(x) : x
+}
+
+function diff (x, y, takeAbs) {
+  if (takeAbs) return Math.abs(y - x)
+  else return y - x
+}
+
+function fold (x, y, takeAbs) {
+  if (x === 0 || y === 0) return null
+  var fold = (y >= x ? y / x : -x / y)
+  return takeAbs ? Math.abs(fold) : fold
+}
+
+function log2Fold (x, y, takeAbs) {
+  if (x === 0) return null
+  if (y / x < 0) return null
+  var log = Math.log(y / x) / Math.log(2)
+  return takeAbs ? Math.abs(log) : log
 }
 
 /**
@@ -81,7 +94,7 @@ function _align_gene_data_to_reactions (data, reactions) {
  * all_reactions: Required for name == 'gene_data'. Must include all GPRs for
  * the map and model.
  */
-function import_and_check (data, name, all_reactions) {
+export function importAndCheck (data, name, allReactions) {
   // check arguments
   if (data === null) {
     return null
@@ -112,75 +125,49 @@ function import_and_check (data, name, all_reactions) {
   data = utils.array_to_object(data)
 
   if (name === 'gene_data') {
-    if (all_reactions === undefined) {
+    if (allReactions === undefined) {
       throw new Error('Must pass all_reactions argument for gene_data')
     }
-    data = _align_gene_data_to_reactions(data, all_reactions)
+    data = alignGeneDataToReactions(data, allReactions)
   }
 
   return data
 }
 
-function float_for_data(d, styles, compare_style) {
+export function floatForData (d, styles, compareStyle) {
   // all null
-  if (d === null)
-    return null
+  if (d === null) return null
 
   // absolute value
-  var take_abs = (styles.indexOf('abs') != -1)
+  const takeAbs = styles.indexOf('abs') !== -1
 
-  if (d.length==1) { // 1 set
+  if (d.length === 1) { // 1 set
     // 1 null
-    var f = _parse_float_or_null(d[0])
-    if (f === null)
-      return null
-    return abs(f, take_abs)
-  } else if (d.length==2) { // 2 sets
+    var f = parseFloatOrNull(d[0])
+    if (f === null) return null
+    return abs(f, takeAbs)
+  } else if (d.length === 2) { // 2 sets
     // 2 null
-    var fs = d.map(_parse_float_or_null)
-    if (fs[0] === null || fs[1] === null)
-      return null
+    var fs = d.map(parseFloatOrNull)
+    if (fs[0] === null || fs[1] === null) return null
 
-    if (compare_style == 'diff') {
-      return diff(fs[0], fs[1], take_abs)
-    } else if (compare_style == 'fold') {
-      return check_finite(fold(fs[0], fs[1], take_abs))
-    }
-    else if (compare_style == 'log2_fold') {
-      return check_finite(log2_fold(fs[0], fs[1], take_abs))
+    if (compareStyle === 'diff') {
+      return diff(fs[0], fs[1], takeAbs)
+    } else if (compareStyle === 'fold') {
+      return checkFinite(fold(fs[0], fs[1], takeAbs))
+    } else if (compareStyle === 'log2_fold') {
+      return checkFinite(log2Fold(fs[0], fs[1], takeAbs))
     }
   } else {
     throw new Error('Data array must be of length 1 or 2')
   }
-  throw new Error('Bad data compare_style: ' + compare_style)
-
-  // definitions
-  function check_finite(x) {
-    return isFinite(x) ? x : null
-  }
-  function abs(x, take_abs) {
-    return take_abs ? Math.abs(x) : x
-  }
-  function diff(x, y, take_abs) {
-    if (take_abs) return Math.abs(y - x)
-    else return y - x
-  }
-  function fold(x, y, take_abs) {
-    if (x == 0 || y == 0) return null
-    var fold = (y >= x ? y / x : - x / y)
-    return take_abs ? Math.abs(fold) : fold
-  }
-  function log2_fold(x, y, take_abs) {
-    if (x == 0) return null
-    if (y / x < 0) return null
-    var log = Math.log(y / x) / Math.log(2)
-    return take_abs ? Math.abs(log) : log
-  }
+  throw new Error('Bad data compare_style: ' + compareStyle)
 }
 
-function reverse_flux_for_data(d) {
-  if (d === null || d[0] === null)
+export function reverse_flux_for_data (d) {
+  if (d === null || d[0] === null) {
     return false
+  }
   return (d[0] < 0)
 }
 
@@ -203,7 +190,7 @@ function reverse_flux_for_data(d) {
  *
  * The text elements should each appear on a new line.
  */
-function gene_string_for_data (rule, gene_values, genes, styles,
+export function gene_string_for_data (rule, gene_values, genes, styles,
                                identifiers_on_map, compare_style) {
   var out_text = rule
   var no_data = (gene_values === null)
@@ -224,8 +211,8 @@ function gene_string_for_data (rule, gene_values, genes, styles,
       if (!(bigg_id in gene_values))
         return
       var d = gene_values[bigg_id]
-      var f = float_for_data(d, styles, compare_style)
-      var format = (f === null ? RETURN_ARG : d3_format('.3g'))
+      var f = floatForData(d, styles, compare_style)
+      var format = (f === null ? RETURN_ARG : d3Format('.3g'))
       if (d.length === 1) {
         out_text = replace_gene_in_rule(out_text, bigg_id,
                                         bigg_id + ' (' + null_or_d(d[0], format) + ')\n')
@@ -233,7 +220,7 @@ function gene_string_for_data (rule, gene_values, genes, styles,
         var new_str
         // check if they are all text
         var any_num = _.any(d, function (x) {
-          return _parse_float_or_null(x) !== null
+          return parseFloatOrNull(x) !== null
         })
         if (any_num) {
           new_str = (bigg_id + ' (' +
@@ -278,16 +265,16 @@ function gene_string_for_data (rule, gene_values, genes, styles,
   }
 }
 
-function text_for_data (d, f) {
+export function text_for_data (d, f) {
   if (d === null) {
     return null_or_d(null)
   }
   if (d.length === 1) {
-    var format = (f === null ? RETURN_ARG : d3_format('.3g'))
+    var format = (f === null ? RETURN_ARG : d3Format('.3g'))
     return null_or_d(d[0], format)
   }
   if (d.length === 2) {
-    var format = (f === null ? RETURN_ARG : d3_format('.3g')),
+    var format = (f === null ? RETURN_ARG : d3Format('.3g')),
     t = null_or_d(d[0], format)
     t += ', ' + null_or_d(d[1], format)
     t += ': ' + null_or_d(f, format)
@@ -301,7 +288,7 @@ function text_for_data (d, f) {
   }
 }
 
-function csv_converter(csv_rows) {
+export function csv_converter(csv_rows) {
   /** Convert data from a csv file to json-style data.
 
       File must include a header row.
@@ -325,7 +312,7 @@ function csv_converter(csv_rows) {
   return converted
 }
 
-function genes_for_gene_reaction_rule(rule) {
+export function genes_for_gene_reaction_rule(rule) {
   /** Find unique genes in gene_reaction_rule string.
 
       Arguments
@@ -352,7 +339,7 @@ function genes_for_gene_reaction_rule(rule) {
   return utils.unique_strings_array(genes)
 }
 
-function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {
+export function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {
   /** Return a value given the rule and gene_values object.
 
       Arguments
@@ -387,7 +374,7 @@ function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_react
     // put all the numbers into the expression
     var all_null = true
     for (var gene_id in gene_values) {
-      var f = _parse_float_or_null(gene_values[gene_id][i])
+      var f = parseFloatOrNull(gene_values[gene_id][i])
       if (f === null) {
         f = 0
       } else {
@@ -441,7 +428,7 @@ function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_react
   return out
 }
 
-function replace_gene_in_rule (rule, gene_id, val) {
+export function replace_gene_in_rule (rule, gene_id, val) {
   // get the escaped string, with surrounding space or parentheses
   var space_or_par_start = '(^|[\\\s\\\(\\\)])'
   var space_or_par_finish = '([\\\s\\\(\\\)]|$)'
@@ -462,7 +449,7 @@ function replace_gene_in_rule (rule, gene_id, val) {
  * @param {String} compare_style -
  * @param {Array} keys - (Optional) The keys in reactions to apply data to.
  */
-function apply_reaction_data_to_reactions (reactions, data, styles,
+export function apply_reaction_data_to_reactions (reactions, data, styles,
                                            compare_style, keys) {
   if (_.isUndefined(keys)) keys = Object.keys(reactions)
 
@@ -490,7 +477,7 @@ function apply_reaction_data_to_reactions (reactions, data, styles,
     reaction = reactions[reaction_id]
     // check bigg_id and name
     var d = data[reaction.bigg_id] || data[reaction.name] || null
-    var f = float_for_data(d, styles, compare_style)
+    var f = floatForData(d, styles, compare_style)
     var r = reverse_flux_for_data(d)
     var s = text_for_data(d, f)
     reaction.data = f
@@ -515,27 +502,24 @@ function apply_reaction_data_to_reactions (reactions, data, styles,
  * @param {String} compare_style -
  * @param {Array} keys - (Optional) The keys in nodes to apply data to.
  */
-function apply_metabolite_data_to_nodes (nodes, data, styles, compare_style,
-                                         keys) {
+export function apply_metabolite_data_to_nodes (nodes, data, styles, compareStyle, keys) {
   if (_.isUndefined(keys)) keys = Object.keys(nodes)
 
-  var node_id
-
   if (data === null) {
-    keys.map(function (node_id) {
-      nodes[node_id].data = null
-      nodes[node_id].data_string = ''
+    keys.map(nodeId => {
+      nodes[nodeId].data = null
+      nodes[nodeId].data_string = ''
     })
     return false
   }
 
   // grab the data
-  keys.map(function (node_id) {
-    var node = nodes[node_id]
+  keys.map(nodeId => {
+    var node = nodes[nodeId]
     // check bigg_id and name
-    var d = data[node.bigg_id] || data[node.name] || null,
-    f = float_for_data(d, styles, compare_style),
-    s = text_for_data(d, f)
+    const d = data[node.bigg_id] || data[node.name] || null
+    const f = floatForData(d, styles, compareStyle)
+    const s = text_for_data(d, f)
     node.data = f
     node.data_string = s
   })
@@ -553,10 +537,15 @@ function apply_metabolite_data_to_nodes (nodes, data, styles, compare_style,
  * and_method_in_gene_reaction_rule:
  * @param {Array} keys - (Optional) The keys in reactions to apply data to.
  */
-function apply_gene_data_to_reactions (reactions, gene_data_obj, styles,
-                                       identifiers_on_map, compare_style,
-                                       and_method_in_gene_reaction_rule,
-                                       keys) {
+export function apply_gene_data_to_reactions (
+  reactions,
+  gene_data_obj,
+  styles,
+  identifiers_on_map,
+  compare_style,
+  and_method_in_gene_reaction_rule,
+  keys
+) {
   if (_.isUndefined(keys)) keys = Object.keys(reactions)
 
   if (gene_data_obj === null) {
@@ -601,7 +590,7 @@ function apply_gene_data_to_reactions (reactions, gene_data_obj, styles,
       gene_values = {}
       d = utils.clone(null_val)
     }
-    var f = float_for_data(d, styles, compare_style)
+    var f = floatForData(d, styles, compare_style)
     var r = reverse_flux_for_data(d)
     var s = text_for_data(d, f)
     reaction.data = f
@@ -622,11 +611,4 @@ function apply_gene_data_to_reactions (reactions, gene_data_obj, styles,
                                                 compare_style)
   })
   return true
-}
-
-function _parse_float_or_null(x) {
-  // strict number casting
-  var f = Number(x)
-  // check for null and '', which haven't been caught yet
-  return (isNaN(f) || parseFloat(x) != f) ? null : f
 }

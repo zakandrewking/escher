@@ -8,7 +8,7 @@ describe('main', () => {
     const properties = [
       'version', 'Builder', 'Map', 'Behavior', 'KeyManager', 'DataMenu',
       'UndoStack', 'CobraModel', 'utils', 'SearchIndex', 'Settings',
-      'data_styles', 'ZoomContainer'
+      'dataStyles', 'ZoomContainer'
     ]
     properties.map(property => {
       assert.property(escher, property)
