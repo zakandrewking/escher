@@ -1,13 +1,10 @@
 environment:
   matrix:
-    - python: 'C:\\Python27-x64'
-      nodejs_version: '7'
-
-    - python: 'C:\\Python35-x64'
-      nodejs_version: '7'
-
     - python: 'C:\\Python36-x64'
-      nodejs_version: '7'
+      nodejs_version: '11'
+
+    - python: 'C:\\Python37-x64'
+      nodejs_version: '11'
 
 install:
   # Add python to PATH

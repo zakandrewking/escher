@@ -1,8 +1,7 @@
 language: python
 python:
-  - "2.7"
-  - "3.5"
   - "3.6"
+  - "3.7"
 # Latest node
 before_install:
   - nvm install 8.3.0
@@ -21,7 +20,7 @@ install:
 # Run tests
 script:
   - yarn test
-  - if [[ $TRAVIS_PYTHON_VERSION = '3.6' ]]; then yarn coverage; fi
+  - if [[ $TRAVIS_PYTHON_VERSION = '3.7' ]]; then yarn coverage; fi
   - cd py
   - python -m pytest
   - cd ..

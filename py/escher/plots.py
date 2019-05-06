@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals
-
 from escher.urls import get_url, root_directory
 from escher.util import b64dump
 from escher.version import __version__
@@ -12,14 +10,9 @@ from traitlets import Unicode, Int, Instance, Any, observe, validate
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
-try:
-    from urllib.request import urlopen
-    from urllib.error import URLError
-    from urllib.parse import quote as url_escape
-except Exception:
-    # python 2
-    from urllib2 import urlopen, URLError
-    from urllib import quote as url_escape
+from urllib.request import urlopen
+from urllib.error import URLError
+from urllib.parse import quote as url_escape
 import json
 import shutil
 import re

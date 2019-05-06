@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function, unicode_literals
-
 from escher.validate import validate_map, validate_schema
 from pytest import raises
 from copy import deepcopy
+
 
 def test_validate_map():
     the_map = [{ 'map_name': 'carbohydrate metabolism',
@@ -41,7 +38,7 @@ def test_validate_map():
                             'y':794.55,
                             'width':10402.35,
                             'height':13224.91}
-             }] 
+             }]
     validate_map(the_map)
 
     # missing node

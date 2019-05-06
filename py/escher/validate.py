@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function, unicode_literals
-
 from escher import __schema_version__
 from escher.urls import get_filepath
 from os.path import join

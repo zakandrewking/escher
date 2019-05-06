@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals
-
 from escher import __schema_version__, __map_model_version__
 from escher import Builder
 from escher.plots import (
@@ -17,15 +14,7 @@ import sys
 from os.path import join, basename
 import json
 from pytest import raises, mark
-try:
-    from urllib.error import URLError
-except ImportError:
-    from urllib2 import URLError
-
-if sys.version < '3':
-    unicode_type = unicode
-else:
-    unicode_type = str
+from urllib.error import URLError
 
 
 @mark.web
