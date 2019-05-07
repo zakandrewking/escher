@@ -81,6 +81,32 @@ Python package, check out the documentation:
 
 https://escher.readthedocs.io/en/latest/escher-python.html
 
+You can install it with pip:
+
+```
+pip install escher
+```
+
+## Jupyter extensions
+
+To install the Jupyter lab extension, simple install Escher with pip:
+
+```bash
+pip install escher
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter labextension install escher
+```
+
+To install the Jupyter notebook extension, run the following:
+
+```bash
+pip install escher
+jupyter nbextension install --py --sys-prefix escher
+jupyter nbextension enable --py --sys-prefix escher
+```
+
+## Python/Jupyter Development
+
 For development of the Python package, first build the JavaScript package and
 copy it over to the `py` directory with these commands in the Escher root:
 
@@ -103,8 +129,6 @@ For Python testing, run this in the `py` directory:
 cd py
 pytest
 ```
-
-## Jupyter extensions
 
 To develop the Jupyter notebook and Jupyter Lab extensions, you will need
 install them with symlinks (the typical installation is describe in the

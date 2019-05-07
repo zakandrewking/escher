@@ -28,6 +28,6 @@ __schema_version__ = package['schema_version']
 __map_model_version__ = package['map_model_version']
 
 # post-release version (required by PyPI & PEP440)
-__post_version__ = None
+__post_version__ = package['post_version']
 # full version with post-release
 __full_version__ = get_full_version(__version__, __post_version__)

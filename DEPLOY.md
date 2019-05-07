@@ -16,12 +16,14 @@ after the above
 
 cd py
 pip install -U pip setuptools wheel twine
+rm -rf dist build
 python setup.py sdist bdist_wheel
 twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 cd ~/new-directory
 virtualenv env
 source env/bin/activate
-pip install --index-url https://test.pypi.org/simple/ escher
+python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple "escher==<version>"
+python -m ipython kernel install --user --name=env
 ipython, jupyter, etc.
 cd -
-twine upload dist/*
+twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
