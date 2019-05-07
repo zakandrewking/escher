@@ -58,6 +58,7 @@ setup(
         'cobra>=0.5.0',
         'jsonschema>=2.4.0,<3',
         'ipywidgets>=7.1.0,<8',
+        'pandas>=0.18'
     ],
     extras_require={
         'docs': ['sphinx>=1.2', 'sphinx-rtd-theme>=0.1.6'],

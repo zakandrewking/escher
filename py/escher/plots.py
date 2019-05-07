@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 from escher.urls import get_url, root_directory
 from escher.util import b64dump
 from escher.version import __version__
 
 import cobra
 from cobra import Model
+import pandas as pd
 import ipywidgets as widgets
 from traitlets import Unicode, Int, Instance, Any, observe, validate
 import os
@@ -141,6 +141,16 @@ def _load_resource(resource, name):
     else:
         return resource
     raise Exception('Could not load %s.' % name)
+
+
+def convert_data(data):
+    if type(data) is pd.Series:
+        return dict(data)
+    elif type(data) is pd.DataFrame:
+        return list(dict(x.dropna()) for _, x in data.T.iterrows())
+    elif type(data) is dict or type(data) is list or data is None:
+        return data
+    raise Exception
 
 
 class Builder(widgets.DOMWidget):
@@ -415,8 +425,18 @@ class Builder(widgets.DOMWidget):
         .tag(sync=True, option=True)
     canvas_size_and_loc = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
+
     reaction_data = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
+
+    @validate('reaction_data')
+    def _validate_reaction_data(self, proposal):
+        try:
+            return convert_data(proposal['value'])
+        except Exception:
+            raise Exception("""Invalid data for reaction_data. Must be pandas
+                            Series, pandas DataFrame, dict, list, or None""")
+
     reaction_styles = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
     reaction_compare_style = Any(None, allow_none=True)\
@@ -427,12 +447,32 @@ class Builder(widgets.DOMWidget):
         .tag(sync=True, option=True)
     reaction_no_data_size = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
+
     gene_data = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
+
+    @validate('gene_data')
+    def _validate_gene_data(self, proposal):
+        try:
+            return convert_data(proposal['value'])
+        except Exception:
+            raise Exception("""Invalid data for gene_data. Must be pandas
+                            Series, pandas DataFrame, dict, list, or None""")
+
     and_method_in_gene_reaction_rule = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
+
     metabolite_data = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
+
+    @validate('metabolite_data')
+    def _validate_metabolite_data(self, proposal):
+        try:
+            return convert_data(proposal['value'])
+        except Exception:
+            raise Exception("""Invalid data for metabolite_data. Must be pandas
+                            Series, pandas DataFrame, dict, list, or None""")
+
     metabolite_styles = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
     metabolite_compare_style = Any(None, allow_none=True)\

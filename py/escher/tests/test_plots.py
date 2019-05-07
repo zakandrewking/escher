@@ -13,8 +13,9 @@ import os
 import sys
 from os.path import join, basename
 import json
-from pytest import raises, mark
+from pytest import raises, mark, param
 from urllib.error import URLError
+import pandas as pd
 
 
 @mark.web
@@ -115,3 +116,22 @@ def test_Builder_options():
     assert b.metabolite_no_data_color == 'blue'
     b.metabolite_no_data_color = 'white'
     assert b.metabolite_no_data_color == 'white'
+
+
+@mark.parametrize('data,expected', [
+    param(pd.Series({'x': 1}), {'x': 1}),
+    param({'x': 1}, {'x': 1}),
+    param(None, None),
+    param({}, {}),
+    param(
+        pd.DataFrame([{'x': 1, 'y': 3}, {'x': 2}]).T,
+        [{'x': 1, 'y': 3}, {'x': 2}]
+    )
+])
+def test_handling_cobra_fluxes(data, expected):
+    b = Builder(reaction_data=data,
+                gene_data=data,
+                metabolite_data=data)
+    assert b.reaction_data == expected
+    assert b.gene_data == expected
+    assert b.metabolite_data == expected
