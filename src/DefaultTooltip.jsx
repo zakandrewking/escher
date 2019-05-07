@@ -10,6 +10,11 @@ import './DefaultTooltip.css'
 const utils = require('./utils')
 
 class DefaultTooltip extends Component {
+  constructor () {
+    super()
+    this.openBigg = this.openBigg.bind(this)
+  }
+
   decompartmentalizeCheck (id, type) {
   // ID without compartment, if metabolite.
     return type === 'metabolite'
@@ -37,7 +42,7 @@ class DefaultTooltip extends Component {
     const decomp = this.decompartmentalizeCheck(this.props.biggId, this.props.type)
     const biggButtonText = `Open ${decomp} in BiGG Models.`
     return (
-      <div className='tooltip'>
+      <div className='default-tooltip'>
         <div className='id'>
           {this.props.biggId}
         </div>
@@ -45,20 +50,20 @@ class DefaultTooltip extends Component {
           name: {this.props.name}
         </div>
         <div className='data'>
-          data: {(this.props.data && this.props.data !== '(nd)'
-          ? this.props.data
-          : 'no data')}
+          data: {
+            this.props.data && this.props.data !== '(nd)' ? this.props.data : 'no data'
+          }
         </div>
-        <button
-          className='biggIdButton'
-          onClick={() => this.openBigg()}
-          >
+        <button onClick={this.openBigg}>
           {biggButtonText}
         </button>
-        <div
-          className='typeLabel'
-        >
-          {this.capitalizeFirstLetter(this.props.type)}
+        <div className='top-right'>
+          <div className='type-label'>
+            {this.capitalizeFirstLetter(this.props.type)}
+          </div>
+          <a onClick={this.props.disableTooltips}>
+            Disable Tooltips
+          </a>
         </div>
       </div>
     )
