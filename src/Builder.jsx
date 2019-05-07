@@ -402,7 +402,7 @@ class Builder {
     }
 
     // Connect status bar
-    this._setup_status(this.map)
+    this._setupStatus(this.map)
     this.map.set_status('Loading map ...')
     _.defer(() => {
       // Set the data for the map
@@ -441,7 +441,8 @@ class Builder {
         this.mapToolsContainer,
         this.settings.get('tooltip_component'),
         this.zoomContainer,
-        this.map
+        this.map,
+        this.settings
       )
 
       // Set up key manager
@@ -1093,7 +1094,7 @@ class Builder {
     this.status_bar = selection.append('div').attr('id', 'status')
   }
 
-  _setup_status (map) {
+  _setupStatus (map) {
     map.callback_manager.set('set_status', status => this.status_bar.html(status))
   }
 

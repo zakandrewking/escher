@@ -12,7 +12,7 @@ import _ from 'underscore'
  * @param map
  */
 export default class TooltipContainer {
-  constructor (selection, TooltipComponent, zoomContainer, map) {
+  constructor (selection, TooltipComponent, zoomContainer, map, settings) {
     this.div = selection.append('div').attr('id', 'tooltip-container')
     this.tooltipRef = null
 
@@ -20,7 +20,7 @@ export default class TooltipContainer {
     this.setUpZoomCallbacks(zoomContainer)
 
     // Create callback manager
-    this.callback_manager = new CallbackManager()
+    this.callbackManager = new CallbackManager()
 
     this.div.on('mouseover', this.cancelHideTooltip.bind(this))
     this.div.on('mouseleave', this.hide.bind(this))
@@ -28,19 +28,32 @@ export default class TooltipContainer {
     this.map = map
     this.setUpMapCallbacks(map)
 
+    this.settings = settings
+
     this.delay_hide_timeout = null
     this.currentTooltip = null
 
     renderWrapper(
       TooltipComponent,
       null,
-      passProps => this.callback_manager.set('passProps', passProps),
+      passProps => this.callbackManager.set('pass_props', passProps),
       this.div.node(),
       instance => { this.tooltipRef = instance }
     )
     this.passProps({
-      display: false
+      display: false,
+      disableTooltips: () => this.disableTooltips()
     })
+  }
+
+  /**
+   * Disable tooltips in the settings
+   */
+  disableTooltips () {
+    this.settings.set('enable_tooltips', false)
+    this.hide()
+    this.map.set_status(`Tooltips disabled. You can enable them again in the
+                         settings menu.`, 3000)
   }
 
   /**
@@ -49,7 +62,7 @@ export default class TooltipContainer {
     * @param {Object} props - Props that the tooltip will use
     */
   passProps (props = {}) {
-    this.callback_manager.run('passProps', null, props)
+    this.callbackManager.run('pass_props', null, props)
   }
 
   /**
@@ -62,10 +75,9 @@ export default class TooltipContainer {
     // connect callbacks to show tooltip
     map.callback_manager.set('show_tooltip.tooltip_container', (type, d) => {
       // Check if the current element is in the list of tooltips to display
-      if (map.settings.get('enable_tooltips').indexOf(type
-        .replace('reaction_', '')
-        .replace('node_', '')
-        .replace('gene_', '')) > -1) {
+      const enableTooltips = map.settings.get('enable_tooltips')
+      const newType = type.replace('reaction_', '').replace('node_', '').replace('gene_', '')
+      if (enableTooltips && enableTooltips.includes(newType)) {
         this.show(type, d)
       }
     })
