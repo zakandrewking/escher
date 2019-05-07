@@ -12,11 +12,11 @@
  *
  **/
 
-var utils = require('./utils');
+import * as utils from './utils'
 
 module.exports = function(container, config) {
-  const thisDocument = utils.get_document(container);
-  const thisWindow = utils.get_window(container);
+  const thisDocument = utils.get_document(container)
+  const thisWindow = utils.get_window(container)
 
     config = config || {};
     config.fontSize =                       config.fontSize   || '13px';
