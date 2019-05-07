@@ -183,8 +183,8 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
     .attr('transform', function(d) {
       return 'translate(' + d.label_x + ',' + d.label_y + ')'
     })
-    .call(this.behavior.turnOffDrag)
-    .call(this.behavior.reactionLabelDrag)
+    // .call(this.behavior.turnOffDrag)
+    // .call(this.behavior.reactionLabelDrag)
 
   // update label visibility
   var label = update_selection.select('.reaction-label')
@@ -200,14 +200,14 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
         }
         return t
       })
-      .on('mousedown', label_mousedown_fn)
-      .on('mouseover', function (d) {
-        label_mouseover_fn('reaction_label', d)
-      })
-      .on('mouseout', label_mouseout_fn)
-      .on('touchend', function (d) {
-        label_touch_fn('reaction_label', d)
-      })
+      // .on('mousedown', label_mousedown_fn)
+      // .on('mouseover', function (d) {
+      //   label_mouseover_fn('reaction_label', d)
+      // })
+      // .on('mouseout', label_mouseout_fn)
+      // .on('touchend', function (d) {
+      //   label_touch_fn('reaction_label', d)
+      // })
   }
 
   var add_gene_height = function (y, i) {
@@ -254,11 +254,11 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   gene_g.append('text')
     .attr('class', 'gene-label')
     .style('font-size', gene_font_size + 'px')
-    .on('mousedown', label_mousedown_fn)
-    .on('mouseover', function (d) {
-      label_mouseover_fn('gene_label', d)
-    })
-    .on('mouseout', label_mouseout_fn)
+    // .on('mousedown', label_mousedown_fn)
+    // .on('mouseover', function (d) {
+    //   label_mouseover_fn('gene_label', d)
+    // })
+    // .on('mouseout', label_mouseout_fn)
 
   // update
   var gene_update = gene_g.merge(all_genes_g)
@@ -421,22 +421,22 @@ function update_segment (update_selection, scale, cobra_model,
         return null
       }
     })
-    .attr('pointer-events', 'visibleStroke')
-    .on('mouseover', function (d) {
-      const mouseEvent = d3_mouse(this)
-      // Add the current mouse position to the segment's datum
-      object_mouseover_fn('reaction_object', Object.assign(
-        {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-      ))
-    })
-    .on('touchend', function (d) {
-      const touchEvent = d3_touch(this.parentNode, 0)
-      // Add last touch position to the segment's datum
-      object_touch_fn('reaction_object', Object.assign(
-        {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-      ))
-    })
-    .on('mouseout', object_mouseout_fn)
+    // .attr('pointer-events', 'visibleStroke')
+    // .on('mouseover', function (d) {
+    //   const mouseEvent = d3_mouse(this)
+    //   // Add the current mouse position to the segment's datum
+    //   object_mouseover_fn('reaction_object', Object.assign(
+    //     {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
+    //   ))
+    // })
+    // .on('touchend', function (d) {
+    //   const touchEvent = d3_touch(this.parentNode, 0)
+    //   // Add last touch position to the segment's datum
+    //   object_touch_fn('reaction_object', Object.assign(
+    //     {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
+    //   ))
+    // })
+    // .on('mouseout', object_mouseout_fn)
 
   // new arrowheads
   var arrowheads = update_selection.select('.arrowheads')
@@ -674,10 +674,10 @@ function update_bezier(update_selection, show_beziers, drag_behavior,
 
   // Draw bezier points
   update_selection.select('.bezier-circle')
-    .call(this.behavior.turnOffDrag)
-    .call(drag_behavior)
-    .on('mouseover', mouseover)
-    .on('mouseout', mouseout)
+    // .call(this.behavior.turnOffDrag)
+    // .call(drag_behavior)
+    // .on('mouseover', mouseover)
+    // .on('mouseout', mouseout)
     .attr('transform', function (d) {
       if (d.x === null || d.y === null) return ''
       return 'translate(' + d.x + ',' + d.y + ')'
@@ -805,29 +805,29 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return null
     })
-    .call(this.behavior.turnOffDrag)
-    .call(drag_behavior)
-    .on('mousedown', mousedown_fn)
-    .on('click', click_fn)
-    .on('mouseover', function (d) {
-      if (d.node_type === 'metabolite') {
-        const mouseEvent = d3_mouse(this.parentNode)
-        // Add current mouse position to the node's datum
-        object_mouseover_fn('node_object', Object.assign(
-          {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-        ))
-      }
-    })
-    .on('mouseout', object_mouseout_fn)
-    .on('touchend', function (d) {
-      if (d.node_type === 'metabolite') {
-        touchEvent = d3_touch(this.parentNode, 0)
-        // Add the touch position to the node's datum
-        object_touch_fn('node_object', Object.assign(
-          {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-        ))
-      }
-    })
+    // .call(this.behavior.turnOffDrag)
+    // .call(drag_behavior)
+    // .on('mousedown', mousedown_fn)
+    // .on('click', click_fn)
+    // .on('mouseover', function (d) {
+    //   if (d.node_type === 'metabolite') {
+    //     const mouseEvent = d3_mouse(this.parentNode)
+    //     // Add current mouse position to the node's datum
+    //     object_mouseover_fn('node_object', Object.assign(
+    //       {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
+    //     ))
+    //   }
+    // })
+    // .on('mouseout', object_mouseout_fn)
+    // .on('touchend', function (d) {
+    //   if (d.node_type === 'metabolite') {
+    //     touchEvent = d3_touch(this.parentNode, 0)
+    //     // Add the touch position to the node's datum
+    //     object_touch_fn('node_object', Object.assign(
+    //       {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
+    //     ))
+    //   }
+    // })
 
   // update node label visibility
   var node_label = update_selection
@@ -847,13 +847,13 @@ function update_node (update_selection, scale, has_data_on_nodes,
           t += ' ' + d.data_string
         return t
       })
-      .call(this.behavior.turnOffDrag)
-      .call(label_drag_behavior)
-      .on('mousedown', label_mousedown_fn)
-      .on('mouseover', function (d) {
-        label_mouseover_fn('node_label', d)
-      })
-      .on('mouseout', label_mouseout_fn)
+      // .call(this.behavior.turnOffDrag)
+      // .call(label_drag_behavior)
+      // .on('mousedown', label_mousedown_fn)
+      // .on('mouseover', function (d) {
+      //   label_mouseover_fn('node_label', d)
+      // })
+      // .on('mouseout', label_mouseout_fn)
   }
 
   this.callback_manager.run('update_node', this, update_selection)
@@ -894,10 +894,10 @@ function update_text_label (update_selection) {
     .attr('transform', function (d) {
       return 'translate(' + d.x + ',' + d.y + ')'
     })
-    .on('mousedown', mousedown_fn)
-    .on('click', click_fn)
-    .call(turn_off_drag)
-    .call(drag_behavior)
+    // .on('mousedown', mousedown_fn)
+    // .on('click', click_fn)
+    // .call(turn_off_drag)
+    // .call(drag_behavior)
 
   this.callback_manager.run('update_text_label', this, update_selection)
 }
