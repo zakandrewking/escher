@@ -41,8 +41,8 @@ module.exports = {
   download_json: download_json,
   load_json: load_json,
   load_json_or_csv: load_json_or_csv,
-  download_svg: download_svg,
-  download_png: download_png,
+  downloadSvg: downloadSvg,
+  downloadPng: downloadPng,
   rotate_coords_recursive: rotate_coords_recursive,
   rotate_coords: rotate_coords,
   get_angle: get_angle,
@@ -717,7 +717,7 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
  * @param {D3 Selection} svg_sel - The d3 selection for the SVG element
  * @param {Boolean} do_beautify - If true, then beautify the SVG output
  */
-function download_svg (name, svg_sel, do_beautify) {
+function downloadSvg (name, svg_sel, do_beautify) {
   // Alert if blob isn't going to work
   _check_filesaver()
 
@@ -739,7 +739,7 @@ function download_svg (name, svg_sel, do_beautify) {
  * @param {String} name - The filename (without extension).
  * @param {D3 Selection} svg_sel - The d3 selection for the SVG element.
  */
-function download_png (name, svg_sel) {
+function downloadPng (name, svg_sel) {
   // Alert if blob isn't going to work
   _check_filesaver()
 
