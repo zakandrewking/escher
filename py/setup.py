@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals
-
 import sys
 from sys import argv
 from subprocess import call
@@ -34,11 +31,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Visualization',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Operating System :: OS Independent'
@@ -61,11 +54,11 @@ setup(
     ],
     install_requires=[
         'Jinja2>=2.7.3,<3',
-        'tornado>=4.0.2,<5',
         'pytest>=4.0.1,<5',
         'cobra>=0.5.0',
         'jsonschema>=2.4.0,<3',
         'ipywidgets>=7.1.0,<8',
+        'pandas>=0.18'
     ],
     extras_require={
         'docs': ['sphinx>=1.2', 'sphinx-rtd-theme>=0.1.6'],

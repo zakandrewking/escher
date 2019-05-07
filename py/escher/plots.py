@@ -1,22 +1,18 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals
-
 from escher.urls import get_url, root_directory
 from escher.util import b64dump
 from escher.version import __version__
 
 import cobra
 from cobra import Model
+import pandas as pd
 import ipywidgets as widgets
-from traitlets import Unicode, Int, Instance, Dict, observe, validate
+from traitlets import Unicode, Int, Instance, Any, observe, validate
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
-try:
-    from urllib.request import urlopen
-    from urllib.error import URLError
-except:
-    from urllib2 import urlopen, URLError
+from urllib.request import urlopen
+from urllib.error import URLError
+from urllib.parse import quote as url_escape
 import json
 import shutil
 import re
@@ -24,7 +20,6 @@ from jinja2 import Environment, PackageLoader, Template
 import codecs
 import random
 import string
-from tornado.escape import url_escape
 import shutil
 from typing import Optional
 
@@ -57,7 +52,6 @@ def list_available_models():
 
 # download maps and models
 
-
 def _json_for_name(name: str, kind: str):
     # check the name
     name = name.replace('.json', '')
@@ -73,10 +67,12 @@ def _json_for_name(name: str, kind: str):
         raise Exception('Could not connect to the Escher server')
     match = match_in_index(name, server_index(), kind)
     if len(match) == 0:
-        raise Exception('Could not find the %s %s on the server' % (kind, name))
+        raise Exception(f'Could not find the {kind} {name} on the server')
     org, name = match[0]
-    url = (get_url(kind + '_download') +
-           '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']]))
+    url = (
+        get_url(kind + '_download') +
+        '/'.join([url_escape(x) for x in [org, name + '.json']])
+    )
     print('Downloading %s from %s' % (kind.title(), url))
     try:
         download = urlopen(url)
@@ -145,6 +141,16 @@ def _load_resource(resource, name):
     else:
         return resource
     raise Exception('Could not load %s.' % name)
+
+
+def convert_data(data):
+    if type(data) is pd.Series:
+        return dict(data)
+    elif type(data) is pd.DataFrame:
+        return list(dict(x.dropna()) for _, x in data.T.iterrows())
+    elif type(data) is dict or type(data) is list or data is None:
+        return data
+    raise Exception
 
 
 class Builder(widgets.DOMWidget):
@@ -216,12 +222,18 @@ class Builder(widgets.DOMWidget):
     details on each of these are provided in the JavaScript API documentation:
 
         - use_3d_transform
+        - menu
+        - scroll_behavior
+        - use_3d_transform
+        - enable_editing
+        - enable_keys
         - enable_search
-        - fill_screen
         - zoom_to_element
         - full_screen_button
+        - disabled_buttons
+        - semantic_zoom
         - starting_reaction
-        - unique_map_id
+        - never_ask_before_quit
         - primary_metabolite_radius
         - secondary_metabolite_radius
         - marker_radius
@@ -230,12 +242,15 @@ class Builder(widgets.DOMWidget):
         - show_gene_reaction_rules
         - hide_all_labels
         - canvas_size_and_loc
+        - reaction_data
         - reaction_styles
         - reaction_compare_style
         - reaction_scale
         - reaction_no_data_color
         - reaction_no_data_size
+        - gene_data
         - and_method_in_gene_reaction_rule
+        - metabolite_data
         - metabolite_styles
         - metabolite_compare_style
         - metabolite_scale
@@ -246,6 +261,18 @@ class Builder(widgets.DOMWidget):
         - allow_building_duplicate_reactions
         - cofactors
         - enable_tooltips
+        - enable_keys_with_tooltip
+        - reaction_scale_preset
+        - metabolite_scale_preset
+        - primary_metabolite_radius
+        - secondary_metabolite_radius
+        - marker_radius
+        - gene_font_size
+        - reaction_no_data_size
+        - metabolite_no_data_size
+
+    If any of these is set to None, the default (or most-recent) value is used.
+    To turn off a setting, use False instead.
 
     All arguments can also be set by assigning the property of an an existing
     Builder object, e.g.:
@@ -265,9 +292,22 @@ class Builder(widgets.DOMWidget):
     _view_module_version = Unicode(__version__).tag(sync=True)
     _model_module_version = Unicode(__version__).tag(sync=True)
 
-    # editable attributes
+    # Python package options
 
     height = Int(500).tag(sync=True)
+
+    embedded_css = Unicode(None, allow_none=True).tag(sync=True)
+
+    @validate('embedded_css')
+    def _validate_embedded_css(self, proposal):
+        css = proposal['value']
+        if css:
+            return css.replace('\n', '')
+        else:
+            return None
+
+    # synced data
+
     _loaded_map_json = Unicode(None, allow_none=True).tag(sync=True)
 
     @observe('_loaded_map_json')
@@ -287,28 +327,9 @@ class Builder(widgets.DOMWidget):
             self.model_name = None
             self.model_json = None
 
-    embedded_css = Unicode(None, allow_none=True).tag(sync=True)
-
-    @validate('embedded_css')
-    def _validate_embedded_css(self, proposal):
-        css = proposal['value']
-        if css:
-            return css.replace('\n', '')
-        else:
-            return None
-
-    reaction_data = Dict(None, allow_none=True).tag(sync=True)
-    metabolite_data = Dict(None, allow_none=True).tag(sync=True)
-    gene_data = Dict(None, allow_none=True).tag(sync=True)
-    scroll_behavior = Unicode('pan').tag(sync=True)
-
-    # builder traitlets that are indirectly synced to the widget
+    # Python options that are indirectly synced to the widget
 
     map_name = Unicode(None, allow_none=True)
-    map_json = Unicode(None, allow_none=True)
-    model = Instance(Model, allow_none=True)
-    model_name = Unicode(None, allow_none=True)
-    model_json = Unicode(None, allow_none=True)
 
     @observe('map_name')
     def _observe_map_name(self, change):
@@ -317,12 +338,16 @@ class Builder(widgets.DOMWidget):
         else:
             self._loaded_map_json = None
 
+    map_json = Unicode(None, allow_none=True)
+
     @observe('map_json')
     def _observe_map_json(self, change):
         if change.new:
             self._loaded_map_json = _load_resource(change.new, 'map_json')
         else:
             self._loaded_map_json = None
+
+    model = Instance(Model, allow_none=True)
 
     @observe('model')
     def _observe_model(self, change):
@@ -331,12 +356,16 @@ class Builder(widgets.DOMWidget):
         else:
             self._loaded_model_json = None
 
+    model_name = Unicode(None, allow_none=True)
+
     @observe('model_name')
     def _observe_model_name(self, change):
         if change.new:
             self._loaded_model_json = model_json_for_name(change.new)
         else:
             self._loaded_model_json = None
+
+    model_json = Unicode(None, allow_none=True)
 
     @observe('model_json')
     def _observe_model_json(self, change):
@@ -345,28 +374,155 @@ class Builder(widgets.DOMWidget):
         else:
             self._loaded_model_json = None
 
+    # Synced options passed as an object to JavaScript Builder
+
+    menu = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    scroll_behavior = Any('none', allow_none=False)\
+        .tag(sync=True, option=True)
+    use_3d_transform = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_editing = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_keys = Any(False, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_search = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    zoom_to_element = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+
+    full_screen_button_default = {
+        'enable_keys': True,
+        'scroll_behavior': 'pan',
+        'enable_editing': True,
+        'menu': 'all',
+        'enable_tooltips': ['label']
+    }
+    full_screen_button = Any(full_screen_button_default, allow_none=True)\
+        .tag(sync=True, option=True)
+
+    disabled_buttons = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    semantic_zoom = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    starting_reaction = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    never_ask_before_quit = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    primary_metabolite_radius = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    secondary_metabolite_radius = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    marker_radius = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    gene_font_size = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    hide_secondary_metabolites = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    show_gene_reaction_rules = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    hide_all_labels = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    canvas_size_and_loc = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+
+    reaction_data = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+
+    @validate('reaction_data')
+    def _validate_reaction_data(self, proposal):
+        try:
+            return convert_data(proposal['value'])
+        except Exception:
+            raise Exception("""Invalid data for reaction_data. Must be pandas
+                            Series, pandas DataFrame, dict, list, or None""")
+
+    reaction_styles = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_compare_style = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_scale = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_no_data_color = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_no_data_size = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+
+    gene_data = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+
+    @validate('gene_data')
+    def _validate_gene_data(self, proposal):
+        try:
+            return convert_data(proposal['value'])
+        except Exception:
+            raise Exception("""Invalid data for gene_data. Must be pandas
+                            Series, pandas DataFrame, dict, list, or None""")
+
+    and_method_in_gene_reaction_rule = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+
+    metabolite_data = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+
+    @validate('metabolite_data')
+    def _validate_metabolite_data(self, proposal):
+        try:
+            return convert_data(proposal['value'])
+        except Exception:
+            raise Exception("""Invalid data for metabolite_data. Must be pandas
+                            Series, pandas DataFrame, dict, list, or None""")
+
+    metabolite_styles = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_compare_style = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_scale = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_no_data_color = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_no_data_size = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    identifiers_on_map = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    highlight_missing = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    allow_building_duplicate_reactions = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    cofactors = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_tooltips = Any(False, allow_none=True)\
+        .tag(sync=True, option=True)
+    enable_keys_with_tooltip = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_scale_preset = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_scale_preset = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    primary_metabolite_radius = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    secondary_metabolite_radius = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    marker_radius = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    gene_font_size = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    reaction_no_data_size = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+    metabolite_no_data_size = Any(None, allow_none=True)\
+        .tag(sync=True, option=True)
+
     def __init__(
             self,
-            #
-            height: int = 500,
             map_name: str = None,
             map_json: str = None,
             model: Model = None,
             model_name: str = None,
             model_json: str = None,
-            embedded_css: str = None,
-            reaction_data: dict = None,
-            metabolite_data: dict = None,
-            gene_data: dict = None,
-            scroll_behavior: str = 'none',
-            # menu: str='zoom',
-            # enable_editing: bool=False,
-            # **kwargs,
+            **kwargs,
     ) -> None:
-        super().__init__()
-
-        # set attributes
-        self.height = height
+        # kwargs will instantiate the traitlets
+        super().__init__(**kwargs)
 
         if map_json:
             if map_name:
@@ -388,128 +544,82 @@ class Builder(widgets.DOMWidget):
         else:
             self.model_name = model_name
 
-        self.embedded_css = embedded_css
+        unavailable_options = {
+            'fill_screen': """The fill_option screen is set automatically by
+            the Escher Python package""",
+            'tooltip_component': """The tooltip_component cannot be customized
+          with the Python API""",
+            'first_load_callback': """The first_load_callback cannot be
+          customized with the Python API""",
+            'unique_map_id': """The option unique_map_id is deprecated""",
+            'ignore_bootstrap': """The option unique_map_id is deprecated""",
+        }
 
-        self.reaction_data = reaction_data
-        self.metabolite_data = metabolite_data
-        self.gene_data = gene_data
-        self.scroll_behavior = scroll_behavior
+        for key, val in kwargs.items():
+            if key in unavailable_options:
+                warn(val)
 
-        # # set up the options
-        # self.options = [
-        #     'use_3d_transform',
-        #     'enable_search',
-        #     'fill_screen',
-        #     'zoom_to_element',
-        #     'full_screen_button',
-        #     'starting_reaction',
-        #     'unique_map_id',
-        #     'primary_metabolite_radius',
-        #     'secondary_metabolite_radius',
-        #     'marker_radius',
-        #     'gene_font_size',
-        #     'hide_secondary_metabolites',
-        #     'show_gene_reaction_rules',
-        #     'hide_all_labels',
-        #     'canvas_size_and_loc',
-        #     'reaction_styles',
-        #     'reaction_compare_style',
-        #     'reaction_scale',
-        #     'reaction_no_data_color',
-        #     'reaction_no_data_size',
-        #     'and_method_in_gene_reaction_rule',
-        #     'metabolite_styles',
-        #     'metabolite_compare_style',
-        #     'metabolite_scale',
-        #     'metabolite_no_data_color',
-        #     'metabolite_no_data_size',
-        #     'identifiers_on_map',
-        #     'highlight_missing',
-        #     'allow_building_duplicate_reactions',
-        #     'cofactors',
-        #     'enable_tooltips',
-        # ]
+    def display_in_notebook(self, *args, **kwargs):
+        """Deprecated.
 
-        # def get_getter_setter(o):
-        #     """Use a closure."""
-        #     # create local fget and fset functions
-        #     fget = lambda self: getattr(self, '_%s' % o)
-        #     fset = lambda self, value: setattr(self, '_%s' % o, value)
-        #     return fget, fset
-        # for option in self.options:
-        #     fget, fset = get_getter_setter(option)
-        #     # make the setter
-        #     setattr(self.__class__, 'set_%s' % option, fset)
-        #     # add property to self
-        #     setattr(self.__class__, option, property(fget))
-        #     # add corresponding local variable
-        #     setattr(self, '_%s' % option, None)
+        The Builder is now a Jupyter Widget, so you can return the Builder
+        object from a cell to display it, or you can manually call the IPython
+        display function:
 
-        # # set the kwargs
-        # for key, val in kwargs.items():
-        #     try:
-        #         getattr(self, 'set_%s' % key)(val)
-        #     except AttributeError:
-        #         print('Unrecognized keywork argument %s' % key)
+        from IPython.display import display
+        from escher import Builder
+        b = Builder(...)
+        display(b)
 
-    # def display_in_notebook(self):
-    #     """Deprecated.
+        """
+        raise Exception(('display_in_notebook is deprecated. The Builder is '
+                         'now a Jupyter Widget, so you can return the '
+                         'Builder in a cell to see it, or use the IPython '
+                         'display function (see Escher docs for details)'))
 
-    #     The Builder is now a Jupyter Widget, so you can return the Builder
-    #     object from a cell to display it, or you can manually call the IPython
-    #     display function:
+    def display_in_browser(self, *args, **kwargs):
+        """Deprecated.
 
-    #     from IPython.display import display
-    #     from escher import Builder
-    #     b = Builder(...)
-    #     display(b)
+        We recommend using the Jupyter Widget (which now supports all Escher
+        features) or the save_html option to generate a standalone HTML file
+        that loads the map.
 
-    #     """
-    #     raise Exception(('display_in_notebook is deprecated. The Builder is '
-    #                      'now a Jupyter Widget, so you can return the '
-    #                      'Builder in a cell to see it, or use the IPython '
-    #                      'display function (see Escher docs for details)'))
+        """
+        raise Exception(('display_in_browser is deprecated. We recommend using'
+                         'the Jupyter Widget (which now supports all Escher'
+                         'features) or the save_html option to generate a'
+                         'standalone HTML file that loads the map.'))
 
-    # def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50,
-    #                        js_source='web', menu='all', scroll_behavior='pan',
-    #                        enable_editing=True, enable_keys=True,
-    #                        minified_js=True, never_ask_before_quit=False):
-    #     """Deprecated.
+    def save_html(self, filepath):
+        """Save an HTML file containing the map.
 
-    #     We recommend using the Jupyter Widget (which now supports all Escher
-    #     features) or the save_html option to generate a standalone HTML file
-    #     that loads the map.
+        :param string filepath:
 
-    #     """
-    #     raise Exception(('display_in_browser is deprecated. We recommend using'
-    #                      'the Jupyter Widget (which now supports all Escher'
-    #                      'features) or the save_html option to generate a'
-    #                      'standalone HTML file that loads the map.'))
+            The name of the HTML file.
 
-    # def save_html(self, filepath=None):
-    #     """Save an HTML file containing the map.
+        TODO apply options from self
 
-    #     :param string filepath:
+        """
 
-    #         The name of the HTML file.
+        #     options = transform(self.options)
+        # get options
+        options = {}
+        for key in self.traits(option=True):
+            val = getattr(self, key)
+            if val is not None:
+                options[key] = val
+        options_json = json.dumps(options)
 
-    #     """
+        template = env.get_template('standalone.html')
+        embedded_css_b64 = (b64dump(self.embedded_css)
+                            if self.embedded_css is not None else None)
+        html = template.render(
+            escher_url=get_url('escher_min'),
+            embedded_css_b64=embedded_css_b64,
+            map_data_json_b64=b64dump(self._loaded_map_json),
+            model_data_json_b64=b64dump(self._loaded_model_json),
+            options_json_b64=b64dump(options_json),
+        )
 
-    #     # TODO apply options from self
-    #     options = transform(self.options)
-
-    #     template = env.get_template('standalone.html')
-    #     html = template.render(
-    #         escher_url=get_url('escher_min'),
-    #         # dump json
-    #         options_json=b64dump(options),
-    #         map_download_url_json=b64dump(get_url('map_download')),
-    #         model_download_url_json=b64dump(get_url('model_download')),
-    #         builder_embed_css_json=b64dump(self.embedded_css),
-    #         # alreay json
-    #         map_data_json=b64dump(self.loaded_map_json),
-    #         model_data_json=b64dump(self.loaded_model_json),
-    #     )
-
-    #     with open(expanduser(filepath), 'wb') as f:
-    #         f.write(html.encode('utf-8'))
+        with open(expanduser(filepath), 'wb') as f:
+            f.write(html.encode('utf-8'))

@@ -1,7 +1,7 @@
 /* global global */
 
 const utils = require('../utils')
-const data_styles = require('../data_styles')
+const dataStyles = require('../dataStyles')
 const d3Body = require('./helpers/d3Body')
 
 const describe = require('mocha').describe
@@ -176,17 +176,17 @@ it('utils.compare_arrays', () => {
   assert.strictEqual(utils.compare_arrays([1,2], [3,2]), false)
 })
 
-describe('utils.array_to_object', () => {
+describe('utils.arrayToObject', () => {
   it('converts array of objects to object of arrays', () => {
     // single
     const a = [{a: 1, b: 2}]
-    const out = utils.array_to_object(a)
+    const out = utils.arrayToObject(a)
     assert.deepEqual(out, { a: [1], b: [2] })
   })
   it('adds null for missing values', () => {
     // multiple
     const a = [{a:1, b:2}, {b:3, c:4}]
-    const out = utils.array_to_object(a)
+    const out = utils.arrayToObject(a)
     assert.deepEqual(out, { a: [1, null],
                             b: [2, 3],
                             c: [null, 4] })
@@ -227,7 +227,7 @@ describe('utils.extend', () => {
 describe('utils.load_json_or_csv', () => {
   it('loads JSON', () => {
     utils.load_json_or_csv(null,
-                           data_styles.csv_converter,
+                           dataStyles.csv_converter,
                            function(error, value) {
                              if (error) console.warn(error)
                              assert.deepEqual(value, {'GAPD': 100})
@@ -238,7 +238,7 @@ describe('utils.load_json_or_csv', () => {
   })
   it('loads CSV', () => {
     utils.load_json_or_csv(null,
-                           data_styles.csv_converter,
+                           dataStyles.csv_converter,
                            function(error, value) {
                              if (error) console.warn(error)
                              assert.deepEqual(value, [{'GAPD': '100'}])

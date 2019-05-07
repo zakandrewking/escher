@@ -392,11 +392,19 @@ JavaScript API
                           that are reaction ID's and values that are data points
                           (numbers).
 
+       :param Boolean set_in_settings: (Optional, Default: ``true``) Used
+                                       internally to set the data from the
+                                       Settings class.
+
     .. js:function:: set_metabolite_data(data)
 
        :param array data: An array of 1 or 2 objects, where each object has keys
                           that are metabolite ID's and values that are data
                           points (numbers).
+
+       :param Boolean set_in_settings: (Optional, Default: ``true``) Used
+                                       internally to set the data from the
+                                       Settings class.
 
     .. js:function:: set_gene_data(data, clear_gene_reaction_rules)
 
@@ -404,9 +412,14 @@ JavaScript API
                           that are gene ID's and values that are data points
                           (numbers).
 
-    :param Boolean clear_gene_reaction_rules: (Optional, Default: ``false``) In
-                                              addition to setting the data, also
-                                              turn of the gene_reaction_rules.
+       :param Boolean clear_gene_reaction_rules: (Optional, Default: ``false``)
+                                                 In addition to setting the
+                                                 data, also turn of the
+                                                 gene_reaction_rules.
+
+       :param Boolean set_in_settings: (Optional, Default: ``true``) Used
+                                       internally to set the data from the
+                                       Settings class.
 
 .. _`support the 3D transforms`: http://caniuse.com/#feat=transforms3d
 .. _`Preact`: https://preactjs.com/

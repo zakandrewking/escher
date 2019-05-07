@@ -29,7 +29,7 @@
  */
 
 var utils = require('./utils')
-var data_styles = require('./data_styles')
+var dataStyles = require('./dataStyles')
 var CallbackManager = require('./CallbackManager').default
 var d3_format = require('d3-format').format
 var d3_select = require('d3-selection').select
@@ -233,7 +233,7 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
         return d.gene_string
       } else if (show_gene_reaction_rule) {
         // make the gene string with no data
-        var sd = data_styles.gene_string_for_data(d.gene_reaction_rule, null,
+        var sd = dataStyles.gene_string_for_data(d.gene_reaction_rule, null,
                                                   d.genes, null,
                                                   identifiers_on_map, null)
         // add coords for tooltip

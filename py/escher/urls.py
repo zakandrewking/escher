@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function, unicode_literals
-
 from escher.version import (
     __version__,
     __schema_version__,

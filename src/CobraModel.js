@@ -3,7 +3,7 @@
  */
 
 var utils = require('./utils')
-var data_styles = require('./data_styles')
+var dataStyles = require('./dataStyles')
 
 var CobraModel = utils.make_class()
 // class methods
@@ -103,7 +103,7 @@ function from_cobra_json (model_data) {
     delete reaction.upper_bound
 
     if ('gene_reaction_rule' in reaction) {
-      var gene_ids = data_styles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule)
+      var gene_ids = dataStyles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule)
       gene_ids.forEach(function(gene_id) {
         if (gene_id in genes) {
           var gene = utils.clone(genes[gene_id])
@@ -141,7 +141,7 @@ function init () {
  * BuildInput. apply_reaction_data overrides apply_gene_data.
  */
 function apply_reaction_data (reaction_data, styles, compare_style) {
-  data_styles.apply_reaction_data_to_reactions(this.reactions, reaction_data,
+  dataStyles.apply_reaction_data_to_reactions(this.reactions, reaction_data,
                                                styles, compare_style)
 }
 
@@ -149,7 +149,7 @@ function apply_reaction_data (reaction_data, styles, compare_style) {
  * Apply data to model. This is only used to display options in BuildInput.
  */
 function apply_metabolite_data (metabolite_data, styles, compare_style) {
-  data_styles.apply_metabolite_data_to_nodes(this.metabolites, metabolite_data,
+  dataStyles.apply_metabolite_data_to_nodes(this.metabolites, metabolite_data,
                                              styles, compare_style)
 }
 
@@ -159,7 +159,7 @@ function apply_metabolite_data (metabolite_data, styles, compare_style) {
  */
 function apply_gene_data (gene_data_obj, styles, identifiers_on_map,
                           compare_style, and_method_in_gene_reaction_rule) {
-  data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
+  dataStyles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
                                            styles, identifiers_on_map,
                                            compare_style,
                                            and_method_in_gene_reaction_rule)

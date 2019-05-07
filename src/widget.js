@@ -12,8 +12,22 @@ try {
 
 const version = ESCHER_VERSION
 
+// These options can be set without explicitly redrawing the map. List is
+// probably not complete.
+const NO_DRAW_OPTIONS = [
+  'menu',
+  'scroll_behavior',
+  'use_3d_transform',
+  'enable_editing',
+  'enable_keys',
+  'full_screen_button',
+  'reaction_data',
+  'metabolite_data',
+  'gene_data'
+]
+
 /**
- *
+ * Jupyter widget implementation for the Escher Builder.
  */
 export default function initializeJupyterWidget () {
   if (!base) {
@@ -29,25 +43,12 @@ export default function initializeJupyterWidget () {
       this.setHeight(sel)
 
       _.defer(() => {
-        const builder = Builder(
+        this.builder = new Builder(
           this.getMapData(),
           this.getModelData(),
           this.model.get('embedded_css'),
           sel,
           {
-            // options
-            enable_keys: false,
-            reaction_data: this.model.get('reaction_data'),
-            metabolite_data: this.model.get('metabolite_data'),
-            gene_data: this.model.get('gene_data'),
-            scroll_behavior: this.model.get('scroll_behavior'),
-            full_screen_button: {
-              enable_keys: true,
-              scroll_behavior: 'pan', // TODO respect parent
-              enable_editing: true, // TODO respect parent
-              menu: 'all', // TODO respect parent
-              enable_tooltips: ['label'] // TODO respect parent
-            },
             first_load_callback: builder => {
               // reset map json in widget
               builder.callback_manager.set('clear_map', () => {
@@ -61,52 +62,53 @@ export default function initializeJupyterWidget () {
                 this.model.save_changes()
               })
 
-              // get changes from options
-              _.mapObject(builder.settings.streams, (stream, key) => {
-                if (key in this.model.attributes) {
-                  stream.onValue(value => {
-                    this.model.set(key, value)
-                    this.model.save_changes()
+              // update functions
+              this.model.on('change:height', () => {
+                this.setHeight(sel)
+              })
+              this.model.on('change:_loaded_map_json', () => {
+                builder.load_map(this.getMapData())
+              })
+              this.model.on('change:_loaded_model_json', () => {
+                builder.load_model(this.getModelData())
+              })
+
+              // set the rest of the options
+              Object.keys(builder.settings.streams).map(key => {
+                if (this.model.keys().includes(key)) {
+                  const val = this.model.get(key)
+                  // ignore null because that means to use the default
+                  if (val !== null) builder.settings.set(key, val)
+
+                  // reactive updates
+                  this.model.on(`change:${key}`, () => {
+                    const val = this.model.get(key)
+                    // ignore null because that means to use the default
+                    if (val !== null) {
+                      builder.settings.set(key, val)
+                      // default to drawing everything, unless it's a common
+                      // option where that's not necessary
+                      if (!NO_DRAW_OPTIONS.includes(key)) {
+                        builder.map.draw_everything()
+                      }
+                    }
                   })
                 }
+              })
+
+              // get changes from options (only after they have been accepted)
+              _.mapObject(builder.settings.acceptedStreams, (stream, key) => {
+                stream.onValue(val => {
+                  // avoid a loop
+                  if (val !== this.model.get(key)) {
+                    this.model.set(key, val)
+                    this.model.save_changes()
+                  }
+                })
               })
             }
           }
         )
-
-        // update functions
-        this.model.on('change:height', () => {
-          this.setHeight(sel)
-        })
-        this.model.on('change:_loaded_map_json', () => {
-          builder.load_map(this.getMapData())
-        })
-        this.model.on('change:_loaded_model_json', () => {
-          builder.load_model(this.getModelData())
-        })
-        this.model.on('change:reaction_data', () => {
-          builder.set_reaction_data(this.model.get('reaction_data'))
-        })
-        this.model.on('change:metabolite_data', () => {
-          builder.set_metabolite_data(this.model.get('metabolite_data'))
-        })
-        this.model.on('change:gene_data', () => {
-          builder.set_gene_data(this.model.get('gene_data'))
-        })
-        this.model.on('change:scroll_behavior', () => {
-          builder.settings.set('scroll_behavior', this.model.get('scroll_behavior'))
-          // TODO make this automatic. see:
-          // https://github.com/zakandrewking/escher/blob/45b59cb6c959dde5cece709a6a937944d8a8a1eb/src/Builder.jsx#L286
-          const newBehavior = builder.settings.get('scroll_behavior')
-          builder.zoomContainer.setScrollBehavior(newBehavior)
-        })
-
-        // // for the rest of the options
-        // Object.keys(builder.options).map(key => {
-        //   if (this.model.keys.indexOf(key) > -1) {
-
-        //   }
-        // })
       })
     }
 
@@ -133,15 +135,7 @@ export default function initializeJupyterWidget () {
         _model_module: 'jupyter-escher',
         _view_module: 'jupyter-escher',
         _model_module_version: version,
-        _view_module_version: version,
-        height: 500,
-        _loaded_map_json: null,
-        _loaded_model_json: null,
-        embedded_css: null,
-        reaction_data: null,
-        metabolite_data: null,
-        gene_data: null,
-        scroll_behavior: 'pan'
+        _view_module_version: version
       })
     }
   }

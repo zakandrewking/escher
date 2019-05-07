@@ -1,0 +1,183 @@
+{
+    "id": "https://escher.github.io/escher/jsonschema/1-0-0#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Escher map",
+    "description": "A metabolic map for Escher: https://escher.github.io",
+    "type": "array",
+    "items": [
+        {
+            "type": "object",
+            "required": ["schema", "homepage", "map_id", "map_name", "map_description"],
+            "additionalProperties": false,
+            "properties": {
+                "schema": {
+                    "type": "string",
+                    "enum": ["https://escher.github.io/escher/jsonschema/1-0-0#"]
+                },
+                "homepage": {
+                    "type": "string",
+                    "enum": ["https://escher.github.io"]
+                },
+                "map_id": {"type": "string"},
+                "map_name": {"type": "string"},
+                "map_description": {"type": "string"},
+                "metadata": {}
+            }
+        },
+        {
+            "type": "object",
+            "required": ["nodes", "reactions", "text_labels", "canvas"],
+            "additionalProperties": false,
+            "properties": {
+                "nodes": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "[0-9]+": {
+                            "anyOf": [
+                                {
+                                    "type": "object",
+                                    "required": ["node_type", "x", "y", "bigg_id", "name",
+                                                 "label_x", "label_y", "node_is_primary"],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "node_type":  {
+                                            "type": "string",
+                                            "enum": ["metabolite"]
+                                        },
+                                        "x": {"type": "number"},
+                                        "y": {"type": "number"},
+                                        "name": {"type": "string"},
+                                        "bigg_id": {"type": "string"},
+                                        "label_x": {"type": "number"},
+                                        "label_y": {"type": "number"},
+                                        "node_is_primary": {"type": "boolean"}
+                                    }
+                                },
+                                {
+                                    "type": "object",
+                                    "required": ["node_type", "x", "y"],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "node_type":  {
+                                            "type": "string",
+                                            "enum": ["midmarker", "multimarker"]
+                                        },
+                                        "x": {"type": "number"},
+                                        "y": {"type": "number"}
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "reactions": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "[0-9]+": {
+                            "type": "object",
+                            "required": ["name", "bigg_id","reversibility",
+                                         "label_x", "label_y", "gene_reaction_rule",
+                                         "genes", "metabolites", "segments"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "name": {"type": "string"},
+                                "bigg_id": {"type": "string"},
+                                "reversibility": {"type": "boolean"},
+                                "label_x": {"type": "number"},
+                                "label_y": {"type": "number"},
+                                "gene_reaction_rule": {"type": "string"},
+                                "genes": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "required_properties": ["bigg_id", "name"],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                            "bigg_id": {"type": "string"},
+                                            "name": {"type": "string"}
+                                        }
+                                    }
+                                },
+                                "metabolites": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "required": ["coefficient", "bigg_id"],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                            "coefficient": {"type": "number"},
+                                            "bigg_id": {"type": "string"}
+                                        }
+                                    }
+                                },
+                                "segments": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "patternProperties": {
+                                        "[0-9]+": {
+                                            "type": "object",
+                                            "required": ["from_node_id", "to_node_id",
+                                                         "b1", "b2"],
+                                            "additionalProperties": false,
+                                            "patternProperties": {
+                                                "(from|to)_node_id": {
+                                                    "type": "string",
+                                                    "pattern": "[0-9]+"
+                                                },
+                                                "b[12]": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "object",
+                                                            "required": ["x", "y"],
+                                                            "additionalProperties": false,
+                                                            "properties": {
+                                                                "x": {"type": "number"},
+                                                                "y": {"type": "number"}
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "null"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "text_labels": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "patternProperties": {
+                        "[0-9]+": {
+                            "type": "object",
+                            "required": ["x", "y", "text"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "x": {"type": "number"},
+                                "y": {"type": "number"},
+                                "text": {"type": "string"}
+                            }
+                        }
+                    }
+                },
+                "canvas": {
+                    "type": "object",
+                    "required": ["x", "y", "width", "height"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "x": {"type": "number"},
+                        "y": {"type": "number"},
+                        "width": {"type": "number"},
+                        "height": {"type": "number"}
+                    }
+                }
+            }
+        }
+    ]
+}

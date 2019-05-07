@@ -12,7 +12,7 @@ import Brush from './Brush'
 import CallbackManager from './CallbackManager'
 import Settings from './Settings'
 import TextEditInput from './TextEditInput'
-import dataStyles from './data_styles'
+import * as dataStyles from './dataStyles'
 import renderWrapper from './renderWrapper'
 import SettingsMenu from './SettingsMenu'
 import MenuBar from './MenuBar'
@@ -96,7 +96,7 @@ class Builder {
       // map, model, and styles
       starting_reaction: null,
       never_ask_before_quit: false,
-      unique_map_id: null,
+      unique_map_id: null, // deprecated
       primary_metabolite_radius: 20,
       secondary_metabolite_radius: 10,
       marker_radius: 5,
@@ -185,6 +185,17 @@ class Builder {
     // this.options and this.settings used to have different functions, but now
     // they are aliases
     this.settings = new Settings(optionsWithDefaults, conditional)
+
+    // make data settings reactive
+    this.settings.streams.reaction_data.onValue(val => {
+      this.set_reaction_data(val, false)
+    })
+    this.settings.streams.metabolite_data.onValue(val => {
+      this.set_metabolite_data(val, false)
+    })
+    this.settings.streams.gene_data.onValue(val => {
+      this.set_gene_data(val, false, false)
+    })
 
     // Warn if scales are too short
     ;['reaction_scale', 'metabolite_scale'].map(scaleType => {
@@ -471,9 +482,6 @@ class Builder {
       if (!this.settings.get('enable_editing')) {
         newDisabledButtons.push('Show control points')
       }
-      if (this.settings.get('full_screen_button') === false) {
-        newDisabledButtons.push('Toggle full screen')
-      }
       this.settings.set('disabled_buttons', newDisabledButtons)
 
       // Set up selection box
@@ -494,7 +502,7 @@ class Builder {
       } else if (mapData !== null) {
         this.map.zoom_extent_canvas()
       } else {
-        if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
+        if (this.settings.get('starting_reaction') && this.cobra_model !== null) {
           // Draw default reaction if no map is provided
           const size = this.zoomContainer.getSize()
           const startCoords = { x: size.width / 2, y: size.height / 4 }
@@ -520,7 +528,7 @@ class Builder {
 
       // confirm before leaving the page
       if (this.settings.get('enable_editing')) {
-        this._setup_confirm_before_exit()
+        this._setupConfirmBeforeExit()
       }
 
       // draw
@@ -665,6 +673,11 @@ class Builder {
     this.settings.streams.menu.onValue(menu => {
       this.passPropsMenuBar({ display: menu === 'all' })
     })
+
+    // redraw when full screen button changes
+    this.settings.streams.full_screen_button.onValue(value => {
+      this.passPropsMenuBar()
+    })
   }
 
   /**
@@ -722,9 +735,15 @@ class Builder {
       buildInput: this.build_input,
       fullScreen: () => this.fullScreen()
     })
+
     // redraw when mode changes
     this.callback_manager.set('set_mode', mode => {
       this.passPropsButtonPanel({ mode })
+    })
+
+    // redraw when full screen button changes
+    this.settings.streams.full_screen_button.onValue(value => {
+      this.passPropsButtonPanel()
     })
   }
 
@@ -814,7 +833,7 @@ class Builder {
   _reactionCheckAddAbs () {
     const currStyle = this.settings.get('reaction_styles')
     if (
-      this.settings.get('reaction_data') !== null &&
+      this.settings.get('reaction_data') &&
       !this.has_custom_reaction_styles &&
       !_.contains(currStyle, 'abs')
     ) {
@@ -830,8 +849,17 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_reaction_data (data) { // eslint-disable-line camelcase
-    this.settings.set('reaction_data', data)
+  set_reaction_data (data, setInSettings = true) { // eslint-disable-line camelcase
+    // If the change came from the setting stream already, then don't update the
+    // stream again
+    if (setInSettings) {
+      this.settings.set('reaction_data', data)
+    }
+
+    // clear gene data
+    if (data) {
+      this.settings._options.gene_data = null
+    }
 
     var messageFn = this._reactionCheckAddAbs()
 
@@ -842,54 +870,79 @@ class Builder {
 
     const disabledButtons = this.settings.get('disabled_buttons') || []
     const buttonName = 'Clear reaction data'
+    const geneButtonName = 'Clear gene data'
     const index = disabledButtons.indexOf(buttonName)
-    if (data !== null && index !== -1) {
-      this.settings.set('disabled_buttons', [
-        ...disabledButtons.slice(0, index),
-        ...disabledButtons.slice(index + 1)
-      ])
-    } else if (data === null && index === -1) {
-      this.settings.set('disabled_buttons', [...disabledButtons, buttonName])
+    if (data && index !== -1) {
+      disabledButtons.splice(index, 1)
+      const gInd = disabledButtons.indexOf(geneButtonName)
+      if (gInd === -1) disabledButtons.push(geneButtonName)
+      this.settings.set('disabled_buttons', disabledButtons)
+    } else if (!data && index === -1) {
+      disabledButtons.push(buttonName)
+      this.settings.set('disabled_buttons', disabledButtons)
     }
   }
 
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_gene_data (data, clearGeneReactionRules) { // eslint-disable-line camelcase
+  set_gene_data (data, clearGeneReactionRules, setInSettings = true) { // eslint-disable-line camelcase
     if (clearGeneReactionRules) {
       // default undefined
       this.settings.set('show_gene_reaction_rules', false)
     }
-    this.settings.set('gene_data', data)
+
+    // If the change came from the setting stream already, then don't update the
+    // stream again
+    if (setInSettings) {
+      this.settings.set('gene_data', data)
+    }
+
+    // clear reaction data
+    if (data) {
+      this.settings._options.reaction_data = null
+    }
+
     this._updateData(true, true, ['reaction'])
     this.map.set_status('')
 
-    const disabledButtonsArray = this.settings.get('disabled_buttons') || []
-    const index = disabledButtonsArray.indexOf('Clear gene data')
-    if (index > -1) {
-      disabledButtonsArray.splice(index, 1)
-      this.settings.set('disabled_buttons', disabledButtonsArray)
-    } else if (index === -1 && data === null) {
-      this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear gene data'])
+    const disabledButtons = this.settings.get('disabled_buttons') || []
+    const index = disabledButtons.indexOf('Clear gene data')
+    const buttonName = 'Clear gene data'
+    const reactionButtonName = 'Clear reaction data'
+    if (index > -1 && data) {
+      disabledButtons.splice(index, 1)
+      const rInd = disabledButtons.indexOf('Clear reaction data')
+      if (rInd === -1) disabledButtons.push(reactionButtonName)
+      this.settings.set('disabled_buttons', disabledButtons)
+    } else if (index === -1 && !data) {
+      disabledButtons.push(buttonName)
+      this.settings.set('disabled_buttons', disabledButtons)
     }
   }
 
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_metabolite_data (data) { // eslint-disable-line camelcase
-    this.settings.set('metabolite_data', data)
+  set_metabolite_data (data, setInSettings = true) { // eslint-disable-line camelcase
+    // If the change came from the setting stream already, then don't update the
+    // stream again
+    if (setInSettings) {
+      this.settings.set('metabolite_data', data)
+    }
+
     this._updateData(true, true, ['metabolite'])
     this.map.set_status('')
 
-    const disabledButtonsArray = this.settings.get('disabled_buttons') || []
-    const index = disabledButtonsArray.indexOf('Clear metabolite data')
-    if (index > -1) {
-      disabledButtonsArray.splice(index, 1)
-      this.settings.set('disabled_buttons', disabledButtonsArray)
-    } else if (index === -1 && data === null) {
-      this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear metabolite data'])
+    const disabledButtons = this.settings.get('disabled_buttons') || []
+    const buttonName = 'Clear metabolite data'
+    const index = disabledButtons.indexOf(buttonName)
+    if (index > -1 && data) {
+      disabledButtons.splice(index, 1)
+      this.settings.set('disabled_buttons', disabledButtons)
+    } else if (index === -1 && !data) {
+      disabledButtons.push(buttonName)
+      this.settings.set('disabled_buttons', disabledButtons)
     }
   }
 
@@ -904,7 +957,7 @@ class Builder {
     }
 
     // this object has reaction keys and values containing associated genes
-    return dataStyles.import_and_check(geneData, 'gene_data', allReactions)
+    return dataStyles.importAndCheck(geneData, 'gene_data', allReactions)
   }
 
   /**
@@ -944,8 +997,8 @@ class Builder {
 
     // metabolite data
     if (updateMetaboliteData && updateMap && this.map !== null) {
-      metaboliteDataObject = dataStyles.import_and_check(this.settings.get('metabolite_data'),
-                                                         'metabolite_data')
+      metaboliteDataObject = dataStyles.importAndCheck(this.settings.get('metabolite_data'),
+                                                       'metabolite_data')
       this.map.apply_metabolite_data_to_map(metaboliteDataObject)
       if (shouldDraw) {
         this.map.draw_all_nodes(false)
@@ -954,14 +1007,14 @@ class Builder {
 
     // reaction data
     if (updateReactionData) {
-      if (this.settings.get('reaction_data') !== null && updateMap && this.map !== null) {
-        reactionDataObject = dataStyles.import_and_check(this.settings.get('reaction_data'),
-                                                         'reaction_data')
+      if (this.settings.get('reaction_data') && updateMap && this.map !== null) {
+        reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
+                                                       'reaction_data')
         this.map.apply_reaction_data_to_map(reactionDataObject)
         if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
         }
-      } else if (this.settings.get('gene_data') !== null && updateMap && this.map !== null) {
+      } else if (this.settings.get('gene_data') && updateMap && this.map !== null) {
         geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
                                                   this.cobra_model, this.map)
         this.map.apply_gene_data_to_map(geneDataObject)
@@ -993,8 +1046,8 @@ class Builder {
       if (updateMetaboliteData && updateModel && this.cobra_model !== null) {
         // if we haven't already made this
         if (!metaboliteDataObject) {
-          metaboliteDataObject = dataStyles.import_and_check(this.settings.get('metabolite_data'),
-                                                             'metabolite_data')
+          metaboliteDataObject = dataStyles.importAndCheck(this.settings.get('metabolite_data'),
+                                                           'metabolite_data')
         }
         this.cobra_model.apply_metabolite_data(metaboliteDataObject,
                                                this.settings.get('metabolite_styles'),
@@ -1003,16 +1056,16 @@ class Builder {
 
       // reaction data
       if (updateReactionData) {
-        if (this.settings.get('reaction_data') !== null && updateModel && this.cobra_model !== null) {
+        if (this.settings.get('reaction_data') && updateModel && this.cobra_model !== null) {
           // if we haven't already made this
           if (!reactionDataObject) {
-            reactionDataObject = dataStyles.import_and_check(this.settings.get('reaction_data'),
-                                                             'reaction_data')
+            reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
+                                                           'reaction_data')
           }
           this.cobra_model.apply_reaction_data(reactionDataObject,
                                                this.settings.get('reaction_styles'),
                                                this.settings.get('reaction_compare_style'))
-        } else if (this.settings.get('gene_data') !== null && updateModel && this.cobra_model !== null) {
+        } else if (this.settings.get('gene_data') && updateModel && this.cobra_model !== null) {
           if (!geneDataObject) {
             geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
                                                       this.cobra_model, this.map)
@@ -1083,18 +1136,15 @@ class Builder {
       },
       load_reaction_data: { fn: null }, // defined by button
       clear_reaction_data: {
-        target: this,
-        fn: function () { this.set_reaction_data(null) }
+        fn: () => this.set_reaction_data(null)
       },
       load_metabolite_data: { fn: null }, // defined by button
       clear_metabolite_data: {
-        target: this,
-        fn: function () { this.set_metabolite_data(null) }
+        fn: () => this.set_metabolite_data(null)
       },
       load_gene_data: { fn: null }, // defined by button
       clear_gene_data: {
-        target: this,
-        fn: function () { this.set_gene_data(null, true) }
+        fn: () => this.set_gene_data(null, true)
       },
       zoom_in_ctrl: {
         key: 'ctrl+=',
@@ -1317,15 +1367,10 @@ class Builder {
   /**
    * Ask if the user wants to exit the page (to avoid unplanned refresh).
    */
-  _setup_confirm_before_exit () {
-    window.onbeforeunload = function (e) {
-      // If we haven't been passed the event get the window.event
-      e = e || window.event
-      return (this.settings.get('never_ask_before_quit')
-        ? null
-        : 'You will lose any unsaved changes.'
-      )
-    }.bind(this)
+  _setupConfirmBeforeExit () {
+    window.onbeforeunload = _ => this.settings.get('never_ask_before_quit')
+                               ? null
+                               : 'You will lose any unsaved changes.'
   }
 
   /**
