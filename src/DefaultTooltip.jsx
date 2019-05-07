@@ -6,8 +6,7 @@
  */
 import { h, Component } from 'preact'
 import './DefaultTooltip.css'
-
-const utils = require('./utils')
+import * as utils from './utils'
 
 class DefaultTooltip extends Component {
   decompartmentalizeCheck (id, type) {

@@ -1,5 +1,5 @@
 import utils from './utils'
-import build from './build'
+import * as build from './build'
 import { drag as d3Drag } from 'd3-drag'
 import * as d3Selection from 'd3-selection'
 
@@ -160,7 +160,7 @@ export default class Behavior {
         d3Selection.event.sourceEvent.stopPropagation()
       }
       const dragFn = (d, angle, totalAngle, center) => {
-        const updated = build.rotate_nodes(selectedNodes, reactions,
+        const updated = build.rotateNodes(selectedNodes, reactions,
                                           beziers, angle, center)
         map.draw_these_nodes(updated.node_ids)
         map.draw_these_reactions(updated.reaction_ids)
@@ -172,9 +172,9 @@ export default class Behavior {
         selectedNodeIds.forEach(function (id) {
           theseNodes[id] = nodes[id]
         })
-        const updated = build.rotate_nodes(theseNodes, reactions,
-                                        beziers, -totalAngle,
-                                        center)
+        const updated = build.rotateNodes(theseNodes, reactions,
+                                          beziers, -totalAngle,
+                                          center)
         map.draw_these_nodes(updated.node_ids)
         map.draw_these_reactions(updated.reaction_ids)
       }
@@ -184,7 +184,7 @@ export default class Behavior {
         selectedNodeIds.forEach(id => {
           theseNodes[id] = nodes[id]
         })
-        const updated = build.rotate_nodes(theseNodes, reactions,
+        const updated = build.rotatenodes(theseNodes, reactions,
                                           beziers, totalAngle,
                                           center)
         map.draw_these_nodes(updated.node_ids)
@@ -603,10 +603,8 @@ export default class Behavior {
       nodeIdsToDrag.forEach(nodeId => {
         // update data
         const node = map.nodes[nodeId]
-        const updated = build.move_node_and_dependents(node, nodeId,
-                                                       map.reactions,
-                                                       map.beziers,
-                                                       displacement)
+        const updated = build.moveNodeAndDependents(node, nodeId, map.reactions,
+                                                    map.beziers, displacement)
         reactionIds = utils.uniqueConcat([ reactionIds, updated.reaction_ids ])
         // remember the displacements
         // if (!(nodeId in totalDisplacement))  totalDisplacement[nodeId] = { x: 0, y: 0 }
@@ -677,7 +675,7 @@ export default class Behavior {
             }
           })
           // move the node back
-          build.move_node_and_dependents(
+          build.moveNodeAndDependents(
             savedDraggedNode,
             draggedNodeId,
             map.reactions,
@@ -689,7 +687,7 @@ export default class Behavior {
         }, () => {
           // redo
           // move node before combining for reliable undo/redo looping
-          build.move_node_and_dependents(
+          build.moveNodeAndDependents(
             savedDraggedNode,
             draggedNodeId,
             map.reactions,
@@ -713,9 +711,13 @@ export default class Behavior {
           // undo
           savedNodeIds.forEach(nodeId => {
             const node = map.nodes[nodeId]
-            build.move_node_and_dependents(node, nodeId, map.reactions,
-                                           map.beziers,
-                                           utils.c_times_scalar(savedDisplacement, -1))
+            build.moveNodeAndDependents(
+              node,
+              nodeId,
+              map.reactions,
+              map.beziers,
+              utils.c_times_scalar(savedDisplacement, -1)
+            )
           })
           savedTextLabelIds.forEach(textLabelId => {
             moveLabel(textLabelId,
@@ -728,9 +730,9 @@ export default class Behavior {
           // redo
           savedNodeIds.forEach(nodeId => {
             const node = map.nodes[nodeId]
-            build.move_node_and_dependents(node, nodeId, map.reactions,
-                                           map.beziers,
-                                           savedDisplacement)
+            build.moveNodeAndDependents(node, nodeId, map.reactions,
+                                        map.beziers,
+                                        savedDisplacement)
           })
           savedTextLabelIds.forEach(textLabelId => {
             moveLabel(textLabelId, savedDisplacement)
@@ -911,7 +913,7 @@ export default class Behavior {
       const savedDisplacement = utils.clone(totalDisplacement) // BUG TODO this variable disappears!
       const savedLocation = {
         x: d3Mouse(rel)[0],
-        y: d3Mouse(rel)[1],
+        y: d3Mouse(rel)[1]
       }
 
       undoStack.push(function () {
