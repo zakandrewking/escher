@@ -290,7 +290,7 @@ export default class Map {
     }
 
     // populate the beziers
-    map.beziers = build.new_beziers_for_reactions(map.reactions)
+    map.beziers = build.newBeziersForReactions(map.reactions)
 
     // get largest ids for adding new reactions, nodes, text labels, and
     // segments
@@ -470,7 +470,7 @@ export default class Map {
 
     if (draw_beziers) {
       // particular beziers to draw
-      var bezier_ids = build.bezier_ids_for_reaction_ids(reaction_subset)
+      var bezier_ids = build.bezierIdsForReactionIds(reaction_subset)
       this.draw_these_beziers(bezier_ids)
     }
   }
@@ -1086,7 +1086,7 @@ export default class Map {
           // align this side bezier if the other node is selected (and that node
           // will handle its bezier)
           if (otherNode.node_id in selected && segment[bez]) {
-            const bezierId = build.bezier_id_for_segment_id(segmentId, bez)
+            const bezierId = build.bezierIdForSegmentId(segmentId, bez)
             bezierDisplacements.push({
               reactionId,
               segmentId,
@@ -1130,7 +1130,7 @@ export default class Map {
         // TODO abstract this approach in a function because the alternative
         // (saving the node itself) causes bugs)
         const node = this.nodes[d.nodeId]
-        const updated = build.move_node_and_dependents(
+        const updated = build.moveNodeAndDependents(
           node,
           d.nodeId,
           this.reactions,
@@ -1271,7 +1271,7 @@ export default class Map {
             r_id = segment_obj.reaction_id,
             seg_o = {}
         seg_o[seg_id] = segment_obj.segment
-        utils.extend(this.beziers, build.new_beziers_for_segments(seg_o, r_id))
+        utils.extend(this.beziers, build.newBeziersForSegments(seg_o, r_id))
 
         if (reaction_ids_to_draw.indexOf(segment_obj.reaction_id) === -1) {
           reaction_ids_to_draw.push(segment_obj.reaction_id)
@@ -1281,14 +1281,14 @@ export default class Map {
       // Apply the reaction and node data. If the scale changes, redraw
       // everything.
       if (this.has_data_on_reactions) {
-        var scale_changed = this.calc_data_stats('reaction')
+        const scale_changed = this.calc_data_stats('reaction')
         if (scale_changed) this.draw_all_reactions(true, false)
         else this.draw_these_reactions(reaction_ids_to_draw)
       } else {
         if (should_draw) this.draw_these_reactions(reaction_ids_to_draw)
       }
       if (this.has_data_on_nodes) {
-        var scale_changed = this.calc_data_stats('metabolite')
+        const scale_changed = this.calc_data_stats('metabolite')
         if (should_draw) {
           if (scale_changed) this.draw_all_nodes(false)
           else this.draw_these_nodes(Object.keys(saved_nodes))
@@ -1357,7 +1357,7 @@ export default class Map {
 
       // remove beziers
       ;['b1', 'b2'].forEach(function(bez) {
-        var bez_id = build.bezier_id_for_segment_id(segment_obj.segment_id, bez)
+        var bez_id = build.bezierIdForSegmentId(segment_obj.segment_id, bez)
         delete this.beziers[bez_id]
       }.bind(this))
 
@@ -1375,7 +1375,7 @@ export default class Map {
       var reaction = this.reactions[reaction_id]
       for (var segment_id in reaction.segments) {
         ;['b1', 'b2'].forEach(function(bez) {
-          var bez_id = build.bezier_id_for_segment_id(segment_id, bez)
+          var bez_id = build.bezierIdForSegmentId(segment_id, bez)
           delete this.beziers[bez_id]
         }.bind(this))
       }
@@ -1652,13 +1652,16 @@ export default class Map {
     var cobra_reaction = this.cobra_model.reactions[reaction_bigg_id]
 
     // build the new reaction
-    var out = build.new_reaction(reaction_bigg_id, cobra_reaction,
-                                 this.cobra_model.metabolites,
-                                 selected_node_id,
-                                 utils.clone(selected_node),
-                                 this.largest_ids,
-                                 this.settings.get('cofactors'),
-                                 direction)
+    var out = build.newReaction(
+      reaction_bigg_id,
+      cobra_reaction,
+      this.cobra_model.metabolites,
+      selected_node_id,
+      utils.clone(selected_node),
+      this.largest_ids,
+      this.settings.get('cofactors'),
+      direction
+    )
     var new_nodes = out.new_nodes
     var new_reactions = out.new_reactions
     var new_beziers = out.new_beziers
@@ -1934,7 +1937,7 @@ export default class Map {
 
   new_text_label (coords, text) {
     // Make an label
-    var out = build.new_text_label(this.largest_ids, text, coords)
+    var out = build.newTextLabel(this.largest_ids, text, coords)
     this.text_labels[out.id] = out.label
     this.draw_these_text_labels([ out.id ])
     // Add to the search index

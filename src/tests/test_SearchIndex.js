@@ -1,19 +1,13 @@
-const SearchIndex = require('../SearchIndex')
+import SearchIndex from '../SearchIndex'
 
-const describe = require('mocha').describe
-const it = require('mocha').it
-const beforeEach = require('mocha').beforeEach
-const assert = require('chai').assert
-
-const d3Body = require('./helpers/d3Body')
-const get_map = require('./helpers/get_map')
-
+import { describe, it, beforeEach } from 'mocha'
+import { assert } from 'chai'
 
 describe('SearchIndex', () => {
   let index
 
   beforeEach(() => {
-    index = SearchIndex()
+    index = new SearchIndex()
   })
 
   it('insert accepts new records', () => {
@@ -22,14 +16,18 @@ describe('SearchIndex', () => {
   })
 
   it('insert throws error for malformed records', () => {
-    assert.throws(() => { index.insert('123', {}, false, true); },
-                  'malformed record')
+    assert.throws(
+      () => { index.insert('123', {}, false, true) },
+      'malformed record'
+    )
   })
 
   it('insert throws error for repeated index', () => {
     index.insert('123', {'name': 'a', 'data': 1})
-    assert.throws(() => { index.insert('123', {}, false, false); },
-                  'id is already in the index')
+    assert.throws(
+      () => { index.insert('123', {}, false, false) },
+      'id is already in the index'
+    )
   })
 
   it('find', () => {
@@ -45,8 +43,8 @@ describe('SearchIndex', () => {
 
   it('remove', () => {
     index.insert('123', {'name': 'a', 'data': 3}, true)
-    const out = index.remove('123'),
-          out2 = index.remove('123')
+    const out = index.remove('123')
+    const out2 = index.remove('123')
     assert.isTrue(out)
     assert.isFalse(out2)
     assert.strictEqual(index.find('a').length, 0)

@@ -1,48 +1,34 @@
 /**
- * build
- *
  * Functions for building new reactions.
  */
 
-var utils = require('./utils')
-var _ = require('underscore')
+import * as utils from './utils'
+import _ from 'underscore'
 
-module.exports = {
-  getMetLabelLoc: getMetLabelLoc,
-  new_reaction: new_reaction,
-  rotate_nodes: rotate_nodes,
-  move_node_and_dependents: move_node_and_dependents,
-  new_text_label: new_text_label,
-  bezier_id_for_segment_id: bezier_id_for_segment_id,
-  bezier_ids_for_reaction_ids: bezier_ids_for_reaction_ids,
-  new_beziers_for_segments: new_beziers_for_segments,
-  new_beziers_for_reactions: new_beziers_for_reactions
-}
-
-function _get_label_loc (angle) {
+function getLabelLoc (angle) {
   if (Math.abs(angle) > Math.PI) {
     throw new Error('Angle must be between -PI and PI')
   }
-  if (Math.abs(angle) < Math.PI/7 || Math.abs(angle - Math.PI) < Math.PI/7) {
+  if (Math.abs(angle) < Math.PI / 7 || Math.abs(angle - Math.PI) < Math.PI / 7) {
     // Close to 0 or PI
     return { x: -50, y: -40 }
   } else if (angle > 0) {
     // Bottom quadrants
     return {
-      x: 15 * (1 - (Math.abs(angle - Math.PI/2)) / (Math.PI/2)),
-      y: 10 + (angle - Math.PI/2) * 50
+      x: 15 * (1 - (Math.abs(angle - Math.PI / 2)) / (Math.PI / 2)),
+      y: 10 + (angle - Math.PI / 2) * 50
     }
   } else {
     // Top quadrants
     return {
-      x: 15 * (1 - (Math.abs(angle + Math.PI/2)) / (Math.PI/2)),
-      y: 10 - (Math.abs(angle) - Math.PI/2) * 50
+      x: 15 * (1 - (Math.abs(angle + Math.PI / 2)) / (Math.PI / 2)),
+      y: 10 - (Math.abs(angle) - Math.PI / 2) * 50
     }
   }
 }
 
 /**
- * Get the location for a new metaoblite label.
+ * Get the location for a new metabolite label.
  * @param angleRaw - angle in radians
  * @param index
  * @param count
@@ -50,8 +36,8 @@ function _get_label_loc (angle) {
  * @param biggId
  * @param primaryIndex
  */
-function getMetLabelLoc (angleRaw, index, count, isPrimary, biggId,
-                         primaryIndex) {
+export function getMetLabelLoc (angleRaw, index, count, isPrimary, biggId,
+                                primaryIndex) {
   const angle = utils.angleNorm(angleRaw)
   const width = biggId.length * 18
   const leftRight = (index - (index > primaryIndex) - (count / 2)) >= -1
@@ -92,128 +78,130 @@ function getMetLabelLoc (angleRaw, index, count, isPrimary, biggId,
 
 /**
  * New reaction.
- *
- * @param {Number} direction - clockwise from 'right', in degrees
+ * @param {Number} direction - clockwise from 'right', in degrees.
  */
-function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
-                       selected_node_id, selected_node,
-                       largest_ids, cofactors, direction) {
+export function newReaction (biggId, cobraReaction, cobraMetabolites,
+                             selectedNodeId, selectedNode, largestIds,
+                             cofactors, direction) {
   // Convert to radians, and force to domain - PI/2 to PI/2
   const angle = utils.to_radians_norm(direction)
 
   // Generate a new integer id
-  var new_reaction_id = String(++largest_ids.reactions)
+  const newReactionId = String(++largestIds.reactions)
 
   // Calculate coordinates of reaction
-  var selected_node_coords = { x: selected_node.x,
-                               y: selected_node.y }
+  const selectedNodeCoords = { x: selectedNode.x, y: selectedNode.y }
 
   // Rotate main axis around angle with distance
-  var reaction_length = 350
-  var main_axis = [
-    selected_node_coords,
-    utils.c_plus_c(selected_node_coords, { x: reaction_length, y: 0 })
+  const reactionLength = 350
+  const mainAxis = [
+    selectedNodeCoords,
+    utils.c_plus_c(selectedNodeCoords, { x: reactionLength, y: 0 })
   ]
-  var center = {
-    x: (main_axis[0].x + main_axis[1].x) / 2,
-    y: (main_axis[0].y + main_axis[1].y) / 2
+  const center = {
+    x: (mainAxis[0].x + mainAxis[1].x) / 2,
+    y: (mainAxis[0].y + mainAxis[1].y) / 2
   }
 
   // Relative label location
-  var label_d = _get_label_loc(angle)
+  const labelD = getLabelLoc(angle)
 
   // Relative anchor node distance
-  var anchor_distance = 20
+  const anchorDistance = 20
 
   // New reaction structure
-  var new_reaction = {
-    name: cobra_reaction.name,
-    bigg_id: cobra_reaction.bigg_id,
-    reversibility: cobra_reaction.reversibility,
-    gene_reaction_rule: cobra_reaction.gene_reaction_rule,
-    genes: utils.clone(cobra_reaction.genes),
-    metabolites: utils.clone(cobra_reaction.metabolites)
+  const newReaction = {
+    name: cobraReaction.name,
+    bigg_id: cobraReaction.bigg_id,
+    reversibility: cobraReaction.reversibility,
+    gene_reaction_rule: cobraReaction.gene_reaction_rule,
+    genes: utils.clone(cobraReaction.genes),
+    metabolites: utils.clone(cobraReaction.metabolites)
   }
-  utils.extend(new_reaction, {
-    label_x: center.x + label_d.x,
-    label_y: center.y + label_d.y,
+  utils.extend(newReaction, {
+    label_x: center.x + labelD.x,
+    label_y: center.y + labelD.y,
     segments: {}
   })
 
   // Set primary metabolites and count reactants/products
 
   // Look for the selected metabolite, and record the indices
-  var reactant_ranks = []
-  var product_ranks = []
-  var reactant_count = 0
-  var product_count = 0
-  var reaction_is_reversed = false
-  for (var met_bigg_id in new_reaction.metabolites) {
+  const reactantRanks = []
+  const productRanks = []
+  let reactantCount = 0
+  let productCount = 0
+  let reactionIsReversed = false
+  for (let metBiggId in newReaction.metabolites) {
     // Make the metabolites into objects
-    var metabolite = cobra_metabolites[met_bigg_id]
-    var coefficient = new_reaction.metabolites[met_bigg_id]
-    var formula = metabolite.formula
-    var new_metabolite = {
+    const metabolite = cobraMetabolites[metBiggId]
+    const coefficient = newReaction.metabolites[metBiggId]
+    const formula = metabolite.formula
+    const newMetabolite = {
       coefficient: coefficient,
-      bigg_id: met_bigg_id,
+      bigg_id: metBiggId,
       name: metabolite.name
     }
     if (coefficient < 0) {
-      new_metabolite.index = reactant_count
+      newMetabolite.index = reactantCount
       // score the metabolites. Infinity == selected, >= 1 == carbon containing
-      var carbons = /C([0-9]+)/.exec(formula)
-      if (selected_node.bigg_id === new_metabolite.bigg_id) {
-        reactant_ranks.push([ new_metabolite.index, Infinity ])
-      } else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0]) === -1) {
-        reactant_ranks.push([ new_metabolite.index, parseInt(carbons[1]) ])
+      const carbons = /C([0-9]+)/.exec(formula)
+      if (selectedNode.bigg_id === newMetabolite.bigg_id) {
+        reactantRanks.push([ newMetabolite.index, Infinity ])
+      } else if (carbons && cofactors.indexOf(utils.decompartmentalize(newMetabolite.bigg_id)[0]) === -1) {
+        reactantRanks.push([ newMetabolite.index, parseInt(carbons[1]) ])
       }
-      reactant_count++
+      reactantCount++
     } else {
-      new_metabolite.index = product_count
-      var carbons = /C([0-9]+)/.exec(formula)
-      if (selected_node.bigg_id === new_metabolite.bigg_id) {
-        product_ranks.push([ new_metabolite.index, Infinity ])
-        reaction_is_reversed = true
-      } else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0]) === -1) {
-        product_ranks.push([ new_metabolite.index, parseInt(carbons[1]) ])
+      newMetabolite.index = productCount
+      const carbons = /C([0-9]+)/.exec(formula)
+      if (selectedNode.bigg_id === newMetabolite.bigg_id) {
+        productRanks.push([ newMetabolite.index, Infinity ])
+        reactionIsReversed = true
+      } else if (carbons && cofactors.indexOf(utils.decompartmentalize(newMetabolite.bigg_id)[0]) === -1) {
+        productRanks.push([ newMetabolite.index, parseInt(carbons[1]) ])
       }
-      product_count++
+      productCount++
     }
-    new_reaction.metabolites[met_bigg_id] = new_metabolite
+    newReaction.metabolites[metBiggId] = newMetabolite
   }
 
   // get the rank with the highest score
-  var max_rank = function (old, current) { return current[1] > old[1] ? current : old }
-  var primary_reactant_index = reactant_ranks.reduce(max_rank, [ 0, 0 ])[0]
-  var primary_product_index = product_ranks.reduce(max_rank, [ 0, 0 ])[0]
+  const maxRank = (old, current) => current[1] > old[1] ? current : old
+  const primaryReactantIndex = reactantRanks.reduce(maxRank, [ 0, 0 ])[0]
+  const primaryProductIndex = productRanks.reduce(maxRank, [ 0, 0 ])[0]
 
   // set primary metabolites, and keep track of the total counts
-  for (var met_bigg_id in new_reaction.metabolites) {
-    var metabolite = new_reaction.metabolites[met_bigg_id]
+  for (let metBiggId in newReaction.metabolites) {
+    const metabolite = newReaction.metabolites[metBiggId]
     if (metabolite.coefficient < 0) {
-      metabolite.is_primary = metabolite.index === primary_reactant_index
-      metabolite.count = reactant_count
+      metabolite.is_primary = metabolite.index === primaryReactantIndex
+      metabolite.count = reactantCount
     } else {
-      metabolite.is_primary = metabolite.index === primary_product_index
-      metabolite.count = product_count
+      metabolite.is_primary = metabolite.index === primaryProductIndex
+      metabolite.count = productCount
     }
   }
 
   // generate anchor nodes
-  var new_anchors = {}
-  var anchors = [ { node_type: 'anchor_reactants',
-                    dis: { x: anchor_distance * (reaction_is_reversed ? 1 : -1), y: 0 } },
-                  { node_type: 'center',
-                    dis: { x: 0, y: 0 } },
-                  { node_type: 'anchor_products',
-                    dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
-  anchor_ids = {}
-  anchors.map(function (n) {
-    var new_id = String(++largest_ids.nodes)
-    var general_node_type = (n.node_type === 'center' ? 'midmarker' :
-                             'multimarker')
-    new_anchors[new_id] = {
-      node_type: general_node_type,
+  const newAnchors = {}
+  const anchors = [
+    {
+      node_type: 'anchor_reactants',
+      dis: { x: anchorDistance * (reactionIsReversed ? 1 : -1), y: 0 }
+    },
+    { node_type: 'center', dis: { x: 0, y: 0 } },
+    {
+      node_type: 'anchor_products',
+      dis: { x: anchorDistance * (reactionIsReversed ? -1 : 1), y: 0 }
+    }
+  ]
+  const anchorIds = {}
+  anchors.map(n => {
+    const newId = String(++largestIds.nodes)
+    const generalNodeType = n.node_type === 'center' ? 'midmarker' : 'multimarker'
+    newAnchors[newId] = {
+      node_type: generalNodeType,
       x: center.x + n.dis.x,
       y: center.y + n.dis.y,
       connected_segments: [],
@@ -224,161 +212,170 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
       node_is_primary: null,
       data: null
     }
-    anchor_ids[n.node_type] = new_id
+    anchorIds[n.node_type] = newId
   })
 
   // add the segments, outside to inside
-  var new_anchor_groups = [
-    [ anchor_ids['anchor_reactants'], anchor_ids['center'], 'reactants' ],
-    [ anchor_ids['anchor_products'],  anchor_ids['center'], 'products' ]
+  const newAnchorGroups = [
+    [ anchorIds['anchor_reactants'], anchorIds['center'], 'reactants' ],
+    [ anchorIds['anchor_products'], anchorIds['center'], 'products' ]
   ]
-  new_anchor_groups.map(function (l) {
-    var from_id = l[0]
-    var to_id = l[1]
-    var new_segment_id = String(++largest_ids.segments)
-    var unconnected_seg = (
-      (reactant_count === 0 && l[2] === 'reactants' && new_reaction.reversibility) ||
-      (product_count === 0 && l[2] === 'products')
+  newAnchorGroups.map(l => {
+    const fromId = l[0]
+    const toId = l[1]
+    const newSegmentId = String(++largestIds.segments)
+    const unconnectedSeg = (
+      (reactantCount === 0 && l[2] === 'reactants' && newReaction.reversibility) ||
+      (productCount === 0 && l[2] === 'products')
     )
-    new_reaction.segments[new_segment_id] =  {
+    newReaction.segments[newSegmentId] = {
       b1: null,
       b2: null,
-      from_node_id: from_id,
-      to_node_id: to_id,
+      from_node_id: fromId,
+      to_node_id: toId,
       from_node_coefficient: null,
       to_node_coefficient: null,
-      reversibility: new_reaction.reversibility,
-      data: new_reaction.data,
-      reverse_flux: new_reaction.reverse_flux,
-      unconnected_segment_with_arrow: unconnected_seg,
+      reversibility: newReaction.reversibility,
+      data: newReaction.data,
+      reverse_flux: newReaction.reverse_flux,
+      unconnected_segment_with_arrow: unconnectedSeg
     }
-    new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
-                                                   reaction_id: new_reaction_id })
-    new_anchors[to_id].connected_segments.push({ segment_id: new_segment_id,
-                                                 reaction_id: new_reaction_id })
+    newAnchors[fromId].connected_segments.push({
+      segment_id: newSegmentId,
+      reaction_id: newReactionId
+    })
+    newAnchors[toId].connected_segments.push({
+      segment_id: newSegmentId,
+      reaction_id: newReactionId
+    })
   })
 
   // Add the metabolites, keeping track of total reactants and products.
-  var new_nodes = new_anchors
-  for (var met_bigg_id in new_reaction.metabolites) {
-    var metabolite = new_reaction.metabolites[met_bigg_id]
-    var primary_index
-    var from_node_id
+  const newNodes = newAnchors
+  for (let metBiggId in newReaction.metabolites) {
+    const metabolite = newReaction.metabolites[metBiggId]
+    let primaryIndex
+    let fromNodeId
     if (metabolite.coefficient < 0) {
-      primary_index = primary_reactant_index
-      from_node_id = anchor_ids['anchor_reactants']
+      primaryIndex = primaryReactantIndex
+      fromNodeId = anchorIds['anchor_reactants']
     } else {
-      primary_index = primary_product_index
-      from_node_id = anchor_ids['anchor_products']
+      primaryIndex = primaryProductIndex
+      fromNodeId = anchorIds['anchor_products']
     }
 
     // calculate coordinates of metabolite components
-    var met_loc = calculate_new_metabolite_coordinates(metabolite,
-                                                       primary_index,
-                                                       main_axis,
-                                                       center,
-                                                       reaction_length,
-                                                       reaction_is_reversed)
+    const metLoc = calculateNewMetaboliteCoordinates(
+      metabolite,
+      primaryIndex,
+      mainAxis,
+      center,
+      reactionLength,
+      reactionIsReversed
+    )
 
     // if this is the existing metabolite
-    if (selected_node.bigg_id === metabolite.bigg_id) {
-      var new_segment_id = String(++largest_ids.segments)
-      new_reaction.segments[new_segment_id] = {
-        b1: met_loc.b1,
-        b2: met_loc.b2,
-        from_node_id: from_node_id,
-        to_node_id: selected_node_id,
+    if (selectedNode.bigg_id === metabolite.bigg_id) {
+      const newSegmentId = String(++largestIds.segments)
+      newReaction.segments[newSegmentId] = {
+        b1: metLoc.b1,
+        b2: metLoc.b2,
+        from_node_id: fromNodeId,
+        to_node_id: selectedNodeId,
         from_node_coefficient: null,
         to_node_coefficient: metabolite.coefficient,
-        reversibility: new_reaction.reversibility,
+        reversibility: newReaction.reversibility
       }
       // Update the existing node
-      selected_node.connected_segments.push({
-        segment_id: new_segment_id,
-        reaction_id: new_reaction_id
+      selectedNode.connected_segments.push({
+        segment_id: newSegmentId,
+        reaction_id: newReactionId
       })
-      new_nodes[from_node_id].connected_segments.push({
-        segment_id: new_segment_id,
-        reaction_id: new_reaction_id
+      newNodes[fromNodeId].connected_segments.push({
+        segment_id: newSegmentId,
+        reaction_id: newReactionId
       })
     } else {
       // save new metabolite
-      var new_segment_id = String(++largest_ids.segments)
-      var new_node_id = String(++largest_ids.nodes)
-      new_reaction.segments[new_segment_id] = {
-        b1: met_loc.b1,
-        b2: met_loc.b2,
-        from_node_id: from_node_id,
-        to_node_id: new_node_id,
+      const newSegmentId = String(++largestIds.segments)
+      const newNodeId = String(++largestIds.nodes)
+      newReaction.segments[newSegmentId] = {
+        b1: metLoc.b1,
+        b2: metLoc.b2,
+        from_node_id: fromNodeId,
+        to_node_id: newNodeId,
         from_node_coefficient: null,
         to_node_coefficient: metabolite.coefficient,
-        reversibility: new_reaction.reversibility,
+        reversibility: newReaction.reversibility
       }
       // save new node
-      var met_label_d = getMetLabelLoc(
+      const metLabelD = getMetLabelLoc(
         angle,
         metabolite.index,
         metabolite.count,
         metabolite.is_primary,
         metabolite.bigg_id,
-        primary_index
+        primaryIndex
       )
-      new_nodes[new_node_id] = {
-        connected_segments: [ { segment_id: new_segment_id,
-                                reaction_id: new_reaction_id } ],
-        x: met_loc.circle.x,
-        y: met_loc.circle.y,
+      newNodes[newNodeId] = {
+        connected_segments: [ {
+          segment_id: newSegmentId,
+          reaction_id: newReactionId
+        } ],
+        x: metLoc.circle.x,
+        y: metLoc.circle.y,
         node_is_primary: metabolite.is_primary,
-        label_x: met_loc.circle.x + met_label_d.x,
-        label_y: met_loc.circle.y + met_label_d.y,
+        label_x: metLoc.circle.x + metLabelD.x,
+        label_y: metLoc.circle.y + metLabelD.y,
         name: metabolite.name,
         bigg_id: metabolite.bigg_id,
         node_type: 'metabolite'
       }
-      new_nodes[from_node_id].connected_segments.push({
-        segment_id: new_segment_id,
-        reaction_id: new_reaction_id
+      newNodes[fromNodeId].connected_segments.push({
+        segment_id: newSegmentId,
+        reaction_id: newReactionId
       })
     }
   }
 
   // now take out the extra reaction details
-  var metabolites_array = []
-  for (var bigg_id in new_reaction.metabolites) {
-    metabolites_array.push({
-      bigg_id: bigg_id,
-      coefficient: new_reaction.metabolites[bigg_id].coefficient
+  const metabolitesArray = []
+  for (let biggId in newReaction.metabolites) {
+    metabolitesArray.push({
+      bigg_id: biggId,
+      coefficient: newReaction.metabolites[biggId].coefficient
     })
   }
-  new_reaction.metabolites = metabolites_array
+  newReaction.metabolites = metabolitesArray
 
-  // new_reactions object
-  var new_reactions = {}
-  new_reactions[new_reaction_id] = new_reaction
+  // newReactions object
+  const newReactions = {}
+  newReactions[newReactionId] = newReaction
 
   // new_beziers object
-  var new_beziers = new_beziers_for_reactions(new_reactions)
+  const newBeziers = newBeziersForReactions(newReactions)
 
   // add the selected node for rotation, and return it as a new (updated) node
-  new_nodes[selected_node_id] = selected_node
-  rotate_nodes(new_nodes, new_reactions, new_beziers,
-               angle, selected_node_coords)
+  newNodes[selectedNodeId] = selectedNode
+  rotateNodes(newNodes, newReactions, newBeziers, angle, selectedNodeCoords)
 
-  return { new_reactions: new_reactions,
-           new_beziers: new_beziers,
-           new_nodes: new_nodes }
+  return {
+    new_reactions: newReactions,
+    new_beziers: newBeziers,
+    new_nodes: newNodes
+  }
 }
 
 /**
  * Rotate the nodes around center.
- * selected_nodes: Nodes to rotate.
- * reactions: Only updates beziers for these reactions.
- * beziers: Also update the bezier points.
- * angle: Angle to rotate in radians.
- * center: Point to rotate around.
+ * @param selected_nodes - Nodes to rotate.
+ * @param reactions - Only updates beziers for these reactions.
+ * @param beziers - Also update the bezier points.
+ * @param angle - Angle to rotate in radians.
+ * @param center - Point to rotate around.
  */
-function rotate_nodes (selected_nodes, reactions, beziers, angle, center) {
-  var rotate_around = function (coord) {
+export function rotateNodes (selectedNodes, reactions, beziers, angle, center) {
+  const rotateAround = coord => {
     if (coord === null) {
       return null
     }
@@ -386,83 +383,85 @@ function rotate_nodes (selected_nodes, reactions, beziers, angle, center) {
   }
 
   // recalculate: node
-  var updated_node_ids = [], updated_reaction_ids = []
-  for (var node_id in selected_nodes) {
-    var node = selected_nodes[node_id],
+  const updatedNodeIds = []
+  let updatedReactionIds = []
+  for (let nodeId in selectedNodes) {
+    const node = selectedNodes[nodeId]
     // rotation distance
-    displacement = rotate_around({ x: node.x, y: node.y }),
+    const displacement = rotateAround({ x: node.x, y: node.y })
     // move the node
-    updated = move_node_and_labels(node, reactions,
-                                   displacement)
+    const updated = moveNodeAndLabels(node, reactions, displacement)
     // move the bezier points
-    node.connected_segments.map(function (segment_obj) {
-      var reaction = reactions[segment_obj.reaction_id]
+    node.connected_segments.map(segmentObj => {
+      const reaction = reactions[segmentObj.reaction_id]
       // If the reaction was not passed in the reactions argument, then ignore
       if (reaction === undefined) return
 
       // rotate the beziers
-      var segment_id = segment_obj.segment_id
-      var segment = reaction.segments[segment_id]
-      if (segment.to_node_id==node_id && segment.b2) {
-        var displacement = rotate_around(segment.b2)
-        var bez_id = bezier_id_for_segment_id(segment_id, 'b2')
+      const segmentId = segmentObj.segment_id
+      const segment = reaction.segments[segmentId]
+      if (segment.to_node_id === nodeId && segment.b2) {
+        const displacement = rotateAround(segment.b2)
+        const bezId = bezierIdForSegmentId(segmentId, 'b2')
         segment.b2 = utils.c_plus_c(segment.b2, displacement)
-        beziers[bez_id].x = segment.b2.x
-        beziers[bez_id].y = segment.b2.y
-      } else if (segment.from_node_id==node_id && segment.b1) {
-        var displacement = rotate_around(segment.b1)
-        var bez_id = bezier_id_for_segment_id(segment_id, 'b1')
+        beziers[bezId].x = segment.b2.x
+        beziers[bezId].y = segment.b2.y
+      } else if (segment.from_node_id === nodeId && segment.b1) {
+        const displacement = rotateAround(segment.b1)
+        const bezId = bezierIdForSegmentId(segmentId, 'b1')
         segment.b1 = utils.c_plus_c(segment.b1, displacement)
-        beziers[bez_id].x = segment.b1.x
-        beziers[bez_id].y = segment.b1.y
+        beziers[bezId].x = segment.b1.x
+        beziers[bezId].y = segment.b1.y
       }
     })
 
-    updated_reaction_ids = utils.uniqueConcat([updated_reaction_ids,
-                                               updated.reaction_ids])
-    updated_node_ids.push(node_id)
+    updatedReactionIds = utils.uniqueConcat([updatedReactionIds, updated.reaction_ids])
+    updatedNodeIds.push(nodeId)
   }
 
-  return { node_ids: updated_node_ids,
-           reaction_ids: updated_reaction_ids }
+  return {
+    node_ids: updatedNodeIds,
+    reaction_ids: updatedReactionIds
+  }
 }
 
 /**
  * Move the node and its labels and beziers.
  */
-function move_node_and_dependents (node, node_id, reactions, beziers, displacement) {
-  var updated = move_node_and_labels(node, reactions, displacement)
+export function moveNodeAndDependents (node, nodeId, reactions, beziers,
+                                       displacement) {
+  const updated = moveNodeAndLabels(node, reactions, displacement)
 
   // move beziers
-  node.connected_segments.map(function(segment_obj) {
-    var reaction = reactions[segment_obj.reaction_id]
+  node.connected_segments.map(segmentObj => {
+    const reaction = reactions[segmentObj.reaction_id]
     // If the reaction was not passed in the reactions argument, then ignore
     if (_.isUndefined(reaction)) return
 
     // Update beziers
-    var segment_id = segment_obj.segment_id
-    var segment = reaction.segments[segment_id]
-    var cs = [ [ 'b1', 'from_node_id' ], [ 'b2', 'to_node_id' ] ]
-    cs.forEach(function (c) {
-      var bez = c[0]
-      var node = c[1]
-      if (segment[node] === node_id && segment[bez]) {
+    const segmentId = segmentObj.segment_id
+    const segment = reaction.segments[segmentId]
+    const cs = [ [ 'b1', 'from_node_id' ], [ 'b2', 'to_node_id' ] ]
+    cs.forEach(c => {
+      const bez = c[0]
+      const node = c[1]
+      if (segment[node] === nodeId && segment[bez]) {
         segment[bez] = utils.c_plus_c(segment[bez], displacement)
-        var tbez = beziers[bezier_id_for_segment_id(segment_id, bez)]
+        const tbez = beziers[bezierIdForSegmentId(segmentId, bez)]
         tbez.x = segment[bez].x
         tbez.y = segment[bez].y
       }
     })
 
     // add to list of updated reaction ids if it isn't already there
-    if (updated.reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
-      updated.reaction_ids.push(segment_obj.reaction_id)
+    if (updated.reaction_ids.indexOf(segmentObj.reaction_id) < 0) {
+      updated.reaction_ids.push(segmentObj.reaction_id)
     }
   })
   return updated
 }
 
-function move_node_and_labels (node, reactions, displacement) {
+function moveNodeAndLabels (node, reactions, displacement) {
   node.x = node.x + displacement.x
   node.y = node.y + displacement.y
 
@@ -471,21 +470,21 @@ function move_node_and_labels (node, reactions, displacement) {
   node.label_y = node.label_y + displacement.y
 
   // recalculate: reaction label
-  var updated_reaction_ids = []
-  node.connected_segments.map(function(segment_obj) {
-    var reaction = reactions[segment_obj.reaction_id]
+  const updatedReactionIds = []
+  node.connected_segments.map(segmentObj => {
+    const reaction = reactions[segmentObj.reaction_id]
     // add to list of updated reaction ids if it isn't already there
-    if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
-      updated_reaction_ids.push(segment_obj.reaction_id)
+    if (updatedReactionIds.indexOf(segmentObj.reaction_id) < 0) {
+      updatedReactionIds.push(segmentObj.reaction_id)
 
       // update reaction label (but only once per reaction
-      if (node.node_type == 'midmarker') {
+      if (node.node_type === 'midmarker') {
         reaction.label_x = reaction.label_x + displacement.x
         reaction.label_y = reaction.label_y + displacement.y
       }
     }
   })
-  return { reaction_ids: updated_reaction_ids }
+  return { reaction_ids: updatedReactionIds }
 }
 
 /**
@@ -494,135 +493,131 @@ function move_node_and_labels (node, reactions, displacement) {
  * @param {Number} draw_at_index - Index of metabolite
  * @param {Number} num_slots - Number of metabolites
  */
-function _met_index_disp (w, draw_at_index, num_slots) {
-  var half = Math.floor(num_slots / 2)
-  return w * (draw_at_index - half + (draw_at_index >= half))
+function metIndexDisp (w, drawAtIndex, numSlots) {
+  const half = Math.floor(numSlots / 2)
+  return w * (drawAtIndex - half + (drawAtIndex >= half))
 }
 
-function _met_secondary_disp (secondary_w, secondary_dis, draw_at_index,
-                              num_slots) {
-  var half = Math.floor(num_slots / 2)
-  return secondary_dis + Math.abs(draw_at_index - half + (draw_at_index >= half)) * secondary_w
+function metSecondaryDisp (secondaryW, secondaryDis, drawAtIndex, numSlots) {
+  const half = Math.floor(numSlots / 2)
+  return secondaryDis + Math.abs(drawAtIndex - half + (drawAtIndex >= half)) * secondaryW
 }
 
 /**
  * Calculate metabolite coordinates for a new reaction metabolite.
  */
-function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
-                                               center, dis, is_reversed) {
+function calculateNewMetaboliteCoordinates (met, primaryIndex, mainAxis, center,
+                                            dis, isReversed) {
   // new local coordinate system
-  var displacement = main_axis[0]
-  main_axis = [ utils.c_minus_c(main_axis[0], displacement),
-                utils.c_minus_c(main_axis[1], displacement) ]
+  const displacement = mainAxis[0]
+  mainAxis = [
+    utils.c_minus_c(mainAxis[0], displacement),
+    utils.c_minus_c(mainAxis[1], displacement)
+  ]
   center = utils.c_minus_c(center, displacement)
 
   // Curve parameters
-  var w = 80 // distance between reactants and between products
-  var b1_strength = 0.4
-  var b2_strength = 0.25
-  var w2 = w * 0.3 // bezier target poin
-  var secondary_dis = 50 // y distance of first secondary mets
-  var secondary_w = 20 // y distance of each other secondary met
+  const w = 80 // distance between reactants and between products
+  const b1Strength = 0.4
+  const b2Strength = 0.25
+  const w2 = w * 0.3 // bezier target poin
+  const secondaryDis = 50 // y distance of first secondary mets
+  const secondaryW = 20 // y distance of each other secondary met
 
   // Secondary mets
-  var num_slots = met.count - 1
+  const numSlots = met.count - 1
 
   // Size and spacing for primary and secondary metabolites
-  var ds
-  var draw_at_index
-  var r
+  let ds
+  let drawAtIndex
   if (met.is_primary) { // primary
     ds = 20
   } else { // secondary
     ds = 10
     // don't use center slot
-    if (met.index > primary_index) draw_at_index = met.index - 1
-    else draw_at_index = met.index
+    if (met.index > primaryIndex) drawAtIndex = met.index - 1
+    else drawAtIndex = met.index
   }
 
-  var de = dis - ds // distance between ends of line axis
-  var reaction_axis = [ { x: ds, y: 0 },
-                        { x: de, y: 0 } ]
+  const de = dis - ds // distance between ends of line axis
+  const reactionAxis = [ { x: ds, y: 0 }, { x: de, y: 0 } ]
 
   // Define line parameters and axis.
   // Begin with unrotated coordinate system. +y = Down, +x = Right.
-  var end
-  var circle
-  var b1
-  var b2
+  let end
+  let circle
+  let b1
+  let b2
 
   // Reactants
-  if (((met.coefficient < 0) !== is_reversed) && met.is_primary) { // Ali == BADASS
+  if (((met.coefficient < 0) !== isReversed) && met.is_primary) { // Ali == BADASS
     end = {
-      x: reaction_axis[0].x,
-      y: reaction_axis[0].y
+      x: reactionAxis[0].x,
+      y: reactionAxis[0].y
     }
     b1 = {
-      x: center.x * (1 - b1_strength) + reaction_axis[0].x * b1_strength,
-      y: center.y * (1 - b1_strength) + reaction_axis[0].y * b1_strength
+      x: center.x * (1 - b1Strength) + reactionAxis[0].x * b1Strength,
+      y: center.y * (1 - b1Strength) + reactionAxis[0].y * b1Strength
     }
     b2 = {
-      x: center.x * b2_strength + end.x * (1 - b2_strength),
-      y: center.y * b2_strength + end.y * (1 - b2_strength)
+      x: center.x * b2Strength + end.x * (1 - b2Strength),
+      y: center.y * b2Strength + end.y * (1 - b2Strength)
     }
     circle = {
-      x: main_axis[0].x,
-      y: main_axis[0].y
+      x: mainAxis[0].x,
+      y: mainAxis[0].y
     }
-  } else if ((met.coefficient < 0) !== is_reversed) {
+  } else if ((met.coefficient < 0) !== isReversed) {
     end = {
-      x: reaction_axis[0].x + _met_secondary_disp(secondary_w, secondary_dis,
-                                                  draw_at_index, num_slots),
-      y: reaction_axis[0].y + _met_index_disp(w2, draw_at_index, num_slots)
+      x: reactionAxis[0].x + metSecondaryDisp(secondaryW, secondaryDis,
+                                                  drawAtIndex, numSlots),
+      y: reactionAxis[0].y + metIndexDisp(w2, drawAtIndex, numSlots)
     }
     b1 = {
-      x: center.x * (1 - b1_strength) + reaction_axis[0].x * b1_strength,
-      y: center.y * (1 - b1_strength) + reaction_axis[0].y * b1_strength
+      x: center.x * (1 - b1Strength) + reactionAxis[0].x * b1Strength,
+      y: center.y * (1 - b1Strength) + reactionAxis[0].y * b1Strength
     }
     b2 = {
-      x: center.x * b2_strength + end.x * (1 - b2_strength),
-      y: center.y * b2_strength + end.y * (1 - b2_strength)
+      x: center.x * b2Strength + end.x * (1 - b2Strength),
+      y: center.y * b2Strength + end.y * (1 - b2Strength)
     }
     circle = {
-      x: main_axis[0].x + _met_secondary_disp (secondary_w, secondary_dis,
-                                               draw_at_index, num_slots),
-      y: main_axis[0].y + _met_index_disp(w, draw_at_index, num_slots)
+      x: mainAxis[0].x + metSecondaryDisp(secondaryW, secondaryDis, drawAtIndex, numSlots),
+      y: mainAxis[0].y + metIndexDisp(w, drawAtIndex, numSlots)
     }
-  } else if (((met.coefficient > 0) !== is_reversed) && met.is_primary) {        // products
+  } else if (((met.coefficient > 0) !== isReversed) && met.is_primary) {        // products
     end = {
-      x: reaction_axis[1].x,
-      y: reaction_axis[1].y
+      x: reactionAxis[1].x,
+      y: reactionAxis[1].y
     }
     b1 = {
-      x: center.x * (1 - b1_strength) + reaction_axis[1].x * b1_strength,
-      y: center.y * (1 - b1_strength) + reaction_axis[1].y * b1_strength
+      x: center.x * (1 - b1Strength) + reactionAxis[1].x * b1Strength,
+      y: center.y * (1 - b1Strength) + reactionAxis[1].y * b1Strength
     }
     b2 = {
-      x: center.x*b2_strength + end.x*(1-b2_strength),
-      y: center.y*b2_strength + end.y*(1-b2_strength)
+      x: center.x * b2Strength + end.x * (1 - b2Strength),
+      y: center.y * b2Strength + end.y * (1 - b2Strength)
     }
     circle = {
-      x: main_axis[1].x,
-      y: main_axis[1].y
+      x: mainAxis[1].x,
+      y: mainAxis[1].y
     }
-  } else if ((met.coefficient > 0) !== is_reversed) {
+  } else if ((met.coefficient > 0) !== isReversed) {
     end = {
-      x: reaction_axis[1].x - _met_secondary_disp (secondary_w, secondary_dis,
-                                                   draw_at_index, num_slots),
-      y: reaction_axis[1].y + _met_index_disp(w2, draw_at_index, num_slots)
+      x: reactionAxis[1].x - metSecondaryDisp(secondaryW, secondaryDis, drawAtIndex, numSlots),
+      y: reactionAxis[1].y + metIndexDisp(w2, drawAtIndex, numSlots)
     }
     b1 = {
-      x: center.x * (1 - b1_strength) + reaction_axis[1].x * b1_strength,
-      y: center.y * (1 - b1_strength) + reaction_axis[1].y * b1_strength
+      x: center.x * (1 - b1Strength) + reactionAxis[1].x * b1Strength,
+      y: center.y * (1 - b1Strength) + reactionAxis[1].y * b1Strength
     }
     b2 = {
-      x: center.x*b2_strength + end.x*(1-b2_strength),
-      y: center.y*b2_strength + end.y*(1-b2_strength)
+      x: center.x * b2Strength + end.x * (1 - b2Strength),
+      y: center.y * b2Strength + end.y * (1 - b2Strength)
     }
     circle = {
-      x: main_axis[1].x - _met_secondary_disp (secondary_w, secondary_dis,
-                                               draw_at_index, num_slots),
-      y: main_axis[1].y + _met_index_disp(w, draw_at_index, num_slots)
+      x: mainAxis[1].x - metSecondaryDisp(secondaryW, secondaryDis, drawAtIndex, numSlots),
+      y: mainAxis[1].y + metIndexDisp(w, drawAtIndex, numSlots)
     }
   }
 
@@ -633,14 +628,14 @@ function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
   }
 }
 
-function new_text_label (largest_ids, text, coords) {
-  var new_id = String(++largest_ids.text_labels)
-  var new_label = { text: text, x: coords.x, y: coords.y }
-  return { id: new_id, label: new_label }
+export function newTextLabel (largestIds, text, coords) {
+  const newId = String(++largestIds.text_labels)
+  const newLabel = { text: text, x: coords.x, y: coords.y }
+  return { id: newId, label: newLabel }
 }
 
-function bezier_id_for_segment_id (segment_id, bez) {
-  return segment_id + '_' + bez
+export function bezierIdForSegmentId (segmentId, bez) {
+  return segmentId + '_' + bez
 }
 
 /**
@@ -648,24 +643,24 @@ function bezier_id_for_segment_id (segment_id, bez) {
  * @param {Object} reactions - A reactions object, e.g. a subset of
  * *escher.Map.reactions*.
  */
-function bezier_ids_for_reaction_ids (reactions) {
-  var bezier_ids = []
-  for (var reaction_id in reactions) {
-    var reaction = reactions[reaction_id]
+export function bezierIdsForReactionIds (reactions) {
+  const bezierIds = []
+  for (let reactionId in reactions) {
+    const reaction = reactions[reactionId]
 
-    for (var segment_id in reaction.segments) {
-      var segment = reaction.segments[segment_id]
+    for (let segmentId in reaction.segments) {
+      const segment = reaction.segments[segmentId]
 
-      var bezs = [ 'b1', 'b2' ]
+      const bezs = [ 'b1', 'b2' ]
       bezs.forEach(function (bez) {
-        var seg_bez = segment[bez]
-        if (seg_bez !== null) {
-          bezier_ids.push(bezier_id_for_segment_id(segment_id, bez))
+        const segBez = segment[bez]
+        if (segBez !== null) {
+          bezierIds.push(bezierIdForSegmentId(segmentId, bez))
         }
       })
     }
   }
-  return bezier_ids
+  return bezierIds
 }
 
 /**
@@ -673,21 +668,21 @@ function bezier_ids_for_reaction_ids (reactions) {
  * segments: A segments object, e.g. *escher.Map.segments*.
  * reaction_id: The reaction id for the segments.
  */
-function new_beziers_for_segments (segments, reaction_id) {
-  var beziers = {}
-  for (var segment_id in segments) {
-    var segment = segments[segment_id]
+export function newBeziersForSegments (segments, reactionId) {
+  const beziers = {}
+  for (let segmentId in segments) {
+    const segment = segments[segmentId]
 
     ;[ 'b1', 'b2' ].forEach(function (bez) {
-      var seg_bez = segment[bez]
-      if (seg_bez !== null) {
-        var bezier_id = bezier_id_for_segment_id(segment_id, bez)
-        beziers[bezier_id] = {
+      const segBez = segment[bez]
+      if (segBez !== null) {
+        const bezierId = bezierIdForSegmentId(segmentId, bez)
+        beziers[bezierId] = {
           bezier: bez,
-          x: seg_bez.x,
-          y: seg_bez.y,
-          reaction_id: reaction_id,
-          segment_id: segment_id
+          x: segBez.x,
+          y: segBez.y,
+          reaction_id: reactionId,
+          segment_id: segmentId
         }
       }
     })
@@ -699,12 +694,11 @@ function new_beziers_for_segments (segments, reaction_id) {
  * Return an object containing beziers for the reactions object.
  * @param {Object} reactions - A reactions object, e.g. *escher.Map.reactions*.
  */
-function new_beziers_for_reactions (reactions) {
-  var beziers = {}
-  for (var reaction_id in reactions) {
-    var reaction = reactions[reaction_id]
-
-    var these = new_beziers_for_segments(reaction.segments, reaction_id)
+export function newBeziersForReactions (reactions) {
+  const beziers = {}
+  for (let reactionId in reactions) {
+    const reaction = reactions[reactionId]
+    const these = newBeziersForSegments(reaction.segments, reactionId)
     utils.extend(beziers, these)
   }
   return beziers

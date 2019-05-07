@@ -102,12 +102,15 @@ To install the Jupyter notebook extension, run the following:
 
 ```bash
 pip install escher
+# you'll need version >=5 of the `notebook` package
+pip install "notebook>=5"
 jupyter nbextension install --py escher
 jupyter nbextension enable --py escher
 ```
 
 Note: depending on you environment, you might want to add the `--sysprefix` flag
-to the nbextension commands.
+to the nbextension commands. You might also need to use `sudo` to get around
+permissions issues.
 
 ## Python/Jupyter Development
 
