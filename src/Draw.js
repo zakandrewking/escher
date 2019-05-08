@@ -104,7 +104,7 @@ function create_reaction (enter_selection) {
   var group = enter_selection.append('g')
     .attr('id', function (d) { return 'r' + d.reaction_id })
     .attr('class', 'reaction')
-  this.create_reaction_label(group)
+  // this.create_reaction_label(group)
 
   this.callback_manager.run('create_reaction', this, enter_selection)
 
@@ -123,10 +123,10 @@ function create_reaction (enter_selection) {
 function update_reaction (update_selection, scale, cobra_model, drawn_nodes,
                           defs, has_data_on_reactions) {
   // Update reaction label
-  update_selection.select('.reaction-label-group')
-    .call(function(sel) {
-      return this.update_reaction_label(sel, has_data_on_reactions)
-    }.bind(this))
+  // update_selection.select('.reaction-label-group')
+  //   .call(function(sel) {
+  //     return this.update_reaction_label(sel, has_data_on_reactions)
+  //   }.bind(this))
 
   // draw segments
   utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
@@ -292,11 +292,11 @@ function create_segment (enter_selection) {
   g.append('path')
     .attr('class', 'segment')
 
-  g.append('g')
-    .attr('class', 'arrowheads')
+  // g.append('g')
+  //   .attr('class', 'arrowheads')
 
-  g.append('g')
-    .attr('class', 'stoichiometry-labels')
+  // g.append('g')
+  //   .attr('class', 'stoichiometry-labels')
 
   this.callback_manager.run('create_segment', this, enter_selection)
 
@@ -424,204 +424,204 @@ function update_segment (update_selection, scale, cobra_model,
         return null
       }
     })
-    .attr('pointer-events', 'visibleStroke')
-    .on('mouseover', function (d) {
-      const mouseEvent = d3_mouse(this)
-      // Add the current mouse position to the segment's datum
-      object_mouseover_fn('reaction_object', Object.assign(
-        {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-      ))
-    })
-    .on('touchend', function (d) {
-      const touchEvent = d3_touch(this.parentNode, 0)
-      // Add last touch position to the segment's datum
-      object_touch_fn('reaction_object', Object.assign(
-        {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-      ))
-    })
-    .on('mouseout', object_mouseout_fn)
+    // .attr('pointer-events', 'visibleStroke')
+    // .on('mouseover', function (d) {
+    //   const mouseEvent = d3_mouse(this)
+    //   // Add the current mouse position to the segment's datum
+    //   object_mouseover_fn('reaction_object', Object.assign(
+    //     {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
+    //   ))
+    // })
+    // .on('touchend', function (d) {
+    //   const touchEvent = d3_touch(this.parentNode, 0)
+    //   // Add last touch position to the segment's datum
+    //   object_touch_fn('reaction_object', Object.assign(
+    //     {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
+    //   ))
+    // })
+    // .on('mouseout', object_mouseout_fn)
 
   // new arrowheads
-  var arrowheads = update_selection.select('.arrowheads')
-    .selectAll('.arrowhead')
-    .data(function (d) {
-      var arrowheads = []
-      var start = drawn_nodes[d.from_node_id]
-      var b1 = d.b1
-      var end = drawn_nodes[d.to_node_id]
-      var b2 = d.b2
-      // hide_secondary_metabolites option
-      if (hide_secondary_metabolites &&
-          ((end['node_type'] === 'metabolite' && !end.node_is_primary) ||
-           (start['node_type'] === 'metabolite' && !start.node_is_primary))) {
-        return arrowheads
-      }
+  // var arrowheads = update_selection.select('.arrowheads')
+  //   .selectAll('.arrowhead')
+  //   .data(function (d) {
+  //     var arrowheads = []
+  //     var start = drawn_nodes[d.from_node_id]
+  //     var b1 = d.b1
+  //     var end = drawn_nodes[d.to_node_id]
+  //     var b2 = d.b2
+  //     // hide_secondary_metabolites option
+  //     if (hide_secondary_metabolites &&
+  //         ((end['node_type'] === 'metabolite' && !end.node_is_primary) ||
+  //          (start['node_type'] === 'metabolite' && !start.node_is_primary))) {
+  //       return arrowheads
+  //     }
 
-      if (start.node_type === 'metabolite' &&
-          (d.reversibility || d.from_node_coefficient > 0)) {
-        var arrow_size = get_arrow_size(d.data, should_size)
-        var disp = get_disp(arrow_size, d.reversibility,
-                        d.from_node_coefficient,
-                        start.node_is_primary)
-        var direction = (b1 === null) ? end : b1
-        var rotation = utils.to_degrees(utils.get_angle([ start, direction ])) + 90
-        var loc = displacedCoords(disp, start, direction, 'start')
-        arrowheads.push({
-          data: d.data,
-          x: loc.x,
-          y: loc.y,
-          size: arrow_size,
-          rotation: rotation,
-          show_arrowhead_flux: (((d.from_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
-        })
-      }
+  //     if (start.node_type === 'metabolite' &&
+  //         (d.reversibility || d.from_node_coefficient > 0)) {
+  //       var arrow_size = get_arrow_size(d.data, should_size)
+  //       var disp = get_disp(arrow_size, d.reversibility,
+  //                       d.from_node_coefficient,
+  //                       start.node_is_primary)
+  //       var direction = (b1 === null) ? end : b1
+  //       var rotation = utils.to_degrees(utils.get_angle([ start, direction ])) + 90
+  //       var loc = displacedCoords(disp, start, direction, 'start')
+  //       arrowheads.push({
+  //         data: d.data,
+  //         x: loc.x,
+  //         y: loc.y,
+  //         size: arrow_size,
+  //         rotation: rotation,
+  //         show_arrowhead_flux: (((d.from_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
+  //       })
+  //     }
 
-      if (end.node_type === 'metabolite' &&
-          (d.reversibility || d.to_node_coefficient > 0)) {
-        var arrow_size = get_arrow_size(d.data, should_size)
-        var disp = get_disp(arrow_size, d.reversibility,
-                        d.to_node_coefficient,
-                        end.node_is_primary)
-        var direction = (b2 === null) ? start : b2
-        var rotation = utils.to_degrees(utils.get_angle([ end, direction ])) + 90
-        var loc = displacedCoords(disp, direction, end, 'end')
-        arrowheads.push({
-          data: d.data,
-          x: loc.x,
-          y: loc.y,
-          size: arrow_size,
-          rotation: rotation,
-          show_arrowhead_flux: (((d.to_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
-        })
-      }
+  //     if (end.node_type === 'metabolite' &&
+  //         (d.reversibility || d.to_node_coefficient > 0)) {
+  //       var arrow_size = get_arrow_size(d.data, should_size)
+  //       var disp = get_disp(arrow_size, d.reversibility,
+  //                       d.to_node_coefficient,
+  //                       end.node_is_primary)
+  //       var direction = (b2 === null) ? start : b2
+  //       var rotation = utils.to_degrees(utils.get_angle([ end, direction ])) + 90
+  //       var loc = displacedCoords(disp, direction, end, 'end')
+  //       arrowheads.push({
+  //         data: d.data,
+  //         x: loc.x,
+  //         y: loc.y,
+  //         size: arrow_size,
+  //         rotation: rotation,
+  //         show_arrowhead_flux: (((d.to_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
+  //       })
+  //     }
 
-      if (d.unconnected_segment_with_arrow) {
-        var arrow_size = get_arrow_size(d.data, should_size)
-        var direction = end
-        var rotation = utils.to_degrees(utils.get_angle([ start, direction ])) + 90
-        arrowheads.push({
-          data: d.data,
-          x: start.x,
-          y: start.y,
-          size: arrow_size,
-          rotation: rotation,
-          show_arrowhead_flux: (((d.to_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
-        })
-      }
+  //     if (d.unconnected_segment_with_arrow) {
+  //       var arrow_size = get_arrow_size(d.data, should_size)
+  //       var direction = end
+  //       var rotation = utils.to_degrees(utils.get_angle([ start, direction ])) + 90
+  //       arrowheads.push({
+  //         data: d.data,
+  //         x: start.x,
+  //         y: start.y,
+  //         size: arrow_size,
+  //         rotation: rotation,
+  //         show_arrowhead_flux: (((d.to_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
+  //       })
+  //     }
 
-      return arrowheads
-    })
-  arrowheads.enter().append('path')
-    .classed('arrowhead', true)
-  // update arrowheads
-    .merge(arrowheads)
-    .attr('d', function(d) {
-      return ('M' + [-d.size.width / 2, 0] +
-              ' L' + [0, d.size.height] +
-              ' L' + [d.size.width / 2, 0] + ' Z')
-    }).attr('transform', function(d) {
-      return 'translate(' + d.x + ',' + d.y + ')rotate(' + d.rotation + ')'
-    }).style('fill', function(d) {
-      if (should_color) {
-        if (d.show_arrowhead_flux) {
-          // show the flux
-          var f = d.data
-          return f === null ? no_data_color : scale.reaction_color(f)
-        } else {
-          // if the arrowhead is not filled because it is reversed
-          return '#FFFFFF'
-        }
-      }
-      // default fill color
-      return null
-    }).style('stroke', function(d) {
-      if (should_color) {
-        // show the flux color in the stroke whether or not the fill is present
-        var f = d.data
-        return f===null ? no_data_color : scale.reaction_color(f)
-      }
-      // default stroke color
-      return null
-    })
-  // remove
-  arrowheads.exit().remove()
+  //     return arrowheads
+  //   })
+  // arrowheads.enter().append('path')
+  //   .classed('arrowhead', true)
+  // // update arrowheads
+  //   .merge(arrowheads)
+  //   .attr('d', function(d) {
+  //     return ('M' + [-d.size.width / 2, 0] +
+  //             ' L' + [0, d.size.height] +
+  //             ' L' + [d.size.width / 2, 0] + ' Z')
+  //   }).attr('transform', function(d) {
+  //     return 'translate(' + d.x + ',' + d.y + ')rotate(' + d.rotation + ')'
+  //   }).style('fill', function(d) {
+  //     if (should_color) {
+  //       if (d.show_arrowhead_flux) {
+  //         // show the flux
+  //         var f = d.data
+  //         return f === null ? no_data_color : scale.reaction_color(f)
+  //       } else {
+  //         // if the arrowhead is not filled because it is reversed
+  //         return '#FFFFFF'
+  //       }
+  //     }
+  //     // default fill color
+  //     return null
+  //   }).style('stroke', function(d) {
+  //     if (should_color) {
+  //       // show the flux color in the stroke whether or not the fill is present
+  //       var f = d.data
+  //       return f===null ? no_data_color : scale.reaction_color(f)
+  //     }
+  //     // default stroke color
+  //     return null
+  //   })
+  // // remove
+  // arrowheads.exit().remove()
 
-  // new stoichiometry labels
-  var stoichiometry_labels = update_selection.select('.stoichiometry-labels')
-    .selectAll('.stoichiometry-label')
-    .data(function (d) {
-      var labels = []
-      var start = drawn_nodes[d.from_node_id]
-      var b1 = d.b1
-      var end = drawn_nodes[d.to_node_id]
-      var b2 = d.b2
-      var disp_factor = 1.5
+  // // new stoichiometry labels
+  // var stoichiometry_labels = update_selection.select('.stoichiometry-labels')
+  //   .selectAll('.stoichiometry-label')
+  //   .data(function (d) {
+  //     var labels = []
+  //     var start = drawn_nodes[d.from_node_id]
+  //     var b1 = d.b1
+  //     var end = drawn_nodes[d.to_node_id]
+  //     var b2 = d.b2
+  //     var disp_factor = 1.5
 
-      // hide_secondary_metabolites option
-      if (hide_secondary_metabolites &&
-          ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-           (start['node_type']=='metabolite' && !start.node_is_primary))) {
-        return labels
-      }
+  //     // hide_secondary_metabolites option
+  //     if (hide_secondary_metabolites &&
+  //         ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+  //          (start['node_type']=='metabolite' && !start.node_is_primary))) {
+  //       return labels
+  //     }
 
-      if (start.node_type === 'metabolite' && (Math.abs(d.from_node_coefficient) != 1)) {
-        var arrow_size = get_arrow_size(d.data, should_size)
-        var disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary)
-        var direction = (b1 === null) ? end : b1
-        direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, start))
-        var loc = displacedCoords(disp, start, direction, 'start')
-        loc = utils.c_plus_c(loc, { x: 0, y: 7 })
-        labels.push({
-          coefficient: Math.abs(d.from_node_coefficient),
-          x: loc.x,
-          y: loc.y,
-          data: d.data,
-        })
-      }
+  //     if (start.node_type === 'metabolite' && (Math.abs(d.from_node_coefficient) != 1)) {
+  //       var arrow_size = get_arrow_size(d.data, should_size)
+  //       var disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary)
+  //       var direction = (b1 === null) ? end : b1
+  //       direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, start))
+  //       var loc = displacedCoords(disp, start, direction, 'start')
+  //       loc = utils.c_plus_c(loc, { x: 0, y: 7 })
+  //       labels.push({
+  //         coefficient: Math.abs(d.from_node_coefficient),
+  //         x: loc.x,
+  //         y: loc.y,
+  //         data: d.data,
+  //       })
+  //     }
 
-      if (end.node_type === 'metabolite' && (Math.abs(d.to_node_coefficient) !== 1)) {
-        var arrow_size = get_arrow_size(d.data, should_size)
-        var disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary)
-        var direction = (b2 === null) ? start : b2
-        direction = utils.c_plus_c(direction,
-                                   utils.rotate_coords(direction, 0.5, end))
-        var loc = displacedCoords(disp, direction, end, 'end')
-        loc = utils.c_plus_c(loc, { x: 0, y: 7 })
-        labels.push({
-          coefficient: Math.abs(d.to_node_coefficient),
-          x: loc.x,
-          y: loc.y,
-          data: d.data,
-        })
-      }
-      return labels
-    })
+  //     if (end.node_type === 'metabolite' && (Math.abs(d.to_node_coefficient) !== 1)) {
+  //       var arrow_size = get_arrow_size(d.data, should_size)
+  //       var disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary)
+  //       var direction = (b2 === null) ? start : b2
+  //       direction = utils.c_plus_c(direction,
+  //                                  utils.rotate_coords(direction, 0.5, end))
+  //       var loc = displacedCoords(disp, direction, end, 'end')
+  //       loc = utils.c_plus_c(loc, { x: 0, y: 7 })
+  //       labels.push({
+  //         coefficient: Math.abs(d.to_node_coefficient),
+  //         x: loc.x,
+  //         y: loc.y,
+  //         data: d.data,
+  //       })
+  //     }
+  //     return labels
+  //   })
 
-  // add labels
-  stoichiometry_labels.enter()
-    .append('text')
-    .attr('class', 'stoichiometry-label')
-    .attr('text-anchor', 'middle')
-  // update stoichiometry_labels
-    .merge(stoichiometry_labels)
-    .attr('transform', function(d) {
-      return 'translate(' + d.x + ',' + d.y + ')'
-    })
-    .text(function(d) {
-      return d.coefficient
-    })
-    .style('fill', function (d) {
-      if (should_color) {
-        // show the flux color
-        var f = d.data
-        return f === null ? no_data_color : scale.reaction_color(f)
-      }
-      // default segment color
-      return null
-    })
+  // // add labels
+  // stoichiometry_labels.enter()
+  //   .append('text')
+  //   .attr('class', 'stoichiometry-label')
+  //   .attr('text-anchor', 'middle')
+  // // update stoichiometry_labels
+  //   .merge(stoichiometry_labels)
+  //   .attr('transform', function(d) {
+  //     return 'translate(' + d.x + ',' + d.y + ')'
+  //   })
+  //   .text(function(d) {
+  //     return d.coefficient
+  //   })
+  //   .style('fill', function (d) {
+  //     if (should_color) {
+  //       // show the flux color
+  //       var f = d.data
+  //       return f === null ? no_data_color : scale.reaction_color(f)
+  //     }
+  //     // default segment color
+  //     return null
+  //   })
 
-  // remove
-  stoichiometry_labels.exit().remove()
+  // // remove
+  // stoichiometry_labels.exit().remove()
 
   this.callback_manager.run('update_segment', this, update_selection)
 }
@@ -726,13 +726,13 @@ function create_node (enter_selection, drawn_nodes, drawn_reactions) {
       return c
     })
 
-  // labels
-  var metabolite_groups = g.filter(function (d) {
-    return d.node_type === 'metabolite'
-  })
+  // // labels
+  // var metabolite_groups = g.filter(function (d) {
+  //   return d.node_type === 'metabolite'
+  // })
 
-  metabolite_groups.append('text')
-    .attr('class', 'node-label label')
+  // metabolite_groups.append('text')
+  //   .attr('class', 'node-label label')
 
   this.callback_manager.run('create_node', this, enter_selection)
 
@@ -809,56 +809,56 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return null
     })
-    .call(this.behavior.turnOffDrag)
-    .call(drag_behavior)
-    .on('mousedown', mousedown_fn)
-    .on('click', click_fn)
-    .on('mouseover', function (d) {
-      if (d.node_type === 'metabolite') {
-        const mouseEvent = d3_mouse(this.parentNode)
-        // Add current mouse position to the node's datum
-        object_mouseover_fn('node_object', Object.assign(
-          {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-        ))
-      }
-    })
-    .on('mouseout', object_mouseout_fn)
-    .on('touchend', function (d) {
-      if (d.node_type === 'metabolite') {
-        touchEvent = d3_touch(this.parentNode, 0)
-        // Add the touch position to the node's datum
-        object_touch_fn('node_object', Object.assign(
-          {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-        ))
-      }
-    })
+    // .call(this.behavior.turnOffDrag)
+    // .call(drag_behavior)
+    // .on('mousedown', mousedown_fn)
+    // .on('click', click_fn)
+    // .on('mouseover', function (d) {
+    //   if (d.node_type === 'metabolite') {
+    //     const mouseEvent = d3_mouse(this.parentNode)
+    //     // Add current mouse position to the node's datum
+    //     object_mouseover_fn('node_object', Object.assign(
+    //       {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
+    //     ))
+    //   }
+    // })
+    // .on('mouseout', object_mouseout_fn)
+    // .on('touchend', function (d) {
+    //   if (d.node_type === 'metabolite') {
+    //     touchEvent = d3_touch(this.parentNode, 0)
+    //     // Add the touch position to the node's datum
+    //     object_touch_fn('node_object', Object.assign(
+    //       {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
+    //     ))
+    //   }
+    // })
 
   // update node label visibility
-  var node_label = update_selection
-      .select('.node-label')
-      .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
-  if (!hide_all_labels) {
-    node_label
-      .style('visibility', function(d) {
-        return hideNode(d, hide_secondary_metabolites) ? 'hidden' : null
-      })
-      .attr('transform', function(d) {
-        return 'translate(' + d.label_x + ',' + d.label_y + ')'
-      })
-      .text(function(d) {
-        var t = d[identifiers_on_map]
-        if (has_data_on_nodes && metabolite_data_styles.indexOf('text') !== -1)
-          t += ' ' + d.data_string
-        return t
-      })
-      .call(this.behavior.turnOffDrag)
-      .call(label_drag_behavior)
-      .on('mousedown', label_mousedown_fn)
-      .on('mouseover', function (d) {
-        label_mouseover_fn('node_label', d)
-      })
-      .on('mouseout', label_mouseout_fn)
-  }
+  // var node_label = update_selection
+  //     .select('.node-label')
+  //     .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
+  // if (!hide_all_labels) {
+  //   node_label
+  //     .style('visibility', function(d) {
+  //       return hideNode(d, hide_secondary_metabolites) ? 'hidden' : null
+  //     })
+  //     .attr('transform', function(d) {
+  //       return 'translate(' + d.label_x + ',' + d.label_y + ')'
+  //     })
+  //     .text(function(d) {
+  //       var t = d[identifiers_on_map]
+  //       if (has_data_on_nodes && metabolite_data_styles.indexOf('text') !== -1)
+  //         t += ' ' + d.data_string
+  //       return t
+  //     })
+  //     .call(this.behavior.turnOffDrag)
+  //     .call(label_drag_behavior)
+  //     .on('mousedown', label_mousedown_fn)
+  //     .on('mouseover', function (d) {
+  //       label_mouseover_fn('node_label', d)
+  //     })
+  //     .on('mouseout', label_mouseout_fn)
+  // }
 
   this.callback_manager.run('update_node', this, update_selection)
 

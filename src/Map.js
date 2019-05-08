@@ -645,9 +645,9 @@ export default class Map {
     }.bind(this)
 
     // draw the beziers
-    utils.draw_an_object(this.sel, '#beziers', '.bezier', bezier_subset,
-                         'bezier_id', this.draw.create_bezier.bind(this.draw),
-                         update_fn)
+    // utils.draw_an_object(this.sel, '#beziers', '.bezier', bezier_subset,
+    //                      'bezier_id', this.draw.create_bezier.bind(this.draw),
+    //                      update_fn)
   }
 
   clear_deleted_beziers() {
