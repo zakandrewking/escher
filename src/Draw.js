@@ -315,6 +315,7 @@ function create_segment (enter_selection) {
  */
 function update_segment (update_selection, scale, cobra_model,
                          drawn_nodes, defs, has_data_on_reactions) {
+  const simplified = this.settings.get('simplified')
   const reaction_data_styles = this.settings.get('reaction_styles')
   const should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1)
   const should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') !== -1)
@@ -417,6 +418,8 @@ function update_segment (update_selection, scale, cobra_model,
       if (should_size) {
         var f = d.data
         return f === null ? no_data_size : scale.reaction_size(f)
+      } else if (simplified) {
+        return 30
       } else {
         return null
       }
@@ -752,6 +755,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
                       mousedown_fn, click_fn, mouseover_fn, mouseout_fn,
                       drag_behavior, label_drag_behavior) {
   // update circle and label location
+  var simplified = this.settings.get('simplified')
   var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
   var primary_r = this.settings.get('primary_metabolite_radius')
   var secondary_r = this.settings.get('secondary_metabolite_radius')
@@ -874,6 +878,8 @@ function create_text_label (enter_selection) {
   var g = enter_selection.append('g')
       .attr('id', function (d) { return 'l' + d.text_label_id })
       .attr('class', 'text-label')
+  g.append('text')              // TODO don't create if not necessary
+    .attr('class', 'label-background')
   g.append('text')
     .attr('class', 'label')
 
@@ -883,6 +889,7 @@ function create_text_label (enter_selection) {
 }
 
 function update_text_label (update_selection) {
+  var simplified = this.settings.get('simplified')
   var mousedown_fn = this.behavior.textLabelMousedown
   var click_fn = this.behavior.textLabelClick
   var drag_behavior = this.behavior.selectableDrag
@@ -898,6 +905,20 @@ function update_text_label (update_selection) {
     .on('click', click_fn)
     .call(turn_off_drag)
     .call(drag_behavior)
+
+  if (simplified) {
+    update_selection.select('.label')
+      .style('font-size', '200px')
+      .style('text-anchor', 'middle')
+    update_selection.select('.label-background')
+      .text(d => d.text)
+      .attr('transform', d => 'translate(' + d.x + ',' + d.y + ')')
+      .style('font-size', '200px')
+      .style('text-anchor', 'middle')
+      .style('stroke', 'white')
+      .style('stroke-width', '0.6em')
+      .style('display', 'inherit')
+  }
 
   this.callback_manager.run('update_text_label', this, update_selection)
 }

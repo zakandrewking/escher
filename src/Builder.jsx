@@ -80,6 +80,9 @@ class Builder {
 
     // set defaults
     const optionsWithDefaults = utils.set_options(options, {
+
+      simplified: false, // testing option for simplified map
+
       // view options
       menu: 'all',
       scroll_behavior: 'pan',
@@ -185,6 +188,13 @@ class Builder {
     // this.options and this.settings used to have different functions, but now
     // they are aliases
     this.settings = new Settings(optionsWithDefaults, conditional)
+
+    // simplified rules
+    if (this.settings.get('simplified')) {
+      this.settings.set('hide_secondary_metabolites', true)
+      this.settings.set('primary_metabolite_radius', 60)
+      this.settings.set('hide_all_labels', true)
+    }
 
     // make data settings reactive
     this.settings.streams.reaction_data.onValue(val => {
@@ -1384,7 +1394,8 @@ class Builder {
       'scroll_behavior',
       'enable_editing',
       'enable_keys',
-      'enable_tooltips'
+      'enable_tooltips',
+      'simplified'
     ]
 
     if (this.isFullScreen) {

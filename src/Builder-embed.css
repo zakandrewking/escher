@@ -38,6 +38,9 @@ svg.escher-svg .gene-label {
 svg.escher-svg .text-label .label {
   font-size: 50px;
 }
+svg.escher-svg .text-label .label-background {
+  display: none;
+}
 svg.escher-svg .text-label-input {
   font-size: 50px;
 }
