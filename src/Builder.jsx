@@ -756,6 +756,13 @@ class Builder {
     this.settings.streams.full_screen_button.onValue(value => {
       this.passPropsButtonPanel()
     })
+
+    // redraw when menu option changes
+    this.settings.streams.menu.onValue(menu => {
+      this.passPropsButtonPanel({
+        display: ['all', 'zoom'].includes(this.settings.get('menu'))
+      })
+    })
   }
 
   /**
@@ -839,6 +846,10 @@ class Builder {
   text_mode () { // eslint-disable-line camelcase
     this.callback_manager.run('text_mode')
     this._setMode('text')
+  }
+
+  none_mode () { // eslint-disable-line camelcase
+    this._setMode('none')
   }
 
   _reactionCheckAddAbs () {
@@ -1459,6 +1470,7 @@ class Builder {
     this.map.zoom_extent_canvas()
     this.passPropsButtonPanel({ isFullScreen: this.isFullScreen })
     this.passPropsMenuBar({ isFullScreen: this.isFullScreen })
+    this.callback_manager.run('full_screen', null, this.isFullScreen)
   }
 }
 
