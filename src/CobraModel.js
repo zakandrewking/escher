@@ -1,166 +1,138 @@
+import * as utils from './utils'
+import * as dataStyles from './dataStyles'
+
 /**
  * CobraModel
  */
+export default class CobraModel {
+  constructor () {
+    this.reactions = {}
+    this.metabolites = {}
+  }
 
-var utils = require('./utils')
-var dataStyles = require('./dataStyles')
-
-var CobraModel = utils.make_class()
-// class methods
-CobraModel.from_cobra_json = from_cobra_json
-CobraModel.build_reaction_string = build_reaction_string
-// instance methods
-CobraModel.prototype = {
-  init: init,
-  apply_reaction_data: apply_reaction_data,
-  apply_metabolite_data: apply_metabolite_data,
-  apply_gene_data: apply_gene_data
-}
-module.exports = CobraModel
-
-// class methods
-
-/**
- * Return a reaction string for the given stoichiometries. Adapted from
- * cobra.core.Reaction.build_reaction_string().
- * @param {Object} stoichiometries - An object with metabolites as keys and
- * stoichiometries as values.
- * @param {Boolean} is_reversible - Whether the reaction is reversible.
- */
-function build_reaction_string (stoichiometries, is_reversible) {
-  var format = function(number) {
-    if (number == 1) {
-      return ''
+  /**
+   * Return a reaction string for the given stoichiometries. Adapted from
+   * cobra.core.Reaction.buildReactionString().
+   * @param {Object} stoichiometries - An object with metabolites as keys and
+   * stoichiometries as values.
+   * @param {Boolean} is_reversible - Whether the reaction is reversible.
+   */
+  static buildReactionString (stoichiometries, isReversible) {
+    const format = number => {
+      if (number === 1) {
+        return ''
+      }
+      return String(number) + ' '
     }
-    return String(number) + ' '
-  }
-  var reactant_dict = {}
-  var product_dict = {}
-  var reactant_bits = []
-  var product_bits = []
-  for (var the_metabolite in stoichiometries) {
-    var coefficient = stoichiometries[the_metabolite]
-    if (coefficient > 0)
-      product_bits.push(format(coefficient) + the_metabolite)
-    else
-      reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite)
-  }
-  var reaction_string = reactant_bits.join(' + ')
-  if (is_reversible) {
-    reaction_string += ' ↔ '
-  } else {
-    reaction_string += ' → '
-  }
-  reaction_string += product_bits.join(' + ')
-  return reaction_string
-}
 
-function from_cobra_json (model_data) {
-  /** Use a JSON Cobra model exported by COBRApy to make a new CobraModel
-      object.
-
-      The COBRA "id" becomes a "bigg_id", and "upper_bound" and "lower_bound"
-      bounds become "reversibility".
-
-      Fills out a "genes" list.
-
-  */
-  // reactions and metabolites
-  if (!(model_data.reactions && model_data.metabolites)) {
-    throw new Error('Bad model data.')
-  }
-
-  // make a gene dictionary
-  var genes = {}
-  for (var i = 0, l = model_data.genes.length; i < l; i++) {
-    var r = model_data.genes[i],
-    the_id = r.id
-    genes[the_id] = r
-  }
-
-  var model = new CobraModel()
-
-  model.reactions = {}
-  for (var i = 0, l = model_data.reactions.length; i<l; i++) {
-    var r = model_data.reactions[i]
-    var the_id = r.id
-    var reaction = utils.clone(r)
-    delete reaction.id
-    reaction.bigg_id = the_id
-    reaction.data_string = ''
-    // add the appropriate genes
-    reaction.genes = []
-
-    // set reversibility
-    reaction.reversibility = (reaction.lower_bound < 0 && reaction.upper_bound > 0)
-    if (reaction.upper_bound <= 0 && reaction.lower_bound < 0) {
-      // reverse stoichiometries
-      for (var met_id in reaction.metabolites) {
-        reaction.metabolites[met_id] = -reaction.metabolites[met_id]
+    const reactantBits = []
+    const productBits = []
+    for (let theMetabolite in stoichiometries) {
+      var coefficient = stoichiometries[theMetabolite]
+      if (coefficient > 0) {
+        productBits.push(format(coefficient) + theMetabolite)
+      } else {
+        reactantBits.push(format(Math.abs(coefficient)) + theMetabolite)
       }
     }
-    delete reaction.lower_bound
-    delete reaction.upper_bound
-
-    if ('gene_reaction_rule' in reaction) {
-      var gene_ids = dataStyles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule)
-      gene_ids.forEach(function(gene_id) {
-        if (gene_id in genes) {
-          var gene = utils.clone(genes[gene_id])
-          // rename id to bigg_id
-          gene.bigg_id = gene.id
-          delete gene.id
-          reaction.genes.push(gene)
-        } else {
-          console.warn('Could not find gene for gene_id ' + gene_id)
-        }
-      })
+    let reactionString = reactantBits.join(' + ')
+    if (isReversible) {
+      reactionString += ' ↔ '
+    } else {
+      reactionString += ' → '
     }
-    model.reactions[the_id] = reaction
+    reactionString += productBits.join(' + ')
+    return reactionString
   }
-  model.metabolites = {}
-  for (var i = 0, l = model_data.metabolites.length; i<l; i++) {
-    var r = model_data.metabolites[i]
-    var the_id = r.id
-    var met = utils.clone(r)
-    delete met.id
-    met.bigg_id = the_id
-    model.metabolites[the_id] = met
+
+  /**
+   * Use a JSON Cobra model exported by COBRApy to make a new CobraModel object.
+   * The COBRA "id" becomes a "bigg_id", and "upper_bound" and "lower_bound"
+   * bounds become "reversibility". Fills out a "genes" list.
+   */
+  static fromCobraJson (modelData) {
+    // reactions and metabolites
+    if (!(modelData.reactions && modelData.metabolites)) {
+      throw new Error('Bad model data.')
+    }
+
+    // make a gene dictionary
+    var genes = {}
+    for (let i = 0, l = modelData.genes.length; i < l; i++) {
+      const r = modelData.genes[i]
+      genes[r.id] = r
+    }
+
+    const model = new CobraModel()
+
+    model.reactions = {}
+    for (let i = 0, l = modelData.reactions.length; i < l; i++) {
+      var r = modelData.reactions[i]
+      var reaction = utils.clone(r)
+      delete reaction.id
+      reaction.bigg_id = r.id
+      reaction.data_string = ''
+      // add the appropriate genes
+      reaction.genes = []
+
+      // set reversibility
+      reaction.reversibility = reaction.lower_bound < 0 && reaction.upper_bound > 0
+      if (reaction.upper_bound <= 0 && reaction.lower_bound < 0) {
+        // reverse stoichiometries
+        for (let metId in reaction.metabolites) {
+          reaction.metabolites[metId] = -reaction.metabolites[metId]
+        }
+      }
+      delete reaction.lower_bound
+      delete reaction.upper_bound
+
+      if ('gene_reaction_rule' in reaction) {
+        const geneIds = dataStyles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule)
+        geneIds.forEach(geneId => {
+          if (geneId in genes) {
+            const gene = utils.clone(genes[geneId])
+            // rename id to bigg_id
+            gene.bigg_id = gene.id
+            delete gene.id
+            reaction.genes.push(gene)
+          } else {
+            console.warn('Could not find gene for gene_id ' + geneId)
+          }
+        })
+      }
+      model.reactions[r.id] = reaction
+    }
+    model.metabolites = {}
+    for (let i = 0, l = modelData.metabolites.length; i < l; i++) {
+      const r = modelData.metabolites[i]
+      const met = utils.clone(r)
+      delete met.id
+      met.bigg_id = r.id
+      model.metabolites[r.id] = met
+    }
+    return model
   }
-  return model
-}
 
-// instance methods
-function init () {
-  this.reactions = {}
-  this.metabolites = {}
-}
+  /**
+   * Apply data to model. This is only used to display options in
+   * BuildInput. applyReactionData overrides applyGeneData.
+   */
+  applyReactionData (...args) {
+    dataStyles.apply_reaction_data_to_reactions(this.reactions, ...args)
+  }
 
-/**
- * Apply data to model. This is only used to display options in
- * BuildInput. apply_reaction_data overrides apply_gene_data.
- */
-function apply_reaction_data (reaction_data, styles, compare_style) {
-  dataStyles.apply_reaction_data_to_reactions(this.reactions, reaction_data,
-                                               styles, compare_style)
-}
+  /**
+   * Apply data to model. This is only used to display options in BuildInput.
+   */
+  applyMetaboliteData (...args) {
+    dataStyles.apply_metabolite_data_to_nodes(this.metabolites, ...args)
+  }
 
-/**
- * Apply data to model. This is only used to display options in BuildInput.
- */
-function apply_metabolite_data (metabolite_data, styles, compare_style) {
-  dataStyles.apply_metabolite_data_to_nodes(this.metabolites, metabolite_data,
-                                             styles, compare_style)
-}
-
-/**
- * Apply data to model. This is only used to display options in
- * BuildInput. Overrides apply_reaction_data.
- */
-function apply_gene_data (gene_data_obj, styles, identifiers_on_map,
-                          compare_style, and_method_in_gene_reaction_rule) {
-  dataStyles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
-                                           styles, identifiers_on_map,
-                                           compare_style,
-                                           and_method_in_gene_reaction_rule)
+  /**
+   * Apply data to model. This is only used to display options in
+   * BuildInput. Overrides applyReactionData.
+   */
+  applyGeneData (...args) {
+    dataStyles.apply_gene_data_to_reactions(this.reactions, ...args)
+  }
 }
