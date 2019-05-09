@@ -51,6 +51,6 @@ describe('main', () => {
   })
 
   it('old style collection', () => {
-    assert.property(escher.utils, 'set_options')
+    assert.property(escher.utils, 'setOptions')
   })
 })

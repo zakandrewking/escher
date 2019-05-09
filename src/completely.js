@@ -15,8 +15,8 @@
 import * as utils from './utils'
 
 module.exports = function(container, config) {
-  const thisDocument = utils.get_document(container)
-  const thisWindow = utils.get_window(container)
+  const thisDocument = utils.getDocument(container)
+  const thisWindow = utils.getWindow(container)
 
     config = config || {};
     config.fontSize =                       config.fontSize   || '13px';

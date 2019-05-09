@@ -79,7 +79,7 @@ class Builder {
     this.has_custom_reaction_styles = Boolean(options.reaction_styles)
 
     // set defaults
-    const optionsWithDefaults = utils.set_options(options, {
+    const optionsWithDefaults = utils.setOptions(options, {
       // view options
       menu: 'all',
       scroll_behavior: 'pan',
@@ -153,7 +153,7 @@ class Builder {
     })
 
     // Check the location
-    if (utils.check_for_parent_tag(this.selection, 'svg')) {
+    if (utils.checkForParentTag(this.selection, 'svg')) {
       throw new Error('Builder cannot be placed within an svg node ' +
                       'because UI elements are html-based.')
     }
@@ -369,8 +369,8 @@ class Builder {
     }
 
     // remove the old map and related divs
-    utils.remove_child_nodes(this.zoomContainer.zoomedSel)
-    utils.remove_child_nodes(this.mapToolsContainer)
+    utils.removeChildNodes(this.zoomContainer.zoomedSel)
+    utils.removeChildNodes(this.mapToolsContainer)
 
     const zoomedSel = this.zoomContainer.zoomedSel
     const svg = this.zoomContainer.svg
@@ -1458,4 +1458,4 @@ class Builder {
   }
 }
 
-export default utils.class_with_optional_new(Builder)
+export default utils.classWithOptionalNew(Builder)

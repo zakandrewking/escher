@@ -1,4 +1,4 @@
-import utils from './utils'
+import * as utils from './utils'
 import CallbackManager from './CallbackManager'
 
 import _ from 'underscore'
@@ -230,8 +230,6 @@ export default class ZoomContainer {
    * @param {Object} translate - The location, of the form {x: 2.0, y: 3.0}.
    */
   goTo (scale, translate) {
-    utils.check_undefined(arguments, [ 'scale', 'translate' ])
-
     // Check inputs
     if (!scale) {
       throw new Error('Bad scale value')
@@ -288,8 +286,8 @@ export default class ZoomContainer {
    */
   _goTo3d (scale, translate, svgScale, svgTranslate) {
     const nScale = scale / svgScale
-    const nTranslate = utils.c_minus_c(translate,
-                                        utils.c_times_scalar(svgTranslate, nScale))
+    const nTranslate = utils.cMinusC(translate,
+                                        utils.cTimesScalar(svgTranslate, nScale))
     const transform = ('translate(' + nTranslate.x + 'px,' + nTranslate.y + 'px) ' +
                        'scale(' + nScale + ')')
     this.css3TransformContainer.style('transform', transform)
@@ -361,7 +359,7 @@ export default class ZoomContainer {
                             this.windowTranslate.y)
     }
     this.goTo(this.windowScale * amount,
-               utils.c_plus_c(this.windowTranslate, shift))
+               utils.cPlusC(this.windowTranslate, shift))
   }
 
   /**

@@ -37,7 +37,7 @@ export default class DirectionArrow {
    */
   setLocation (coords) {
     this.center = coords
-    var transform = utils.d3_transform_catch(this.arrowContainer.attr('transform'))
+    var transform = utils.d3TransformCatch(this.arrowContainer.attr('transform'))
     this.arrowContainer.attr('transform',
                              'translate(' + coords.x + ',' + coords.y +
                              ')rotate(' + transform.rotate + ')')
@@ -47,7 +47,7 @@ export default class DirectionArrow {
    * Rotate the arrow to rotation.
    */
   setRotation (rotation) {
-    var transform = utils.d3_transform_catch(this.arrowContainer.attr('transform'))
+    var transform = utils.d3TransformCatch(this.arrowContainer.attr('transform'))
     this.arrowContainer.attr('transform',
                               'translate(' + transform.translate + ')rotate(' + rotation + ')')
   }
@@ -56,7 +56,7 @@ export default class DirectionArrow {
    * Displace the arrow rotation by a set amount.
    */
   displaceRotation (dRotation) {
-    var transform = utils.d3_transform_catch(this.arrowContainer.attr('transform'))
+    var transform = utils.d3TransformCatch(this.arrowContainer.attr('transform'))
     this.arrowContainer.attr('transform',
                               'translate(' + transform.translate + ')' +
                               'rotate(' + (transform.rotate + dRotation) + ')')
@@ -66,7 +66,7 @@ export default class DirectionArrow {
    * Returns the arrow rotation.
    */
   getRotation () {
-    return utils.d3_transform_catch(this.arrowContainer.attr('transform')).rotate
+    return utils.d3TransformCatch(this.arrowContainer.attr('transform')).rotate
   }
 
   toggle (onOff) {
@@ -115,9 +115,9 @@ export default class DirectionArrow {
             x: d3Mouse(this.sel.node())[0],
             y: d3Mouse(this.sel.node())[1]
           }
-          const dAngle = utils.angle_for_event(displacement, location,
-                                               this.center)
-          this.displaceRotation(utils.to_degrees(dAngle))
+          const dAngle = utils.angleForEvent(displacement, location,
+                                             this.center)
+          this.displaceRotation(utils.toDegrees(dAngle))
         })
         .on('end', d => {
           setTimeout(() => { this.dragging = false }, 200)

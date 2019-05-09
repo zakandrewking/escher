@@ -38,6 +38,7 @@ import mousetrap from 'mousetrap'
 import vkbeautify from 'vkbeautify'
 import { select as d3Select, selection as d3Selection } from 'd3-selection'
 import { json as d3Json } from 'd3-request'
+import * as utils from './utils'
 
 export const version = ESCHER_VERSION
 
@@ -47,11 +48,11 @@ export { default as Behavior } from './Behavior'
 export { default as KeyManager } from './KeyManager'
 export { default as UndoStack } from './UndoStack'
 export { default as CobraModel } from './CobraModel'
-export { default as utils } from './utils'
 export { default as SearchIndex } from './SearchIndex'
 export { default as Settings } from './Settings'
 export { default as dataStyles } from './dataStyles'
 export { default as ZoomContainer } from './ZoomContainer'
+export { utils }
 
 // Jupyter extension
 export { default as initializeJupyterWidget } from './widget'

@@ -1,4 +1,4 @@
-import utils from './utils'
+import * as utils from './utils'
 import PlacedDiv from './PlacedDiv'
 import completely from './completely'
 import DirectionArrow from './DirectionArrow'

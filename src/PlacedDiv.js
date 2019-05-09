@@ -6,7 +6,7 @@
 
 var utils = require('./utils')
 
-var PlacedDiv = utils.make_class()
+var PlacedDiv = utils.makeClass()
 // instance methods
 PlacedDiv.prototype = {
   init: init,

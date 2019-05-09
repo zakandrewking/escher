@@ -2,7 +2,7 @@
 
 import { h, Component } from 'preact'
 import _ from 'underscore'
-import utils from './utils'
+import * as utils from './utils'
 import * as dataStyles from './dataStyles'
 
 /**
@@ -16,7 +16,7 @@ export default class MenuButton extends Component {
     const file = target.files[0]
     const reader = new window.FileReader()
     reader.onload = () => {
-      utils.load_json_or_csv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
+      utils.loadJsonOrCsv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
     }
     if (file !== undefined) {
       reader.readAsText(file)

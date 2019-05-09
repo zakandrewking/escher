@@ -1,4 +1,4 @@
-import utils from './utils'
+import * as utils from './utils'
 import * as build from './build'
 import { drag as d3Drag } from 'd3-drag'
 import * as d3Selection from 'd3-selection'
@@ -109,7 +109,7 @@ export default class Behavior {
         updateSel.selectAll('path').style('stroke-width', null)
       })
       .call(d3Drag().on('drag', () => {
-        const cur = utils.d3_transform_catch(updateSel.attr('transform'))
+        const cur = utils.d3TransformCatch(updateSel.attr('transform'))
         const newLoc = [
           d3Selection.event.dx + cur.translate[0],
           d3Selection.event.dy + cur.translate[1]
@@ -273,7 +273,7 @@ export default class Behavior {
           return // mousedown suppressed
         }
         // run the callback
-        const coordsA = utils.d3_transform_catch(d3Select(this).attr('transform')).translate
+        const coordsA = utils.d3TransformCatch(d3Select(this).attr('transform')).translate
         const coords = { x: coordsA[0], y: coordsA[1] }
         map.callback_manager.run('edit_text_label', null, d3Select(this), coords)
         d3Selection.event.stopPropagation()
@@ -599,7 +599,7 @@ export default class Behavior {
         x: d3Selection.event.dx,
         y: d3Selection.event.dy
       }
-      totalDisplacement = utils.c_plus_c(totalDisplacement, displacement)
+      totalDisplacement = utils.cPlusC(totalDisplacement, displacement)
       nodeIdsToDrag.forEach(nodeId => {
         // update data
         const node = map.nodes[nodeId]
@@ -608,13 +608,13 @@ export default class Behavior {
         reactionIds = utils.uniqueConcat([ reactionIds, updated.reaction_ids ])
         // remember the displacements
         // if (!(nodeId in totalDisplacement))  totalDisplacement[nodeId] = { x: 0, y: 0 }
-        // totalDisplacement[nodeId] = utils.c_plus_c(totalDisplacement[nodeId], displacement)
+        // totalDisplacement[nodeId] = utils.cPlusC(totalDisplacement[nodeId], displacement)
       })
       textLabelIdsToDrag.forEach(textLabelId => {
         moveLabel(textLabelId, displacement)
         // remember the displacements
         // if (!(nodeId in totalDisplacement))  totalDisplacement[nodeId] = { x: 0, y: 0 }
-        // totalDisplacement[nodeId] = utils.c_plus_c(totalDisplacement[nodeId], displacement)
+        // totalDisplacement[nodeId] = utils.cPlusC(totalDisplacement[nodeId], displacement)
       })
       // draw
       map.draw_these_nodes(nodeIdsToDrag)
@@ -680,7 +680,7 @@ export default class Behavior {
             draggedNodeId,
             map.reactions,
             map.beziers,
-            utils.c_times_scalar(savedDisplacement, -1)
+            utils.cTimesScalar(savedDisplacement, -1)
           )
           map.draw_these_nodes([draggedNodeId])
           map.draw_these_reactions(updatedReactions)
@@ -692,7 +692,7 @@ export default class Behavior {
             draggedNodeId,
             map.reactions,
             map.beziers,
-            utils.c_times_scalar(savedDisplacement, 1)
+            utils.cTimesScalar(savedDisplacement, 1)
           )
           combineNodesAndDraw(fixedNodeId, draggedNodeId)
         })
@@ -716,12 +716,12 @@ export default class Behavior {
               nodeId,
               map.reactions,
               map.beziers,
-              utils.c_times_scalar(savedDisplacement, -1)
+              utils.cTimesScalar(savedDisplacement, -1)
             )
           })
           savedTextLabelIds.forEach(textLabelId => {
             moveLabel(textLabelId,
-                       utils.c_times_scalar(savedDisplacement, -1))
+                       utils.cTimesScalar(savedDisplacement, -1))
           })
           map.draw_these_nodes(savedNodeIds)
           map.draw_these_reactions(savedReactionIds)
@@ -765,7 +765,7 @@ export default class Behavior {
   getBezierDrag (map) {
     const moveBezier = (reactionId, segmentId, bez, bezierId, displacement) => {
       const segment = map.reactions[reactionId].segments[segmentId]
-      segment[bez] = utils.c_plus_c(segment[bez], displacement)
+      segment[bez] = utils.cPlusC(segment[bez], displacement)
       map.beziers[bezierId].x = segment[bez].x
       map.beziers[bezierId].y = segment[bez].y
     }
@@ -784,7 +784,7 @@ export default class Behavior {
     }
     const undoFn = (d, displacement) => {
       moveBezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
-                 utils.c_times_scalar(displacement, -1))
+                 utils.cTimesScalar(displacement, -1))
       map.draw_these_reactions([d.reaction_id], false)
       map.draw_these_beziers([d.bezier_id])
     }
@@ -815,7 +815,7 @@ export default class Behavior {
     }
     const endFn = () => {}
     const undoFn = (d, displacement) => {
-      moveLabel(d.reaction_id, utils.c_times_scalar(displacement, -1))
+      moveLabel(d.reaction_id, utils.cTimesScalar(displacement, -1))
       map.draw_these_reactions([ d.reaction_id ])
     }
     const redoFn = (d, displacement) => {
@@ -843,7 +843,7 @@ export default class Behavior {
     }
     const endFn = () => {}
     const undoFn = (d, displacement) => {
-      moveLabel(d.node_id, utils.c_times_scalar(displacement, -1))
+      moveLabel(d.node_id, utils.cTimesScalar(displacement, -1))
       map.draw_these_nodes([ d.node_id ])
     }
     const redoFn = (d, displacement) => {
@@ -900,7 +900,7 @@ export default class Behavior {
       }
 
       // remember the displacement
-      totalDisplacement = utils.c_plus_c(totalDisplacement, displacement)
+      totalDisplacement = utils.cPlusC(totalDisplacement, displacement)
       dragFn(d, displacement, totalDisplacement, location)
     })
 
@@ -976,7 +976,7 @@ export default class Behavior {
         y: d3Mouse(rel)[1]
       }
       const center = getCenter()
-      const angle = utils.angle_for_event(displacement, location, center)
+      const angle = utils.angleForEvent(displacement, location, center)
       // remember the displacement
       totalAngle = totalAngle + angle
       dragFn(d, angle, totalAngle, center)
