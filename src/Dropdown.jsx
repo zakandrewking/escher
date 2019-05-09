@@ -1,14 +1,14 @@
+/** @jsx h */
+
+import { h, Component } from 'preact'
+import './Dropdown.css'
+
 /**
  * Dropdown. Handles the behavior of the menu bar and the dropdowns. Composed of
  * a menu button and a corresponding menu that displays when the button is
  * clicked.
  */
-
-/** @jsx h */
-import { h, Component } from 'preact'
-import './Dropdown.css'
-
-class Dropdown extends Component {
+export default class Dropdown extends Component {
   constructor (props) {
     super(props)
     this.state = {
@@ -88,5 +88,3 @@ class Dropdown extends Component {
     )
   }
 }
-
-export default Dropdown

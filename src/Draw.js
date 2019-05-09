@@ -1,3 +1,5 @@
+/* NOT_ES6 */
+
 /**
  * Draw. Manages creating, updating, and removing objects during d3 data
  * binding.

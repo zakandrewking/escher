@@ -1,3 +1,5 @@
+/* NOT_ES6 (mostly done) */
+
 import * as utils from './utils'
 import Draw from './Draw'
 import Behavior from './Behavior'

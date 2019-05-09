@@ -9,7 +9,7 @@ import './ScaleSlider.css'
 
 const TRACK_WIDTH = 400
 
-class ScaleSlider extends Component {
+export default class ScaleSlider extends Component {
   /**
    * Sorts the color scale for makeGradient
    */
@@ -275,5 +275,3 @@ class ScaleSlider extends Component {
     )
   }
 }
-
-export default ScaleSlider

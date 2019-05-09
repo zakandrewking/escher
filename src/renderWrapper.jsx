@@ -1,4 +1,5 @@
 /** @jsx h */
+
 import { h, Component, render } from 'preact'
 
 class Wrapper extends Component {
@@ -38,7 +39,7 @@ class Wrapper extends Component {
  * @param {} ref - A preact ref for the wrapper so that the "display" state can
  *                 be tracked.
  */
-function renderWrapper (
+export default function renderWrapper (
   component,
   ref,
   connectSetStateFn,
@@ -57,5 +58,3 @@ function renderWrapper (
     divNode.children.length > 0 ? divNode.firstChild : undefined
   )
 }
-
-export default renderWrapper

@@ -1,3 +1,5 @@
+/* NOT_ES6 */
+
 /* global Blob, XMLSerializer, Image, btoa */
 
 var vkbeautify = require('vkbeautify')

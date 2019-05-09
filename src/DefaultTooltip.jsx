@@ -1,13 +1,13 @@
 /* global window */
 /** @jsx h */
 
-/**
- * Define a Tooltip component and interface with Preact.
- */
 import { h, Component } from 'preact'
 import './DefaultTooltip.css'
 import * as utils from './utils'
 
+/**
+ * Define a Tooltip component and interface with Preact.
+ */
 class DefaultTooltip extends Component {
   constructor () {
     super()

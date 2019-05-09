@@ -1,7 +1,8 @@
 /** @jsx h */
-import {h, Component} from 'preact'
 
-class ScaleSelection extends Component {
+import { h, Component } from 'preact'
+
+export default class ScaleSelection extends Component {
   constructor (props) {
     super(props)
     const colors = []
@@ -29,5 +30,3 @@ class ScaleSelection extends Component {
     )
   }
 }
-
-export default ScaleSelection

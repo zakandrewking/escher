@@ -2,7 +2,7 @@ import utils from './utils'
 import CallbackManager from './CallbackManager'
 
 import _ from 'underscore'
-import { selection as d3Selection, event } from 'd3-selection'
+import { event } from 'd3-selection'
 import {
   zoom as d3Zoom,
   zoomIdentity as d3ZoomIdentity
