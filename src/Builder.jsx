@@ -219,6 +219,7 @@ class Builder {
       this.isFullScreen = true
     }
     this.savedFullScreenSettings = null
+    this.savedFullScreenParent = null
     this.clearFullScreenEscape = null
 
     // Set up this callback manager
@@ -1399,8 +1400,12 @@ class Builder {
         this.clearFullScreenEscape = null
       }
 
-      // hack for full screen in jupyterlab
-      d3SelectAll('.p-DockPanel-widget').style('z-index', 'inherit')
+      // hack for full screen in jupyterlab / notebook
+      if (this.savedFullScreenParent) {
+        const parentNode = this.savedFullScreenParent.node()
+        parentNode.insertBefore(this.selection.remove().node(), parentNode.firstChild)
+        this.savedFullScreenParent = null
+      }
 
       // apply the saved settings
       if (this.savedFullScreenSettings !== null) {
@@ -1438,7 +1443,9 @@ class Builder {
       this.isFullScreen = true
 
       // hack for full screen in jupyterlab
-      d3SelectAll('.p-DockPanel-widget').style('z-index', 'auto')
+      this.savedFullScreenParent = d3Select(this.selection.node().parentNode)
+      const bodyNode = d3Select('body').node()
+      bodyNode.insertBefore(this.selection.remove().node(), bodyNode.firstChild)
 
       // set escape listener
       this.clearFullScreenEscape = this.map.key_manager.addEscapeListener(
