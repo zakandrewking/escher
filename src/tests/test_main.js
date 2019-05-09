@@ -6,9 +6,18 @@ import {assert} from 'chai'
 describe('main', () => {
   it('properties', () => {
     const properties = [
-      'version', 'Builder', 'Map', 'Behavior', 'KeyManager', 'DataMenu',
-      'UndoStack', 'CobraModel', 'utils', 'SearchIndex', 'Settings',
-      'dataStyles', 'ZoomContainer'
+      'version',
+      'Builder',
+      'Map',
+      'Behavior',
+      'KeyManager',
+      'UndoStack',
+      'CobraModel',
+      'utils',
+      'SearchIndex',
+      'Settings',
+      'dataStyles',
+      'ZoomContainer'
     ]
     properties.map(property => {
       assert.property(escher, property)
@@ -17,8 +26,15 @@ describe('main', () => {
 
   it('libs', () => {
     const libs = [
-      '_', 'underscore', 'preact', 'baconjs', 'mousetrap', 'vkbeautify',
-      'd3_selection', 'd3_select', 'd3_json'
+      '_',
+      'underscore',
+      'preact',
+      'baconjs',
+      'mousetrap',
+      'vkbeautify',
+      'd3Selection',
+      'd3Select',
+      'd3Json'
     ]
     libs.map(lib => {
       assert.property(escher.libs, lib)

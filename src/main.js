@@ -36,8 +36,8 @@ import preact from 'preact'
 import baconjs from 'baconjs'
 import mousetrap from 'mousetrap'
 import vkbeautify from 'vkbeautify'
-import { select as d3_select, selection as d3_selection } from 'd3-selection'
-import { json as d3_json } from 'd3-request'
+import { select as d3Select, selection as d3Selection } from 'd3-selection'
+import { json as d3Json } from 'd3-request'
 
 export const version = ESCHER_VERSION
 
@@ -45,7 +45,6 @@ export { default as Builder, default } from './Builder'
 export { default as Map } from './Map'
 export { default as Behavior } from './Behavior'
 export { default as KeyManager } from './KeyManager'
-export { default as DataMenu } from './DataMenu'
 export { default as UndoStack } from './UndoStack'
 export { default as CobraModel } from './CobraModel'
 export { default as utils } from './utils'
@@ -64,7 +63,7 @@ export const libs = {
   baconjs,
   mousetrap,
   vkbeautify,
-  d3_selection,
-  d3_select,
-  d3_json
+  d3Selection,
+  d3Select,
+  d3Json
 }
