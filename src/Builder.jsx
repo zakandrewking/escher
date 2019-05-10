@@ -862,8 +862,8 @@ class Builder {
     ) {
       this.settings.set('reaction_styles', currStyle.concat('abs'))
       return () => {
-        this.map.set_status('Visualizing absolute value of reaction data. ' +
-                            'Change this option in Settings.', 5000)
+        // this.map.set_status('Visualizing absolute value of reaction data. ' +
+        //                     'Change this option in Settings.', 5000)
       }
     }
     return null
