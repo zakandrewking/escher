@@ -55,7 +55,7 @@ export { default as dataStyles } from './dataStyles'
 export { default as ZoomContainer } from './ZoomContainer'
 
 // Jupyter extension
-export { default as initializeJupyterWidget } from './widget'
+export { EscherMapView, EscherMapModel } from './widget'
 
 export const libs = {
   _: underscore,

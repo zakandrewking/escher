@@ -7,21 +7,11 @@
 // dynamically.
 window.__webpack_public_path__ = document.querySelector('body').getAttribute('data-base-url') + 'nbextensions/escher'
 
-// Pull jupyter object out when importing escher
-window.define(
-  'escher-intercept',
-  ['escher'],
-  escher => escher.initializeJupyterWidget()
-)
-
 // Configure requirejs
 if (window.require) {
   window.require.config({
     map: {
       '*': {
-        'escher': 'escher-intercept'
-      },
-      'escher-intercept': {
         escher: 'nbextensions/escher/escher.min'
       }
     }
