@@ -40,7 +40,7 @@ setup(
     include_package_data=True,
     data_files=[
         (
-            'share/jupyter/nbextensions/jupyter-escher',
+            'share/jupyter/nbextensions/escher',
             [
                 'escher/static/extension.js',
                 'escher/static/escher.min.js',
@@ -49,7 +49,7 @@ setup(
         ),
         (
             'etc/jupyter/nbconfig/notebook.d',
-            ['jupyter-escher.json'],
+            ['escher.json'],
         )
     ],
     install_requires=[

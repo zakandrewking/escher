@@ -15,6 +15,6 @@ def _jupyter_nbextension_paths():
     return [{
         'section': 'notebook',
         'src': 'static',
-        'dest': 'jupyter-escher',
-        'require': 'jupyter-escher/extension'
+        'dest': 'escher',
+        'require': 'escher/extension'
     }]

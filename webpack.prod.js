@@ -11,7 +11,8 @@ const common = require('./webpack.common.js')
 module.exports = merge.smart(common, {
   entry: {
     'escher': './src/main.js',
-    'escher.min': './src/main.js'
+    'escher.min': './src/main.js',
+    'index': './src/main.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
