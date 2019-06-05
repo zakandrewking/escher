@@ -1,6 +1,7 @@
 # npm
 
 update version in package.json
+yarn clean
 yarn install
 yarn build
 yarn copy # for docs to build
