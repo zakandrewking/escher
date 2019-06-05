@@ -1,4 +1,4 @@
-import utils from './utils'
+import * as utils from './utils'
 import PlacedDiv from './PlacedDiv'
 import completely from './completely'
 import DirectionArrow from './DirectionArrow'
@@ -241,10 +241,10 @@ export default class BuildInput {
             reaction.genes.map(g => [ g.name, g.biggId ])
           )
           // get the reaction string
-          const reactionString = CobraModel.build_reaction_string(mets,
-                                                                  reaction.reversibility,
-                                                                  reaction.lower_bound,
-                                                                  reaction.upper_bound)
+          const reactionString = CobraModel.buildReactionString(mets,
+                                                                reaction.reversibility,
+                                                                reaction.lower_bound,
+                                                                reaction.upper_bound)
           // make the matches list and filter out any missing entries (e.g.
           // missing gene names from model
           const matches = [ showReactionName ].concat(showMetNames).concat(showGeneNames).filter(x => x)

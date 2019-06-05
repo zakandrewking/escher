@@ -84,7 +84,7 @@ export function newReaction (biggId, cobraReaction, cobraMetabolites,
                              selectedNodeId, selectedNode, largestIds,
                              cofactors, direction) {
   // Convert to radians, and force to domain - PI/2 to PI/2
-  const angle = utils.to_radians_norm(direction)
+  const angle = utils.toRadiansNorm(direction)
 
   // Generate a new integer id
   const newReactionId = String(++largestIds.reactions)
@@ -96,7 +96,7 @@ export function newReaction (biggId, cobraReaction, cobraMetabolites,
   const reactionLength = 350
   const mainAxis = [
     selectedNodeCoords,
-    utils.c_plus_c(selectedNodeCoords, { x: reactionLength, y: 0 })
+    utils.cPlusC(selectedNodeCoords, { x: reactionLength, y: 0 })
   ]
   const center = {
     x: (mainAxis[0].x + mainAxis[1].x) / 2,
@@ -379,7 +379,7 @@ export function rotateNodes (selectedNodes, reactions, beziers, angle, center) {
     if (coord === null) {
       return null
     }
-    return utils.rotate_coords(coord, angle, center)
+    return utils.rotateCoords(coord, angle, center)
   }
 
   // recalculate: node
@@ -403,13 +403,13 @@ export function rotateNodes (selectedNodes, reactions, beziers, angle, center) {
       if (segment.to_node_id === nodeId && segment.b2) {
         const displacement = rotateAround(segment.b2)
         const bezId = bezierIdForSegmentId(segmentId, 'b2')
-        segment.b2 = utils.c_plus_c(segment.b2, displacement)
+        segment.b2 = utils.cPlusC(segment.b2, displacement)
         beziers[bezId].x = segment.b2.x
         beziers[bezId].y = segment.b2.y
       } else if (segment.from_node_id === nodeId && segment.b1) {
         const displacement = rotateAround(segment.b1)
         const bezId = bezierIdForSegmentId(segmentId, 'b1')
-        segment.b1 = utils.c_plus_c(segment.b1, displacement)
+        segment.b1 = utils.cPlusC(segment.b1, displacement)
         beziers[bezId].x = segment.b1.x
         beziers[bezId].y = segment.b1.y
       }
@@ -446,7 +446,7 @@ export function moveNodeAndDependents (node, nodeId, reactions, beziers,
       const bez = c[0]
       const node = c[1]
       if (segment[node] === nodeId && segment[bez]) {
-        segment[bez] = utils.c_plus_c(segment[bez], displacement)
+        segment[bez] = utils.cPlusC(segment[bez], displacement)
         const tbez = beziers[bezierIdForSegmentId(segmentId, bez)]
         tbez.x = segment[bez].x
         tbez.y = segment[bez].y
@@ -511,10 +511,10 @@ function calculateNewMetaboliteCoordinates (met, primaryIndex, mainAxis, center,
   // new local coordinate system
   const displacement = mainAxis[0]
   mainAxis = [
-    utils.c_minus_c(mainAxis[0], displacement),
-    utils.c_minus_c(mainAxis[1], displacement)
+    utils.cMinusC(mainAxis[0], displacement),
+    utils.cMinusC(mainAxis[1], displacement)
   ]
-  center = utils.c_minus_c(center, displacement)
+  center = utils.cMinusC(center, displacement)
 
   // Curve parameters
   const w = 80 // distance between reactants and between products
@@ -622,9 +622,9 @@ function calculateNewMetaboliteCoordinates (met, primaryIndex, mainAxis, center,
   }
 
   return {
-    b1: utils.c_plus_c(displacement, b1),
-    b2: utils.c_plus_c(displacement, b2),
-    circle: utils.c_plus_c(displacement, circle)
+    b1: utils.cPlusC(displacement, b1),
+    b2: utils.cPlusC(displacement, b2),
+    circle: utils.cPlusC(displacement, circle)
   }
 }
 

@@ -1,4 +1,5 @@
 /** @jsx h */
+
 import { h, Component } from 'preact'
 import Dropdown from './Dropdown'
 import MenuButton from './MenuButton'
@@ -8,7 +9,7 @@ import MenuButton from './MenuButton'
  * Builder menu bar. Currently re-renders every time an edit mode is chosen.
  * This can be changed once Builder is ported to Preact.
  */
-class MenuBar extends Component {
+export default class MenuBar extends Component {
   componentWillMount () {
     this.props.sel.selectAll('.escher-zoom-container')
         .on('touchend.menuBar', () => this.setState({ dropdownVisible: false }))
@@ -258,5 +259,3 @@ class MenuBar extends Component {
     )
   }
 }
-
-export default MenuBar

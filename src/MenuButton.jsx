@@ -1,22 +1,22 @@
+/** @jsx h */
+
+import { h, Component } from 'preact'
+import _ from 'underscore'
+import * as utils from './utils'
+import * as dataStyles from './dataStyles'
+
 /**
  * MenuButton. Handles the individual menu items within the Dropdown menus.
  * Takes in a name and a function and binds the function to a button. If the
  * type prop is defined as 'load' will instead render a label with an attached
  * hidden input[file] element.
  */
-
-/** @jsx h */
-import { h, Component } from 'preact'
-import _ from 'underscore'
-import utils from './utils'
-import * as dataStyles from './dataStyles'
-
-class MenuButton extends Component {
+export default class MenuButton extends Component {
   handleFileInput (target) {
     const file = target.files[0]
     const reader = new window.FileReader()
     reader.onload = () => {
-      utils.load_json_or_csv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
+      utils.loadJsonOrCsv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
     }
     if (file !== undefined) {
       reader.readAsText(file)
@@ -68,5 +68,3 @@ class MenuButton extends Component {
     }
   }
 }
-
-export default MenuButton

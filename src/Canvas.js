@@ -54,7 +54,7 @@ export default class Canvas {
     }
 
     const transformString = (x, y, currentTransform) => {
-      const tr = utils.d3_transform_catch(currentTransform)
+      const tr = utils.d3TransformCatch(currentTransform)
       const translate = tr.translate
       if (x !== null) translate[0] = x
       if (y !== null) translate[1] = y

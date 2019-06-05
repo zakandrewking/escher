@@ -1,28 +1,23 @@
-/* global global */
+import * as utils from '../utils'
+import * as dataStyles from '../dataStyles'
+import d3Body from './helpers/d3Body'
 
-const utils = require('../utils')
-const dataStyles = require('../dataStyles')
-const d3Body = require('./helpers/d3Body')
+import { describe, it } from 'mocha'
+import { assert } from 'chai'
 
-const describe = require('mocha').describe
-const it = require('mocha').it
-const before = require('mocha').before
-const after = require('mocha').after
-const assert = require('chai').assert
-
-describe('utils.set_options', () => {
+describe('utils.setOptions', () => {
   it('defaults to null', () => {
-    const options = utils.set_options({ a: undefined,
-                                      b: null }, {})
+    const options = utils.setOptions({ a: undefined,
+                                       b: null }, {})
     for (let x in options) {
       assert.strictEqual(options[x], null)
     }
   })
 
   it('can require floats and does not overwrite', () => {
-    const options = utils.set_options({ a: '5px', b: 'asdfwe' },
-                                    { a: 6, b: 7 },
-                                    { a: true, b: true })
+    const options = utils.setOptions({ a: '5px', b: 'asdfwe' },
+                                     { a: 6, b: 7 },
+                                     { a: true, b: true })
 
     assert.strictEqual(options.a, 5)
     assert.strictEqual(options.b, 7)
@@ -31,7 +26,7 @@ describe('utils.set_options', () => {
 
 // TODO waiting on result of
 // http://stackoverflow.com/questions/41812098/using-d3-request-from-node
-// describe('utils.load_the_file', () => {
+// describe('utils.loadTheFile', () => {
 //   before(() => {
 //     test_server.listen(8000)
 //   })
@@ -41,7 +36,7 @@ describe('utils.set_options', () => {
 //   })
 
 //   it('loads json', done => {
-//     utils.load_the_file(
+//     utils.loadTheFile(
 //       { my: 'this' },
 //       'http://localhost:8000/test_file.json',
 //       function (e, d) {
@@ -54,7 +49,7 @@ describe('utils.set_options', () => {
 //   })
 
 //   it('loads css', done => {
-//     utils.load_the_file({my: 'this'}, 'js/src/tests/data/test_file.css', function(e, d) {
+//     utils.loadTheFile({my: 'this'}, 'js/src/tests/data/test_file.css', function(e, d) {
 //       assert.deepEqual(this, {my: 'this'})
 //       assert.isNull(e)
 //       assert.strictEqual(d, 'test\ndata\n')
@@ -63,7 +58,7 @@ describe('utils.set_options', () => {
 //   })
 
 //   it('takes value', done => {
-//     utils.load_the_file({my: 'this'}, null, function(e, d) {
+//     utils.loadTheFile({my: 'this'}, null, function(e, d) {
 //       assert.deepEqual(this, {my: 'this'})
 //       assert.isNull(e)
 //       assert.strictEqual(d, 'value')
@@ -72,7 +67,7 @@ describe('utils.set_options', () => {
 //   })
 
 //   it('no filename', done => {
-//     utils.load_the_file({my: 'this'}, null, function(e, d) {
+//     utils.loadTheFile({my: 'this'}, null, function(e, d) {
 //       assert.deepEqual(this, {my: 'this'})
 //       assert.strictEqual(e, 'No filename')
 //       assert.isNull(d)
@@ -81,7 +76,7 @@ describe('utils.set_options', () => {
 //   })
 
 //   it('unrecognized file type', done => {
-//     utils.load_the_file({my: 'this'}, 'js/src/tests/data/bad_path', function(e, d, f) {
+//     utils.loadTheFile({my: 'this'}, 'js/src/tests/data/bad_path', function(e, d, f) {
 //       assert.deepEqual(this, {my: 'this'})
 //       assert.strictEqual(e, 'Unrecognized file type')
 //       assert.isNull(d)
@@ -90,7 +85,7 @@ describe('utils.set_options', () => {
 //   })
 // })
 
-// describe('utils.load_files', () => {
+// describe('utils.loadFiles', () => {
 //   it('loads multiple files', done => {
 //     let first = false
 //     let second = false
@@ -104,7 +99,7 @@ describe('utils.set_options', () => {
 //         callback: function(e, d, f) { second = d; }
 //       },
 //     ]
-//     utils.load_files({my: 'this'}, files, function() {
+//     utils.loadFiles({my: 'this'}, files, function() {
 //       assert.deepEqual(this, {my: 'this'})
 //       assert.deepEqual(first, {'test': 'data'})
 //       assert.strictEqual(second, 'test\ndata\n')
@@ -113,7 +108,7 @@ describe('utils.set_options', () => {
 //   })
 
 //   it('callback if empty', done => {
-//     utils.load_files(null, [], () => {
+//     utils.loadFiles(null, [], () => {
 //       done()
 //     })
 //   })
@@ -131,7 +126,7 @@ describe('utils.set_options', () => {
 //         callback: () => { second = true; }
 //       },
 //     ]
-//     utils.load_files(null, files, () => {
+//     utils.loadFiles(null, files, () => {
 //       assert.isTrue(first)
 //       assert.isTrue(second)
 //       done()
@@ -139,27 +134,27 @@ describe('utils.set_options', () => {
 //   })
 // })
 
-describe('utils.make_class', () => {
+describe('utils.makeClass', () => {
   it('works with our without "new"', () => {
-    const MyClass = utils.make_class()
+    const MyClass = utils.makeClass()
     const obj1 = new MyClass()
     const obj2 = MyClass()
 
     assert.isTrue(obj1 instanceof MyClass)
     assert.isTrue(obj2 instanceof MyClass)
-    assert.isTrue(obj1.constructor == MyClass)
-    assert.isTrue(obj2.constructor == MyClass)
+    assert.strictEqual(obj1.constructor, MyClass)
+    assert.strictEqual(obj2.constructor, MyClass)
   })
 })
 
-describe('utils.class_with_optional_new', () => {
+describe('utils.classWithOptionalNew', () => {
   it('takes existing class and makes "new" optional', () => {
     class C {
       constructor (a) {
         this.a = a
       }
     }
-    const MyClass = utils.class_with_optional_new(C)
+    const MyClass = utils.classWithOptionalNew(C)
     const obj1 = new MyClass('b')
     const obj2 = MyClass('b')
     const obj3 = new MyClass // eslint-disable-line new-parens
@@ -171,9 +166,9 @@ describe('utils.class_with_optional_new', () => {
   })
 })
 
-it('utils.compare_arrays', () => {
-  assert.strictEqual(utils.compare_arrays([1,2], [1,2]), true)
-  assert.strictEqual(utils.compare_arrays([1,2], [3,2]), false)
+it('utils.compareArrays', () => {
+  assert.strictEqual(utils.compareArrays([1, 2], [1, 2]), true)
+  assert.strictEqual(utils.compareArrays([1, 2], [3, 2]), false)
 })
 
 describe('utils.arrayToObject', () => {
@@ -185,11 +180,13 @@ describe('utils.arrayToObject', () => {
   })
   it('adds null for missing values', () => {
     // multiple
-    const a = [{a:1, b:2}, {b:3, c:4}]
+    const a = [{a: 1, b: 2}, {b: 3, c: 4}]
     const out = utils.arrayToObject(a)
-    assert.deepEqual(out, { a: [1, null],
-                            b: [2, 3],
-                            c: [null, 4] })
+    assert.deepEqual(out, {
+      a: [1, null],
+      b: [2, 3],
+      c: [null, 4]
+    })
   })
 })
 
@@ -224,28 +221,32 @@ describe('utils.extend', () => {
   })
 })
 
-describe('utils.load_json_or_csv', () => {
-  it('loads JSON', () => {
-    utils.load_json_or_csv(null,
-                           dataStyles.csv_converter,
-                           function(error, value) {
-                             if (error) console.warn(error)
-                             assert.deepEqual(value, {'GAPD': 100})
-                           },
-                           null,
-                           null,
-                           {target: {result: '{"GAPD":100}'}})
+describe('utils.loadJsonOrCsv', () => {
+  it('loads JSON', done => {
+    utils.loadJsonOrCsv(
+      null,
+      dataStyles.csv_converter,
+      (error, value) => {
+        if (error) console.warn(error)
+        assert.deepEqual(value, {'GAPD': 100})
+        done()
+      },
+      null,
+      null,
+      {target: {result: '{"GAPD":100}'}})
   })
-  it('loads CSV', () => {
-    utils.load_json_or_csv(null,
-                           dataStyles.csv_converter,
-                           function(error, value) {
-                             if (error) console.warn(error)
-                             assert.deepEqual(value, [{'GAPD': '100'}])
-                           },
-                           null,
-                           null,
-                           {target: {result: 'reaction,value\nGAPD,100\n'}})
+  it('loads CSV', done => {
+    utils.loadJsonOrCsv(
+      null,
+      dataStyles.csv_converter,
+      (error, value) => {
+        if (error) console.warn(error)
+        assert.deepEqual(value, [{'GAPD': '100'}])
+        done()
+      },
+      null,
+      null,
+      {target: {result: 'reaction,value\nGAPD,100\n'}})
   })
 })
 
@@ -260,20 +261,20 @@ describe('utils.angleNorm', () => {
   })
 })
 
-describe('utils.to_degrees', () => {
+describe('utils.toDegrees', () => {
   it('returns degrees', () => {
-    assert.strictEqual(utils.to_degrees(Math.PI / 2), 90)
-    assert.strictEqual(utils.to_degrees(Math.PI), 180)
-    assert.strictEqual(utils.to_degrees(-Math.PI), -180)
+    assert.strictEqual(utils.toDegrees(Math.PI / 2), 90)
+    assert.strictEqual(utils.toDegrees(Math.PI), 180)
+    assert.strictEqual(utils.toDegrees(-Math.PI), -180)
   })
 })
 
-describe('utils.to_radians_norm', () => {
+describe('utils.toRadiansNorm', () => {
   it('returns radians between -PI and PI', () => {
-    assert.strictEqual(utils.to_radians_norm(90), Math.PI / 2)
-    assert.strictEqual(utils.to_radians_norm(-90), -Math.PI / 2)
-    assert.strictEqual(utils.to_radians_norm(-270), Math.PI / 2)
-    assert.strictEqual(utils.to_radians_norm(270), -Math.PI / 2)
+    assert.strictEqual(utils.toRadiansNorm(90), Math.PI / 2)
+    assert.strictEqual(utils.toRadiansNorm(-90), -Math.PI / 2)
+    assert.strictEqual(utils.toRadiansNorm(-270), Math.PI / 2)
+    assert.strictEqual(utils.toRadiansNorm(270), -Math.PI / 2)
   })
 })
 
@@ -311,40 +312,29 @@ it('utils.quartiles', () => {
                    [15, 40, 43])
 })
 
-it('utils.random_characters', () => {
+it('utils.randomCharacters', () => {
   for (let i = 5; i < 10; i++) {
-    assert.strictEqual(utils.random_characters(i).length, i)
+    assert.strictEqual(utils.randomCharacters(i).length, i)
   }
 })
 
-it('utils.check_for_parent_tag', () => {
+it('utils.checkForParentTag', () => {
   const sel = d3Body.append('div')
-  assert.strictEqual(utils.check_for_parent_tag(sel, 'body'), true)
-  assert.strictEqual(utils.check_for_parent_tag(sel.node(), 'body'), true)
-  assert.strictEqual(utils.check_for_parent_tag(sel, 'BODY'), true)
-  assert.strictEqual(utils.check_for_parent_tag(sel, 'svg'), false)
+  assert.strictEqual(utils.checkForParentTag(sel, 'body'), true)
+  assert.strictEqual(utils.checkForParentTag(sel.node(), 'body'), true)
+  assert.strictEqual(utils.checkForParentTag(sel, 'BODY'), true)
+  assert.strictEqual(utils.checkForParentTag(sel, 'svg'), false)
 })
 
-describe('utils.test_name_to_url', () => {
-  it('adds extension', () => {
-    const url = utils.name_to_url('iJO1366.central_metabolism')
-    assert.strictEqual(url, 'iJO1366.central_metabolism.json')
-  })
-  it('takes optional prefix', () => {
-    const url = utils.name_to_url('iJO1366', 'https://github.io/1-0-0/models/Escherichia%20coli')
-    assert.strictEqual(url, 'https://github.io/1-0-0/models/Escherichia%20coli/iJO1366.json')
-  })
-})
-
-describe('utils.d3_transform_catch', () => {
+describe('utils.d3TransformCatch', () => {
   it('gets translate', () => {
-    assert.deepEqual(utils.d3_transform_catch('translate  ( 20, 30  )'),
+    assert.deepEqual(utils.d3TransformCatch('translate  ( 20, 30  )'),
                      { translate: [ 20, 30 ], rotate: 0, scale: 0 })
   })
 
   it('gets translate, rotate, scale', () => {
     assert.deepEqual(
-      utils.d3_transform_catch('translate  ( 0, -30.2  )rotate(5.1 ) scale(-3)'),
+      utils.d3TransformCatch('translate  ( 0, -30.2  )rotate(5.1 ) scale(-3)'),
       { translate: [ 0, -30.2 ], rotate: 5.1, scale: -3.0 }
     )
   })

@@ -1,3 +1,4 @@
+/* NOT_ES6 */
 /**
  * PlacedDiv. A container to position an html div to match the coordinates of a
  * SVG element.
@@ -5,7 +6,7 @@
 
 var utils = require('./utils')
 
-var PlacedDiv = utils.make_class()
+var PlacedDiv = utils.makeClass()
 // instance methods
 PlacedDiv.prototype = {
   init: init,

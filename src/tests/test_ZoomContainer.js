@@ -1,5 +1,5 @@
 import ZoomContainer from '../ZoomContainer'
-import { d3_transform_catch } from '../utils'
+import { d3TransformCatch } from '../utils'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import { assert } from 'chai'
 import d3Body from './helpers/d3Body'
@@ -52,7 +52,7 @@ describe('ZoomContainer', () => {
     assert.strictEqual(zoomTransform.y, -20.5)
     _.defer(() => {
       // check node transform attribute
-      const transform = d3_transform_catch(zc.zoomedSel.attr('transform'))
+      const transform = d3TransformCatch(zc.zoomedSel.attr('transform'))
       assert.strictEqual(transform.scale, 2.0)
       assert.strictEqual(transform.translate[0], 10.0)
       assert.strictEqual(transform.translate[1], -20.5)

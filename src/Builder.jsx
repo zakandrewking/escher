@@ -79,7 +79,7 @@ class Builder {
     this.has_custom_reaction_styles = Boolean(options.reaction_styles)
 
     // set defaults
-    const optionsWithDefaults = utils.set_options(options, {
+    const optionsWithDefaults = utils.setOptions(options, {
       // view options
       menu: 'all',
       scroll_behavior: 'pan',
@@ -153,7 +153,7 @@ class Builder {
     })
 
     // Check the location
-    if (utils.check_for_parent_tag(this.selection, 'svg')) {
+    if (utils.checkForParentTag(this.selection, 'svg')) {
       throw new Error('Builder cannot be placed within an svg node ' +
                       'because UI elements are html-based.')
     }
@@ -335,7 +335,7 @@ class Builder {
     if (_.isNull(modelData)) {
       this.cobra_model = null
     } else {
-      this.cobra_model = CobraModel.from_cobra_json(modelData)
+      this.cobra_model = CobraModel.fromCobraJson(modelData)
     }
 
     if (this.map) {
@@ -369,8 +369,8 @@ class Builder {
     }
 
     // remove the old map and related divs
-    utils.remove_child_nodes(this.zoomContainer.zoomedSel)
-    utils.remove_child_nodes(this.mapToolsContainer)
+    utils.removeChildNodes(this.zoomContainer.zoomedSel)
+    utils.removeChildNodes(this.mapToolsContainer)
 
     const zoomedSel = this.zoomContainer.zoomedSel
     const svg = this.zoomContainer.svg
@@ -1051,9 +1051,9 @@ class Builder {
           metaboliteDataObject = dataStyles.importAndCheck(this.settings.get('metabolite_data'),
                                                            'metabolite_data')
         }
-        this.cobra_model.apply_metabolite_data(metaboliteDataObject,
-                                               this.settings.get('metabolite_styles'),
-                                               this.settings.get('metabolite_compare_style'))
+        this.cobra_model.applyMetaboliteData(metaboliteDataObject,
+                                             this.settings.get('metabolite_styles'),
+                                             this.settings.get('metabolite_compare_style'))
       }
 
       // reaction data
@@ -1064,24 +1064,24 @@ class Builder {
             reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
                                                            'reaction_data')
           }
-          this.cobra_model.apply_reaction_data(reactionDataObject,
-                                               this.settings.get('reaction_styles'),
-                                               this.settings.get('reaction_compare_style'))
+          this.cobra_model.applyReactionData(reactionDataObject,
+                                             this.settings.get('reaction_styles'),
+                                             this.settings.get('reaction_compare_style'))
         } else if (this.settings.get('gene_data') && updateModel && this.cobra_model !== null) {
           if (!geneDataObject) {
             geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
                                                       this.cobra_model, this.map)
           }
-          this.cobra_model.apply_gene_data(geneDataObject,
-                                           this.settings.get('reaction_styles'),
-                                           this.settings.get('identifiers_on_map'),
-                                           this.settings.get('reaction_compare_style'),
-                                           this.settings.get('and_method_in_gene_reaction_rule'))
+          this.cobra_model.applyGeneData(geneDataObject,
+                                         this.settings.get('reaction_styles'),
+                                         this.settings.get('identifiers_on_map'),
+                                         this.settings.get('reaction_compare_style'),
+                                         this.settings.get('and_method_in_gene_reaction_rule'))
         } else if (updateModel && this.cobra_model !== null) {
           // clear the data
-          this.cobra_model.apply_reaction_data(null,
-                                               this.settings.get('reaction_styles'),
-                                               this.settings.get('reaction_compare_style'))
+          this.cobra_model.applyReactionData(null,
+                                             this.settings.get('reaction_styles'),
+                                             this.settings.get('reaction_compare_style'))
         }
       }
 
@@ -1458,4 +1458,4 @@ class Builder {
   }
 }
 
-export default utils.class_with_optional_new(Builder)
+export default utils.classWithOptionalNew(Builder)

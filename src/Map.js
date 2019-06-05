@@ -1,3 +1,5 @@
+/* NOT_ES6 (mostly done) */
+
 import * as utils from './utils'
 import Draw from './Draw'
 import Behavior from './Behavior'
@@ -73,7 +75,7 @@ export default class Map {
     }
 
     if (_.isUndefined(map_id) || map_id === null || map_id === '') {
-      map_id = utils.generate_map_id()
+      map_id = utils.generateMapId()
     } else {
       map_id = String(map_id)
     }
@@ -89,7 +91,7 @@ export default class Map {
 
     // set up the defs
     this.svg = svg
-    this.defs = utils.setup_defs(svg, css)
+    this.defs = utils.setupDefs(svg, css)
 
     // make the canvas
     this.canvas = new Canvas(selection, canvas_size_and_loc)
@@ -267,7 +269,7 @@ export default class Map {
         var start = map.nodes[segment.from_node_id],
             end = map.nodes[segment.to_node_id]
         if (start['node_type']=='metabolite' || end['node_type']=='metabolite') {
-          var midpoint = utils.c_plus_c(start, utils.c_times_scalar(utils.c_minus_c(end, start), 0.5))
+          var midpoint = utils.cPlusC(start, utils.cTimesScalar(utils.cMinusC(end, start), 0.5))
           if (segment.b1 === null) segment.b1 = midpoint
           if (segment.b2 === null) segment.b2 = midpoint
         }
@@ -393,7 +395,7 @@ export default class Map {
     this.nodes = {}
     this.text_labels = {}
     this.map_name = 'new_map'
-    this.map_id = utils.generate_map_id()
+    this.map_id = utils.generateMapId()
     this.map_description = ''
   }
 
@@ -453,8 +455,8 @@ export default class Map {
     if (_.isUndefined(draw_beziers)) draw_beziers = true
 
     // find reactions for reaction_ids
-    var reaction_subset = utils.object_slice_for_ids_ref(this.reactions,
-                                                         reaction_ids)
+    var reaction_subset = utils.objectSliceForIdsRef(this.reactions,
+                                                     reaction_ids)
 
     // function to update reactions
     var update_fn = function(sel) {
@@ -464,9 +466,9 @@ export default class Map {
     }.bind(this)
 
     // draw the reactions
-    utils.draw_an_object(this.sel, '#reactions', '.reaction', reaction_subset,
-                         'reaction_id', this.draw.create_reaction.bind(this.draw),
-                         update_fn)
+    utils.drawAnObject(this.sel, '#reactions', '.reaction', reaction_subset,
+                       'reaction_id', this.draw.create_reaction.bind(this.draw),
+                       update_fn)
 
     if (draw_beziers) {
       // particular beziers to draw
@@ -484,18 +486,16 @@ export default class Map {
     if (_.isUndefined(draw_beziers)) draw_beziers = true
 
     // Remove deleted reactions and segments
-    utils.draw_an_object(
+    utils.drawAnObject(
       this.sel, '#reactions', '.reaction', this.reactions, 'reaction_id', null,
-      function (update_selection) {
+      update_selection => {
         // Draw segments
-        utils.draw_a_nested_object(
+        utils.drawANestedObject(
           update_selection, '.segment-group', 'segments', 'segment_id', null,
-          null, function(sel) { sel.remove() }
+          null, sel => { sel.remove() }
         )
       },
-      function (sel) {
-        sel.remove()
-      }
+      sel => { sel.remove() }
     )
 
     if (draw_beziers === true) {
@@ -535,7 +535,7 @@ export default class Map {
   */
   draw_these_nodes (node_ids) {
     // find reactions for reaction_ids
-    var node_subset = utils.object_slice_for_ids_ref(this.nodes, node_ids)
+    var node_subset = utils.objectSliceForIdsRef(this.nodes, node_ids)
 
     // functions to create and update nodes
     var create_fn = function(sel) {
@@ -556,8 +556,8 @@ export default class Map {
     }.bind(this)
 
     // draw the nodes
-    utils.draw_an_object(this.sel, '#nodes', '.node', node_subset, 'node_id',
-                         create_fn, update_fn)
+    utils.drawAnObject(this.sel, '#nodes', '.node', node_subset, 'node_id',
+                       create_fn, update_fn)
   }
 
   /**
@@ -565,8 +565,8 @@ export default class Map {
    */
   clear_deleted_nodes() {
     // Run remove for exit selection
-    utils.draw_an_object(this.sel, '#nodes', '.node', this.nodes, 'node_id',
-                         null, null, function (sel) { sel.remove() })
+    utils.drawAnObject(this.sel, '#nodes', '.node', this.nodes, 'node_id',
+                       null, null, sel => { sel.remove() })
   }
 
   /**
@@ -586,22 +586,22 @@ export default class Map {
    */
   draw_these_text_labels (text_label_ids) {
     // Find reactions for reaction_ids
-    var text_label_subset = utils.object_slice_for_ids_ref(this.text_labels, text_label_ids)
+    var text_label_subset = utils.objectSliceForIdsRef(this.text_labels, text_label_ids)
 
     // Draw the text_labels
-    utils.draw_an_object(this.sel, '#text-labels', '.text-label',
-                         text_label_subset, 'text_label_id',
-                         this.draw.create_text_label.bind(this.draw),
-                         this.draw.update_text_label.bind(this.draw))
+    utils.drawAnObject(this.sel, '#text-labels', '.text-label',
+                       text_label_subset, 'text_label_id',
+                       this.draw.create_text_label.bind(this.draw),
+                       this.draw.update_text_label.bind(this.draw))
   }
 
   /**
    * Remove any text_labels that are not in *this.text_labels*.
    */
   clear_deleted_text_labels () {
-    utils.draw_an_object(this.sel, '#text-labels', '.text-label',
-                         this.text_labels, 'text_label_id', null, null,
-                         function (sel) { sel.remove() })
+    utils.drawAnObject(this.sel, '#text-labels', '.text-label',
+                       this.text_labels, 'text_label_id', null, null,
+                       sel => { sel.remove() })
   }
 
   /**
@@ -631,7 +631,7 @@ export default class Map {
 
     */
     // find reactions for reaction_ids
-    var bezier_subset = utils.object_slice_for_ids_ref(this.beziers, bezier_ids)
+    var bezier_subset = utils.objectSliceForIdsRef(this.beziers, bezier_ids)
 
     // function to update beziers
     var update_fn = function(sel) {
@@ -645,9 +645,9 @@ export default class Map {
     }.bind(this)
 
     // draw the beziers
-    utils.draw_an_object(this.sel, '#beziers', '.bezier', bezier_subset,
-                         'bezier_id', this.draw.create_bezier.bind(this.draw),
-                         update_fn)
+    utils.drawAnObject(this.sel, '#beziers', '.bezier', bezier_subset,
+                       'bezier_id', this.draw.create_bezier.bind(this.draw),
+                       update_fn)
   }
 
   clear_deleted_beziers() {
@@ -655,9 +655,8 @@ export default class Map {
 
      */
     // remove deleted
-    utils.draw_an_object(this.sel, '#beziers', '.bezier', this.beziers,
-                         'bezier_id', null, null,
-                         function(sel) { sel.remove(); })
+    utils.drawAnObject(this.sel, '#beziers', '.bezier', this.beziers,
+                       'bezier_id', null, null, sel => { sel.remove() })
   }
 
   show_beziers () {
@@ -1142,7 +1141,7 @@ export default class Map {
       // move beziers
       bezDisps.map(d => {
         const segment = this.reactions[d.reactionId].segments[d.segmentId]
-        segment[d.bez] = utils.c_plus_c(segment[d.bez], d.displacement)
+        segment[d.bez] = utils.cPlusC(segment[d.bez], d.displacement)
         this.beziers[d.bezierId].x = segment[d.bez].x
         this.beziers[d.bezierId].y = segment[d.bez].y
       })
@@ -1466,7 +1465,7 @@ export default class Map {
           : Object.keys(cobra_reaction.metabolites)[0]
     const metabolite = this.cobra_model.metabolites[metaboliteId]
     const selected_node_id = String(++this.largest_ids.nodes)
-    const label_d = build.getMetLabelLoc(utils.to_radians(direction), 0, 1,
+    const label_d = build.getMetLabelLoc(utils.toRadians(direction), 0, 1,
                                          true, metaboliteId, true)
     var selected_node = {
       connected_segments: [],
@@ -2139,7 +2138,7 @@ export default class Map {
   // -------------------------------------------------------------------------
 
   save () {
-    utils.download_json(this.map_for_export(), this.map_name)
+    utils.downloadJson(this.map_for_export(), this.map_name)
   }
 
   map_for_export () {

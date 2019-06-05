@@ -1,4 +1,5 @@
 /** @jsx h */
+
 import { h, Component } from 'preact'
 import ScaleSelector from './ScaleSelector'
 import ScaleSlider from './ScaleSlider'
@@ -12,7 +13,7 @@ import scalePresets from './colorPresets'
  * settings. Implements Settings.js but otherwise only uses
  * Preact.
  */
-class SettingsMenu extends Component {
+export default class SettingsMenu extends Component {
   componentWillMount () {
     this.props.settings.holdChanges()
     this.setState({
@@ -545,4 +546,3 @@ class SettingsMenu extends Component {
     )
   }
 }
-export default SettingsMenu

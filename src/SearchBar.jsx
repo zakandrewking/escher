@@ -1,11 +1,11 @@
-/** SearchBar */
-
 /** @jsx h */
+
 import { h, Component } from 'preact'
 import './SearchBar.css'
 import _ from 'underscore'
 
-class SearchBar extends Component {
+/** SearchBar */
+export default class SearchBar extends Component {
   constructor (props) {
     super(props)
     this.state = {
@@ -175,5 +175,3 @@ class SearchBar extends Component {
     )
   }
 }
-
-export default SearchBar
