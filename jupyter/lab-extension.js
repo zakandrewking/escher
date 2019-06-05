@@ -2,10 +2,10 @@ const escher = require('../dist/escher.min')
 const base = require('@jupyter-widgets/base')
 
 module.exports = {
-  id: 'jupyter.extensions.jupyter-escher',
+  id: 'jupyter.extensions.escher',
   requires: [base.IJupyterWidgetRegistry],
   activate: (app, widgets) => widgets.registerWidget({
-    name: 'jupyter-escher',
+    name: 'escher',
     version: escher.version,
     exports: escher.initializeJupyterWidget()
   }),

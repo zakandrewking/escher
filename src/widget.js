@@ -132,8 +132,8 @@ export default function initializeJupyterWidget () {
       return _.extend(super.defaults(), {
         _model_name: 'EscherMapModel',
         _view_name: 'EscherMapView',
-        _model_module: 'jupyter-escher',
-        _view_module: 'jupyter-escher',
+        _model_module: 'escher',
+        _view_module: 'escher',
         _model_module_version: version,
         _view_module_version: version
       })
