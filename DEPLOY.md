@@ -28,3 +28,8 @@ python -m ipython kernel install --user --name=env
 ipython, jupyter, etc.
 cd -
 twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+
+# Docs
+
+If changes have been made to example notebooks, then save them with widget state
+in Jupyter Notebook (not lab).
