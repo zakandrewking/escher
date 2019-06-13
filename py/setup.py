@@ -57,12 +57,12 @@ setup(
         'pytest>=4.0.1,<5',
         'cobra>=0.5.0',
         'jsonschema>=2.4.0,<3',
-        'ipywidgets>=7.1.0,<8',
+        'ipywidgets>=7.4.0,<8',
         'pandas>=0.18'
     ],
     extras_require={
         'docs': [
-            'sphinx>=1.5.3,<2',
+            'sphinx>=2.1.1,<3',
             'sphinx-rtd-theme>=0.4.3,<0.5',
             'nbsphinx>=0.4.2,<0.5'
         ],
