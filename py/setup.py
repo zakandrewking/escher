@@ -61,6 +61,10 @@ setup(
         'pandas>=0.18'
     ],
     extras_require={
-        'docs': ['sphinx>=1.2', 'sphinx-rtd-theme>=0.1.6'],
+        'docs': [
+            'sphinx>=1.5.3,<2',
+            'sphinx-rtd-theme>=0.4.3,<0.5',
+            'nbsphinx>=0.4.2,<0.5'
+        ],
     },
 )
