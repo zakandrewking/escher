@@ -108,82 +108,115 @@ Now you are ready to extend Escher!
 Custom tooltips
 ===============
 
-We are going to modify the Escher tooltips, first with simple text, and then
-with some pictures and plots. We will start with the code in the folder
-``custom_tooltips``, and you should already be able to see the output at
+We've designed the tooltip customization process to be as easy and modular as
+possible. The Builder will generate a ``div`` element to display your tooltip
+whenever you mouse over a label or map object associated with a reaction or
+metabolite. The only consideration that must be made is that a getSize function
+that returns an object with both height and width properties should be implemented
+within the tooltip. Otherwise the Builder willa assume that your tooltip is 270px
+wide and 100px tall. We'll start with a a basic tooltip that includes a random
+picture. You can view your currently deployad code at:
 http://localhost:8000/custom_tooltips.
 
-Method 1: Callback function
-===========================
+Method 1: Tooltip with random pics
+==================================
 
-The simplest tooltip is just a function that Escher will call whenever a user
-pilots the mouse over a metabolite, reaction, or gene. In the ``main.js`` for
-``custom_tooltips``, we can set our tooltip function with the ``tooltip_component``
-option.
-
-.. code-block:: javascript
-
-  var options = {
-    menu: 'zoom',
-    fill_screen: true,
-    // --------------------------------------------------
-    // CHANGE ME
-    tooltip_component: tooltips_4,
-    // --------------------------------------------------
-  }
-
-First, let's change ``tooltips_4`` to the simplest tooltip,
-``tooltips_1``. ``tooltips_1`` is a function that we define earlier in
-``main.js``. Here's what it looks like:
+To start, we'll just display a simple tooltip with a random image from unsplash.
+Change the tooltip_component option at the bottom of the file to ``Tooltip1``
+which looks like this:
 
 .. code-block:: javascript
 
-  var tooltips_1 = function (args) {
-    // Check if there is already text in the tooltip
-    if (args.el.childNodes.length === 0) {
-      // If not, add new text
-      var node = document.createTextNode('Hello ')
-      args.el.appendChild(node)
+  const Tooltip1 = props => {
+    return (
       // Style the text based on our tooltip_style object
-      Object.keys(tooltip_style).map(function (key) {
-        args.el.style[key] = tooltip_style[key]
-      })
-    }
-    // Update the text to read out the identifier biggId
-    args.el.childNodes[0].textContent = 'Hello ' + args.state.biggId
-  }
+      h('div', { style: tooltipStyle},
+        // Update the text to read out the identifier biggId
+        'Hello tinier ' + props.biggId,
+        // Line break
+        h('br'),
+        // Add a picture. Get a random pic from unsplash, with ID between 0 and 1000.
+        h('img', { src: 'https://unsplash.it/100/100?image=' +  Math.floor(Math.random() * 1000) })
+      )
+    );
+  };
 
-And when you hover over a reaction on the page, you will see this:
+Try it out! You should get a tooltip like this, with a different picture every
+time:
 
-.. image:: _static/hover.png
 
-The function looks a little complicated, but what we are doing is extremely
-simple. The first thing to look at is that ``args`` object. Escher gives you all
-the data you need to render your tooltips through ``args``. Try adding this line
-to the function and reloading:
+Method 2: Tooltip with a D3 plot
+================================
+
+What if we want a data plot in the tooltip? `D3.js`_ is great for creating
+custom plots, so let's start with this example of a bar plot in D3:
+
+https://bl.ocks.org/mbostock/3310560
+
+D3 takes a little while to learn, so, if you are interested in expanding on what
+we show here, I recommend you read through some D3 `tutorials`_. I will only
+explain the main points here, and you can work through the details as you learn
+D3.
+
+The complete code for ``Tooltip2`` with bar charts is in
+``custom_tooltips/main.js``.
 
 .. code-block:: javascript
 
-  var tooltips_1 = function (args) {
-    // Check if there is already text in the tooltip
-    if (args.el.childNodes.length === 0) {
+  var tooltips_4 = function (args) {
+    // Use the tinier.render function to render any changes each time the
+    // tooltip gets called
+    tinier.render(
+      args.el,
+      // Create a new div element inside args.el
+      tinier.createElement(
+        'div',
+        // Style the text based on our tooltip_style object
+        { style: tooltip_style }
+      )
+    )
+    ...
 
-Now, open your developer tools, and, when you hover over a reaction, and you can
-see exactly what we're working with. After you hover a few times, the console
-should contain something like this:
+So we still create and style a tooltip, but now we are going to fill it with a
+plot. Next, we take the biggID for our reaction, metabolite, or gene, and we
+calculate the frequency of each letter.
 
-.. image:: _static/console.png
+.. code-block:: javascript
 
-So there you have it! Escher passes you ``args.el``, the location on the page
-(DOM element) inside the active tooltip, and ``args.state``, an object with
-details about the element you just hovered over.
+  // Let's calculate the frequency of letters in the ID
+  var letters = calculateLetterFrequency(args.state.biggId)
 
-The rest of the tooltip function takes ``el`` and adds some text to it. Browsers
-contain some built-in functions like ``document.createTextNode`` for modifying
-the page, and with a little reading on `MDN`_, you can probably make sense of
-it. But there is a better way! Because these built-in methods are long and
-boring, we created a some shortcuts for this kind of basic DOM manipulation, and
-that's what the next section is all about.
+You can look at the ``calculateLetterFrequency`` function; basic JavaScript.
+
+.. code-block:: javascript
+
+  function calculateLetterFrequency (s) {
+    var counts = {}
+    s.toUpperCase().split('').map(function (c) {
+      if (!(c in counts)) {
+        counts[c] = 1
+      } else {
+        counts[c] += 1
+      }
+    })
+    return Object.keys(counts).map(function (k) {
+      return { letter: k, frequency: counts[k] }
+    })
+  }
+
+The rest of ``Tooltip2`` takes our frequency data and turns it into a bar
+chart. This code is just an adaptation of the example we mentioned above:
+
+https://bl.ocks.org/mbostock/3310560
+
+For the details on how this works, check out the `tutorials`_ called "How to build
+a bar chart." The end result looks like this:
+
+.. image:: _static/tooltip_bar.png
+
+Pretty cool! This is also the version that's live on the `demo website`_, so you
+can see it in action there as well.
+.. image:: _static/tooltip_image.png
 
 Method 2: Callback function with Tinier for rendering
 =====================================================
@@ -246,179 +279,6 @@ new tooltip in action.
     // --------------------------------------------------
   }
 
-Method 3: Tooltip with random pics
-==================================
-
-We have a pretty simple tooltip, so let's add something interesting to it. Try
-replacing ``tooltips_2`` with ``tooltips_3``, which looks like this:
-
-.. code-block:: javascript
-
-  var tooltips_3 = function (args) {
-    // Use the tinier.render function to render any changes each time the
-    // tooltip gets called
-    tinier.render(
-      args.el,
-      // Create a new div element inside args.el
-      tinier.createElement(
-        'div',
-        // Style the text based on our tooltip_style object
-        { style: tooltip_style},
-        // Update the text to read out the identifier biggId
-        'Hello tinier ' + args.state.biggId,
-        // Line break
-        tinier.createElement('br'),
-        // Add a picture
-        tinier.createElement(
-          'img',
-          // Get a random pic from unsplash, with ID between 0 and 1000
-          { src: 'https://unsplash.it/100/100?image=' +  Math.floor(Math.random() * 1000) }
-        )
-      )
-    )
-  }
-
-So what happened there? We just added two new elements inside our div. The
-``br`` creates a linebreak. And the ``img`` creates a new image. We are pulling
-images from a website call unsplash that will return a different image for each
-of our random integer values.
-
-Try it out! You should get a tooltip like this, with a different picture every
-time:
-
-.. image:: _static/tooltip_image.png
-
-Method 4: Tooltip with a D3 plot
-================================
-
-What if we want a data plot in the tooltip? `D3.js`_ is great for creating
-custom plots, so let's start with this example of a bar plot in D3:
-
-https://bl.ocks.org/mbostock/3310560
-
-D3 takes a little while to learn, so, if you are interested in expanding on what
-we show here, I recommend you read through some D3 `tutorials`_. I will only
-explain the main points here, and you can work through the details as you learn
-D3.
-
-The complete code for ``tooltips_4`` with bar charts is in
-``custom_tooltips/main.js``.
-
-.. code-block:: javascript
-
-  var tooltips_4 = function (args) {
-    // Use the tinier.render function to render any changes each time the
-    // tooltip gets called
-    tinier.render(
-      args.el,
-      // Create a new div element inside args.el
-      tinier.createElement(
-        'div',
-        // Style the text based on our tooltip_style object
-        { style: tooltip_style }
-      )
-    )
-    ...
-
-So we still create and style a tooltip, but now we are going to fill it with a
-plot. Next, we take the biggID for our reaction, metabolite, or gene, and we
-calculate the frequency of each letter.
-
-.. code-block:: javascript
-
-  // Let's calculate the frequency of letters in the ID
-  var letters = calculateLetterFrequency(args.state.biggId)
-
-You can look at the ``calculateLetterFrequency`` function; basic JavaScript.
-
-.. code-block:: javascript
-
-  function calculateLetterFrequency (s) {
-    var counts = {}
-    s.toUpperCase().split('').map(function (c) {
-      if (!(c in counts)) {
-        counts[c] = 1
-      } else {
-        counts[c] += 1
-      }
-    })
-    return Object.keys(counts).map(function (k) {
-      return { letter: k, frequency: counts[k] }
-    })
-  }
-
-The rest of ``tooltips_4`` takes our frequency data and turns it into a bar
-chart. This code is just an adaptation of the example we mentioned above:
-
-https://bl.ocks.org/mbostock/3310560
-
-For the details on how this works, check out the `tutorials`_ called "How to build
-a bar chart." The end result looks like this:
-
-.. image:: _static/tooltip_bar.png
-
-Pretty cool! This is also the version that's live on the `demo website`_, so you
-can see it in action there as well.
-
-Method 5: Tinier Component with state
-=====================================
-
-We have just one more example before you have complete control over all things
-tooltip. As you develop more components like tooltips, you might find a need for
-some kind of memory in your component. A function, like the ones we have seen so
-far, runs from scratch every time. You can keep memory in global variables, but
-that gets hairy, fast.
-
-We take an approach inspired by the `Redux`_ library, and you can read more
-about this approach in the excellent Redux documentation. Tinier uses some of
-the concepts from Redux, specifically *reducers* and *immutable state*.
-
-Here is our example of a tooltip with memory; it will count the number of times
-you hover:
-
-.. code-block:: javascript
-
-     var tooltips_5 = tinier.createComponent({
-       init: function () {
-         return {
-           biggId: '',
-           count: 0,
-         }
-       },
-
-       reducers: {
-         setContainerData: function (args) {
-           return Object.assign({}, args.state, {
-             biggId: args.biggId,
-             count: args.state.count + 1,
-           })
-         },
-       },
-
-       render: function (args) {
-         tinier.render(
-           args.el,
-           tinier.createElement(
-             'div', { style: tooltip_style },
-             'Hello tinier ' + args.state.biggId + ' ' + args.state.count
-           )
-         )
-       }
-     })
-
-We can pass this Tinier component right into our Escher Builder. Just like in
-Redux, every time we want to change the state (memory) of our component, we will
-call a reducer function. Escher expects you to define a reducer called
-``setContainerData`` that will be called every time the data for the tooltip
-updates, and this will trigger the render if the state changes.
-
-The `Tinier`_ documentation has some more details on the concepts. Tinier is
-still beta software and is in active development. If you get this far in the
-tutorial, and you want to ask questions about how Tinier works and the plans for
-its future, you can make an issue on GitHub, or email zaking@ucsd.edu and he (I)
-will excited to talk about it.
-
-.. _`Tinier`: https://github.com/zakandrewking/tinier
 .. _`demos`: https://escher.github.io/escher-demo
 .. _`Protein Data Bank`: http://www.rcsb.org/pdb/secondary.do?p=v2/secondary/visualize.jsp#visualize_pathway
 .. _`example gallery`: https://github.com/d3/d3/wiki/Gallery
