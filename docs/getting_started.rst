@@ -4,8 +4,8 @@ Getting started
 Introduction
 ============
 
-**Escher** is here to help you visualize pathway maps. But, if you have never
-heard of a pathway map, you might appreciate a quick introduction.
+**Escher** is here to help you visualize metabolic pathway maps. But, if you
+have never heard of a pathway map, you might appreciate a quick introduction.
 
 Many Escher maps represent *metabolic* pathways, and Escher was developed at the
 `Systems Biology Research Group`_ where we have been building genome-scale
@@ -108,8 +108,8 @@ Use the model menu to manage the COBRA model loaded in Escher:
 .. image:: _static/model_menu.png
 
 Choose **Load COBRA model JSON** to open a COBRA model. Read more about COBRA
-models in :doc:`escher_and_cobrapy`. Once you have COBRApy v0.3.0 or later
-installed, then you can generate a JSON model by following this `example code`_.
+models in :doc:`escher_and_cobrapy`. For examples of using Escher with COBRApy,
+see the :doc:`escher-python`.
 
 Once you have loaded a COBRA model, there may be inconsistencies between the
 content in the map and the model (e.g. reaction IDs, descriptive names and gene

@@ -116,7 +116,7 @@ I still need help!
 
 If you are interested in developing with Escher and you need more information
 than what is provided in the documentation, please contact Zachary King
-(zaking-AT-ucsd-DOT-edu).
+<zaking@ucsd.edu>.
 
 .. _`Gitter chat room`: https://gitter.im/zakandrewking/escher
 .. _`Development roadmap`: https://github.com/zakandrewking/escher/wiki/Development-Roadmap
