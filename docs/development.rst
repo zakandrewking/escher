@@ -15,8 +15,7 @@ Using the static JavaScript and CSS files
 =========================================
 
 You can include the compiled Escher JavaScript and CSS files in any HTML
-document. The only dependencies are `d3.js`_, and optionally `Twitter
-Bootstrap`_ if you are using the option ``menu='all'``.
+document.
 
 The compiled files are available from unpkg::
 
@@ -30,7 +29,7 @@ Source maps are also hosted there::
 
 If you want a particular version of escher, add a version tag like this::
 
-  https://unpkg.com/escher@1.7.0-beta.1/dist/escher.js
+  https://unpkg.com/escher@1.7.0-beta.17/dist/escher.js
 
 Or, if you use NPM, you can simply install `escher`::
 
