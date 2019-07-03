@@ -1,12 +1,13 @@
 from escher.urls import get_url, root_directory
 from escher.util import b64dump
 from escher.version import __version__
+from escher import rc
 
 import cobra
 from cobra import Model
 import pandas as pd
 import ipywidgets as widgets
-from traitlets import Unicode, Int, Instance, Any, observe, validate
+from traitlets import Unicode, Int, Instance, Any, observe, validate, default
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -407,8 +408,14 @@ class Builder(widgets.DOMWidget):
         .tag(sync=True, option=True)
     starting_reaction = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
-    never_ask_before_quit = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
+
+    # This option can be set globally with escher.rc['never_ask_before_quit']
+    never_ask_before_quit = Any(allow_none=True).tag(sync=True, option=True)
+
+    @default('never_ask_before_quit')
+    def _never_ask_before_quit(self):
+        return rc.get('never_ask_before_quit', None)
+
     primary_metabolite_radius = Any(None, allow_none=True)\
         .tag(sync=True, option=True)
     secondary_metabolite_radius = Any(None, allow_none=True)\
