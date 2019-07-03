@@ -1,5 +1,5 @@
-Tutorial: Custom tooltips
--------------------------
+Developer Tutorial: Custom tooltips
+-----------------------------------
 
 We designed Escher to be easily extended by anyone willing to learn a little
 JavaScript. A few extensions to Escher already exist; you can check out our
