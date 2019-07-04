@@ -60,7 +60,7 @@ Contents
    :numbered:
 
    getting_started
-   contribute_maps
+   tips-and-tricks
    escher_and_cobrapy
    escher-python
    convert_maps

@@ -1,12 +1,8 @@
-Building and contributing maps
-==============================
+Tips and Tricks
+===============
 
-We are excited to collect pathway maps for every organism with a well
-characterized metabolic network. This section describes the process of building
-a new map, either from scratch or using a COBRA model with BiGG IDs.
-
-Building from scratch
----------------------
+Building a map from scratch
+---------------------------
 
 To build a map from scratch, you will first need a COBRA model for your map. See
 the section :doc:`escher_and_cobrapy` for some background information on COBRA
@@ -53,38 +49,6 @@ and move on.
 
 Finally, when there are no highlighted reactions left, you can repeat this for
 other subsystems.
-
-Submitting maps to the Escher website
--------------------------------------
-
-We have a repository for sharing maps, with few restrictions. Anyone can submit
-a pull request to add new maps, and you might find some of the existing maps
-there useful:
-
-https://github.com/escher/community-maps
-
-If you would like to contribute maps to Escher the main Escher website, this
-takes a little more effort, but we appreciate it! You can make a Pull Request to
-the GitHub repository escher.github.io_. Make sure there is a folder with the
-name of the organism in ``1-0-0/maps``. For example, a new yeast map goes in the
-folder::
-
-    1-0-0/maps/Saccharomyces cerevisiae/
-
-Then, name your map by concatenating the model ID and the map name, separated by
-a period. For example, a yeast map built with the genome-scale model iMM904
-could be named::
-
-    iMM904.Amino acid biosynthesis.json
-
-Then, add the JSON file for the model to the Pull Request *if that model is not
-already available*. As before, make a folder for your organism within
-``1-0-0/models/``. The model filename is just the model ID.
-
-In this example, a correct Pull Request would include the following files::
-
-    1-0-0/maps/Saccharomyces cerevisiae/iMM904.Amino acid biosynthesis.json
-    1-0-0/models/Saccharomyces cerevisiae/iMM904.json
 
 .. _escher.github.io: https://www.github.com/escher/escher.github.io/
 .. _`BiGG Database`: http://bigg.ucsd.edu
