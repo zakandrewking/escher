@@ -138,8 +138,7 @@ pytest
 ```
 
 To develop the Jupyter notebook and Jupyter Lab extensions, you will need
-install them with symlinks (the typical installation is describe in the
-[docs](https://escher.readthedocs.io/en/latest/escher-python.html)).
+install them with symlinks.
 
 First, install the Python package for development as described above.
 

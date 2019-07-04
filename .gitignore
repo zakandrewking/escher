@@ -27,3 +27,7 @@ node_modules/
 .yarnclean
 .mypy_cache/
 /TODO.txt
+
+# docs
+docs/iJO1366.json
+docs/e_coli_core.json

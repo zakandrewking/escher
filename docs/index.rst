@@ -6,8 +6,8 @@ Welcome to the documentation for **Escher**
 ===========================================
 
 Escher is a web-based tool for building, viewing, and sharing visualizations of
-biological pathways. These 'pathway maps' are a great way to contextualize
-biological datasets. The easiest way to use Escher is to browse and build maps
+metabolic pathways. These 'pathway maps' are a great way to contextualize
+metabolic datasets. The easiest way to use Escher is to browse and build maps
 on the `Escher website`_. New users may be interested in the
 :doc:`getting_started` guide. Escher also has a :doc:`Python package
 <escher-python>` and, for developers, a :doc:`NPM package <development>`.
@@ -56,7 +56,7 @@ Contents
 --------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :numbered:
 
    getting_started

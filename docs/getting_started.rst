@@ -1,24 +1,22 @@
-Getting started
----------------
+Getting started with Escher visualizations
+------------------------------------------
 
 Introduction
 ============
 
-**Escher** is here to help you visualize pathway maps. But, if you have never
-heard of a pathway map, you might appreciate a quick introduction.
+**Escher** is web application for visualizing metabolic pathway maps.
 
-Many Escher maps represent *metabolic* pathways, and Escher was developed at the
-`Systems Biology Research Group`_ where we have been building genome-scale
-models of metabolism over the past fifteen years. However, Escher is not limited to
-metabolism: It can be used to visualize any collection of biochemical reactions.
-
-Escher includes one more killer feature: The ability to visualize datasets on a
-pathway map. Many biological discoveries are enabled by collecting and analyzing
-enormous datsets, and so biologists are grappling with the challenges of *big
-data*. By visualizing data in the context of pathway maps, we can quickly spot
-trends which would not be apparent with standard statistical tools. And Escher
-visualizations can be adapted and shared to demonstrate those biological
-discoveries.
+Three key features make Escher a uniquely effective tool for pathway
+visualization. First, users can rapidly design new pathway maps. Escher provides
+pathway suggestions based on user data and genome-scale models, so users can
+draw pathways in a semi-automated way. Second, users can visualize data related
+to genes or proteins on the associated reactions and path- ways, using rules
+that define which enzymes catalyze each reaction. Thus, users can identify
+trends in common genomic data types (e.g. RNA-Seq, proteomics, ChIP)—in
+conjunction with metabolite- and reaction-oriented data types (e.g.
+metabolomics, fluxomics). Third, Escher harnesses the strengths of web
+technologies (SVG, D3, developer tools) so that visualizations can be rapidly
+adapted, extended, shared, and embedded.
 
 The rest of this guide will introduce the Escher user interface and the major
 features of Escher.
@@ -97,6 +95,9 @@ for presentations and publications. Unlike a JSON file, a SVG file maintains the
 data visualizations on the Escher map. However, you cannot load SVG files into
 Escher after you generate them.
 
+Click **Export as PNG** to generate a `PNG`_ file for sharing finished
+visualizations quickly (e.g. in PowerPoint).
+
 Click **Clear Map** to empty the whole map, leaving a blank canvas. **NOTE**: You
 cannot undo **Clear Map**.
 
@@ -108,8 +109,8 @@ Use the model menu to manage the COBRA model loaded in Escher:
 .. image:: _static/model_menu.png
 
 Choose **Load COBRA model JSON** to open a COBRA model. Read more about COBRA
-models in :doc:`escher_and_cobrapy`. Once you have COBRApy v0.3.0 or later
-installed, then you can generate a JSON model by following this `example code`_.
+models in :doc:`escher_and_cobrapy`. For examples of using Escher with COBRApy,
+see the :doc:`escher-python`.
 
 Once you have loaded a COBRA model, there may be inconsistencies between the
 content in the map and the model (e.g. reaction IDs, descriptive names and gene
@@ -295,6 +296,10 @@ following commands:
 
 - **Redo**: Redo the last action that was undone.
 
+- **Align vertical** and **Align horizontal:** Line up with selected nodes in
+  the given direction. If you have selected entire reactions, Escher will try to
+  intelligently maintain the shape of the reactions.
+
 - **Toggle primary/secondary node**: In Escher, each metabolite node is either a
   primary node or a secondary node. Primary nodes are larger, and secondary
   nodes can be hidden in the Settings menu. Use this command to toggle the
@@ -366,6 +371,9 @@ View and build options
 - **Identifiers:** Choose whether to show BiGG IDs or descriptive names for
   reactions, metabolites, and genes.
 
+- **Scroll to zoom:** If checked, then the scroll wheel and trackpad will
+  control zoom rather than pan.
+
 - **Hide secondary metabolites:** This will simplify the map by hiding all
   secondary metabolites and the paths connected to them.
 
@@ -382,6 +390,12 @@ View and build options
 - **Highlight reactions not in model:** Highlight in red any reactions that are on
   the map but are not in the model. This is useful when you are adapting a map
   from one model for use with another model
+
+- **Use 3D transform for responsive panning and zooming:** If true, then use
+  CSS3 3D transforms to speed up panning and zooming.
+
+- **Show tooltips**: Determines over which elements tooltips will display for
+  reactions, metabolites, and genes
 
 Reaction data settings
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -404,6 +418,9 @@ scale the thickness of reactions.
 
 There are also color and size options for reactions that do not have any data
 value.
+
+The **Preset Scale Selections** menu provides some built-in color scales that
+will modify the scale for you with new control points, colors, and sizes.
 
 Finally, there are a few on/off settings for the loaded reaction or gene
 dataset:

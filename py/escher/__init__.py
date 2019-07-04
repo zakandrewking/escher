@@ -1,3 +1,7 @@
+# global config
+rc = {}
+
+
 from escher.version import (
     __version__,
     __schema_version__,
