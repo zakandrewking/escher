@@ -4,7 +4,7 @@
   "version": "1.7.0-beta.18",
   "post_version": null,
   "schema_version": "1-0-0",
-  "map_model_version": "5",
+  "map_model_version": "6",
   "description": "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Metabolic Pathways",
   "keywords": [
     "visualization",
