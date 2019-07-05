@@ -65,7 +65,7 @@ Contents
    escher-python
    convert_maps
    development
-   development-tutorial
+   developer-tutorial
    escherconverter
    javascript_api
    python_api

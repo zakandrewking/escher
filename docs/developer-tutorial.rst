@@ -46,7 +46,7 @@ control, you can also clone the `source code from GitHub`_.
 Then, in your favorite terminal, navigate to into the folder (the one that
 contains ``README.md``), and run one of the following commands to start a web
 server. You will need to have Python or node.js installed first; if you don't
-have either, `get started with Python`_ first.
+have either, read `get started with Python`_ first.
 
 .. code-block:: shell
 
@@ -96,7 +96,7 @@ some options for the map. And third, it creates a new ``Builder``, passing in
 the loaded data. Escher needs to know where to render the map, so the fourth
 argument points to a location on the page (a DOM element) using D3. Check the
 HTML in ``index.html`` and you will find the line ``<div
-id="map_container"></div>``. This is where Escher lives.
+id="map_container"></div>``. This is where the new Escher Builder will live.
 
 To test your setup, change the ``menu`` option from ``all`` to ``zoom``, reload
 the page, and see what happens.
@@ -111,19 +111,39 @@ Custom tooltips
 We've designed the tooltip customization process to be as easy and modular as
 possible. The Builder will generate a ``div`` element to display your tooltip
 whenever you mouse over a label or map object associated with a reaction or
-metabolite. The only consideration that must be made is that a getSize function
+metabolite. (The only consideration that must be made is that a getSize function
 that returns an object with both height and width properties should be implemented
-within the tooltip. Otherwise the Builder willa assume that your tooltip is 270px
-wide and 100px tall. We'll start with a a basic tooltip that includes a random
-picture. You can view your currently deployad code at:
-http://localhost:8000/custom_tooltips.
+within the tooltip. Otherwise the Builder will assume that your tooltip is 270px
+wide and 100px tall.)
 
 Method 1: Tooltip with random pics
 ==================================
 
-To start, we'll just display a simple tooltip with a random image from unsplash.
-Change the tooltip_component option at the bottom of the file to ``Tooltip1``
-which looks like this:
+In the ``custom_tooltips`` directory, you'll find a JavaScript file called
+``main.js`` that we will use to try out two examples of custom tooltips. The
+first one, ``Tooltip1``, displays a random image from a web service called
+unsplash when you hover over a metabolite label or reaction label:
+
+.. image:: _static/tooltip_image.png
+
+To activate ``Tooltip1``, look for the following block of code at the end of
+``main.js`` and change the variable ``Tooltip2`` to ``Tooltip1``:
+
+.. code-block:: javascript
+
+  var options = {
+    menu: 'zoom',
+    fill_screen: true,
+    never_ask_before_quit: true,
+    // --------------------------------------------------
+    // CHANGE ME
+    tooltip_component: Tooltip2
+    // --------------------------------------------------
+
+The open your browser to http://127.0.0.1:8080/custom_tooltips and hover over a
+reaction or metabolite label to see it in action!
+
+The tooltip is defined like this:
 
 .. code-block:: javascript
 
@@ -132,7 +152,7 @@ which looks like this:
       // Style the text based on our tooltip_style object
       h('div', { style: tooltipStyle},
         // Update the text to read out the identifier biggId
-        'Hello tinier ' + props.biggId,
+        'Hello tooltip world ' + props.biggId,
         // Line break
         h('br'),
         // Add a picture. Get a random pic from unsplash, with ID between 0 and 1000.
@@ -141,17 +161,30 @@ which looks like this:
     );
   };
 
-Try it out! You should get a tooltip like this, with a different picture every
-time:
+Each tooltip receives data from Escher as an data structure called ``props``.
+The props include these attributes:
 
+- biggId: The ID for the reaction, metabolite, or gene.
+- name: The display name for the reaction, metabolite, or gene.
+- loc: The coordinates of the tooltip.
+- data: Any loaded data associated with the reaction, metabolite, or gene.
+- type: The type of element ("reaction", "metabolite", or "gene")
+
+Escher uses the `Preact`_ library to define tooltips. Preact provides the ``h``
+function which specifies the HTML element to create and any attributes and
+children (or you can use JSX if you already know how to set it up). Preact is a
+variant of the popular `React`_ web framework, and there are many resources
+available for learning more about it. We recommend this course:
+
+https://www.codecademy.com/learn/react-101
+
+Anything you can do with Preact, you can do in tooltip!
 
 Method 2: Tooltip with a D3 plot
 ================================
 
 What if we want a data plot in the tooltip? `D3.js`_ is great for creating
-custom plots, so let's start with this example of a bar plot in D3:
-
-https://bl.ocks.org/mbostock/3310560
+custom plots, so let's start with this example of a bar plot in D3.
 
 D3 takes a little while to learn, so, if you are interested in expanding on what
 we show here, I recommend you read through some D3 `tutorials`_. I will only
@@ -159,34 +192,42 @@ explain the main points here, and you can work through the details as you learn
 D3.
 
 The complete code for ``Tooltip2`` with bar charts is in
-``custom_tooltips/main.js``.
+``custom_tooltips/main.js``. To see it in action, change the tooltip_component
+back too ``Tooltip2`` (i.e. undo the changes you made in the last section) and
+refresh the demo website.
+
+The new Tooltip also uses Preact to define how it will render, but the Tooltip
+is now defined as a Preact Component class:
 
 .. code-block:: javascript
 
-  var tooltips_4 = function (args) {
-    // Use the tinier.render function to render any changes each time the
-    // tooltip gets called
-    tinier.render(
-      args.el,
-      // Create a new div element inside args.el
-      tinier.createElement(
-        'div',
-        // Style the text based on our tooltip_style object
-        { style: tooltip_style }
-      )
-    )
+  class Tooltip2 extends Component {
+    componentShouldUpdate() {
+      return false;
+    }
     ...
 
-So we still create and style a tooltip, but now we are going to fill it with a
-plot. Next, we take the biggID for our reaction, metabolite, or gene, and we
-calculate the frequency of each letter.
+This component tells Preact to create a div by defining this ``render`` function:
 
 .. code-block:: javascript
 
-  // Let's calculate the frequency of letters in the ID
-  var letters = calculateLetterFrequency(args.state.biggId)
+    render() {
+      // Style the text based on our tooltip_style object
+      return h('div', { style: tooltipStyle });
+    }
 
-You can look at the ``calculateLetterFrequency`` function; basic JavaScript.
+But the rest of the work is deferred to the D3 code in
+``componentWillReceiveProps``. To make sure Preact and D3 play nicely, it is
+essential to return ``false`` from ``componentShouldUpdate``.
+
+With these pieces in place, the rest of the code defines the particular plot we
+will make. Most of the content of ``componentWillReceiveProps`` should look like
+the D3 example here:
+
+https://bl.ocks.org/mbostock/3310560
+
+There is also a helper function to take the BiGG ID for our reaction,
+metabolite, or gene and calculate the frequency of each letter:
 
 .. code-block:: javascript
 
@@ -204,82 +245,22 @@ You can look at the ``calculateLetterFrequency`` function; basic JavaScript.
     })
   }
 
-The rest of ``Tooltip2`` takes our frequency data and turns it into a bar
-chart. This code is just an adaptation of the example we mentioned above:
-
-https://bl.ocks.org/mbostock/3310560
-
-For the details on how this works, check out the `tutorials`_ called "How to build
-a bar chart." The end result looks like this:
+The end result looks like this:
 
 .. image:: _static/tooltip_bar.png
 
 Pretty cool! This is also the version that's live on the `demo website`_, so you
 can see it in action there as well.
-.. image:: _static/tooltip_image.png
 
-Method 2: Callback function with Tinier for rendering
-=====================================================
+With these tools, you should have what you need to build complex, custom
+features on top of Escher. To see what's possible, check out Escher-FBA which
+was built using this exact API:
 
-The shortcuts we will use are part a the `Tinier`_ library. Tinier looks a lot
-like the popular JavaScript framework `React`_, but it is meant to be tiny (get
-it?) and modular so you can use it just to render a few DOM elements inside a
-tooltip. (In place of Tinier, you could also use a library like JQuery. That's
-not a bad idea if you alreay have experience with it.)
+https://sbrg.github.io/escher-fba
 
-The reasons for using Tinier will be a lot more obvious if we look at the second
-tooltip. Here is the code. NOTE: If you look at the code in escher-demo,
-``tooltip_2`` is more complicated. We are working up to that version.
+Happy extending!
 
-.. code-block:: javascript
-
-  var tooltips_2 = function (args) {
-    // Use the tinier.render function to render any changes each time the
-    // tooltip gets called
-    tinier.render(
-      args.el,
-      // Create a new div element inside args.el
-      tinier.createElement(
-        'div',
-        // Style the text based on our tooltip_style object
-        { style: tooltip_style},
-        // Update the text to read out the identifier biggId
-        'Hello tinier ' + args.state.biggId
-      )
-    )
-  }
-
-OK, let's compare ``tooltips_2`` to ``tooltips_1``. Both functions take
-``args``, and both function render something inside of ``args.el``. The new
-function uses two pieces of Tinier. First, ``tinier.render`` will take a
-location on the page (``args.el``) and render a Tinier element. Second,
-``tinier.createElement`` defines a Tinier version of a DOM element, in this case
-a ``div``. To create an Alement, you pass in a tag name, an object with
-attributes for the element like styles, and any children of the ``div``. In this
-case, the only child is some text that says 'Hello tinier' with the biggId.
-
-If you compare ``tootips_2`` and ``tooltips_1`` in detail, you might notice that
-``tooltips_2`` does not have any ``if`` statements. That's becuase Tinier lets
-you define your interface once, up front, and then it will determine whether any
-changes need to be made. If a ``div`` already exists, Tinier will just modify it
-instead of creating a new one. In the old version, we would have to use ``if``
-to check whether changes are necessary.
-
-Change ``tooltips_1`` to ``tooltips_2`` in this block, and refresh to see our
-new tooltip in action.
-
-.. code-block:: javascript
-
-  var options = {
-    menu: 'zoom',
-    fill_screen: true,
-    // --------------------------------------------------
-    // CHANGE ME
-    tooltip_component: tooltips_2,
-    // --------------------------------------------------
-  }
-
-.. _`demos`: https://escher.github.io/escher-demo
+.. _`demos`: https://github.com/escher/escher-demo
 .. _`Protein Data Bank`: http://www.rcsb.org/pdb/secondary.do?p=v2/secondary/visualize.jsp#visualize_pathway
 .. _`example gallery`: https://github.com/d3/d3/wiki/Gallery
 .. _`get started with Python`: https://www.python.org/about/gettingstarted/
@@ -290,9 +271,8 @@ new tooltip in action.
 .. _`ZIP file`: https://github.com/escher/escher-demo/archive/master.zip
 .. _`Chrome`: https://developer.chrome.com/devtools
 .. _`Firefox`: https://developer.mozilla.org/en-US/docs/Tools
-.. _`MDN`: https://developer.mozilla.org/
-.. _`React`: https://facebook.github.io/react/
+.. _`React`: https://reactjs.org/
+.. _`Preact`: https://preactjs.com/
 .. _`tutorials`: https://github.com/d3/d3/wiki/Tutorials
 .. _`demo website`: http://escher.github.io/escher-demo/custom_tooltips/
 .. _`live demo`: http://escher.github.io/escher-demo/custom_tooltips/
-.. _`Redux`: http://redux.js.org
