@@ -306,6 +306,11 @@ JavaScript API
           :doc:`Tooltip Tutorial <development-tutorial>` for more tips on
           getting started with custom tooltips.
 
+          For correct placement of the tooltip, the tooltip component should
+          implement a ``get_size`` function that returns the size of the tooltip
+          in pixes with the form: ``{ width: 300, height: 400 }``. Otherwise the
+          Builder will assume that your tooltip is 270px wide and 100px tall.
+
        .. js:attribute:: options.enable_tooltips
 
           (Default: ``['label']``) Determines the mouseover or touch

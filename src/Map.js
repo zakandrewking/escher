@@ -57,7 +57,7 @@ export default class Map {
                canvas_size_and_loc, enable_search, map_name, map_id,
                map_description) {
     if (canvas_size_and_loc === null) {
-      var size = zoomContainer.getSize()
+      var size = zoomContainer.get_size()
       canvas_size_and_loc = {
         x: -size.width,
         y: -size.height,
@@ -1027,14 +1027,14 @@ export default class Map {
   /**
    * Align selected nodes and/or reactions vertically. Undoable.
    */
-  alignVertical () {
+  align_vertical () {
     return this._align(false)
   }
 
   /**
    * Align selected nodes and/or reactions horizontally. Undoable
    */
-  alignHorizontal () {
+  align_horizontal () {
     return this._align(true)
   }
 
@@ -2080,7 +2080,7 @@ export default class Map {
   }
 
   get_size () {
-    return this.zoomContainer.getSize()
+    return this.zoomContainer.get_size()
   }
 
   zoom_to_reaction(reaction_id) {
@@ -2267,11 +2267,11 @@ export default class Map {
     )
   }
 
-  saveSvg () {
+  save_svg () {
     this.saveMap('before_svg_export', 'after_svg_export', 'svg')
   }
 
-  savePng () {
+  save_png () {
     this.saveMap('before_png_export', 'after_png_export', 'png')
   }
 

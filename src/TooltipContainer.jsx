@@ -122,8 +122,8 @@ export default class TooltipContainer {
 
     if (_.contains([ 'reaction_label', 'node_label', 'gene_label', 'reaction_object', 'node_object' ], type)) {
       // Use a default height if the ref hasn't been connected yet
-      const tooltipSize = (this.tooltipRef !== null && this.tooltipRef.getSize)
-                        ? this.tooltipRef.getSize()
+      const tooltipSize = (this.tooltipRef !== null && this.tooltipRef.get_size)
+                        ? this.tooltipRef.get_size()
                         : { width: 270, height: 100 }
       this.currentTooltip = { type, id: d[type.replace('_label', '_id').replace('_object', '_id')] }
       const windowTranslate = this.zoomContainer.windowTranslate

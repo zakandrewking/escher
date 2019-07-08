@@ -232,19 +232,19 @@ class Builder {
     }
 
     // Set up the zoom container
-    this.zoomContainer = new ZoomContainer(this.selection,
+    this.zoom_container = new ZoomContainer(this.selection,
                                             this.settings.get('scroll_behavior'),
                                             this.settings.get('use_3d_transform'))
     // Zoom container status changes
-    // this.zoomContainer.callbackManager.set('svg_start', () => {
+    // this.zoom_container.callbackManager.set('svg_start', () => {
     //   if (this.map) this.map.set_status('Drawing ...')
     // })
-    // this.zoomContainer.callbackManager.set('svg_finish', () => {
+    // this.zoom_container.callbackManager.set('svg_finish', () => {
     //   if (this.map) this.map.set_status('')
     // })
-    this.zoomContainer.callbackManager.set('zoom_change', () => {
+    this.zoom_container.callbackManager.set('zoom_change', () => {
       if (this.settings.get('semantic_zoom')) {
-        const scale = this.zoomContainer.windowScale
+        const scale = this.zoom_container.windowScale
         const optionObject = this.settings.get('semantic_zoom')
                                  .sort((a, b) => a.zoomLevel - b.zoomLevel)
                                  .find(a => a.zoomLevel > scale)
@@ -261,10 +261,10 @@ class Builder {
       }
     })
     this.settings.streams.use_3d_transform.onValue(val => {
-      this.zoomContainer.setUse3dTransform(val)
+      this.zoom_container.setUse3dTransform(val)
     })
     this.settings.streams.scroll_behavior.onValue(val => {
-      this.zoomContainer.setScrollBehavior(val)
+      this.zoom_container.setScrollBehavior(val)
     })
 
     // Make a container for other map-related tools that will be reset on map load
@@ -297,10 +297,10 @@ class Builder {
       this.settings.statusBus.onValue(x => {
         if (x === 'accept') {
           this._updateData(true, true, ['reaction', 'metabolite'], false)
-          if (this.zoomContainer !== null) {
+          if (this.zoom_container !== null) {
             // TODO make this automatic
             const newBehavior = this.settings.get('scroll_behavior')
-            this.zoomContainer.setScrollBehavior(newBehavior)
+            this.zoom_container.setScrollBehavior(newBehavior)
           }
           if (this.map !== null) {
             this.map.draw_all_nodes(false)
@@ -369,11 +369,11 @@ class Builder {
     }
 
     // remove the old map and related divs
-    utils.remove_child_nodes(this.zoomContainer.zoomedSel)
+    utils.remove_child_nodes(this.zoom_container.zoomedSel)
     utils.remove_child_nodes(this.mapToolsContainer)
 
-    const zoomedSel = this.zoomContainer.zoomedSel
-    const svg = this.zoomContainer.svg
+    const zoomedSel = this.zoom_container.zoomedSel
+    const svg = this.zoom_container.svg
 
     // remove the old map side effects
     if (this.map) {
@@ -386,7 +386,7 @@ class Builder {
                                svg,
                                this.embeddedCss,
                                zoomedSel,
-                               this.zoomContainer,
+                               this.zoom_container,
                                this.settings,
                                this.cobra_model,
                                this.settings.get('enable_search'))
@@ -395,7 +395,7 @@ class Builder {
       this.map = new Map(svg,
                          this.embeddedCss,
                          zoomedSel,
-                         this.zoomContainer,
+                         this.zoom_container,
                          this.settings,
                          this.cobra_model,
                          this.settings.get('canvas_size_and_loc'),
@@ -413,11 +413,11 @@ class Builder {
 
       // Set up the reaction input with complete.ly
       this.build_input = new BuildInput(this.mapToolsContainer, this.map,
-                                        this.zoomContainer, this.settings)
+                                        this.zoom_container, this.settings)
 
       // Set up the text edit input
       this.text_edit_input = new TextEditInput(this.mapToolsContainer, this.map,
-                                               this.zoomContainer)
+                                               this.zoom_container)
 
       // Set up the Brush
       this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
@@ -441,7 +441,7 @@ class Builder {
       this.tooltip_container = new TooltipContainer(
         this.mapToolsContainer,
         this.settings.get('tooltip_component'),
-        this.zoomContainer,
+        this.zoom_container,
         this.map,
         this.settings
       )
@@ -506,7 +506,7 @@ class Builder {
       } else {
         if (this.settings.get('starting_reaction') && this.cobra_model !== null) {
           // Draw default reaction if no map is provided
-          const size = this.zoomContainer.getSize()
+          const size = this.zoom_container.get_size()
           const startCoords = { x: size.width / 2, y: size.height / 4 }
           this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
                                              startCoords, 90)
@@ -623,9 +623,9 @@ class Builder {
         this.map.save()
       },
       loadMap: (file) => this.load_map(file),
-      saveSvg: () => this.map.saveSvg(),
-      savePng: () => this.map.savePng(),
-      clearMap: () => { this.clearMap() },
+      save_svg: () => this.map.save_svg(),
+      save_png: () => this.map.save_png(),
+      clear_map: () => { this.clear_map() },
       loadModel: file => this.load_model(file, true),
       clearModel: () => {
         this.load_model(null)
@@ -639,18 +639,18 @@ class Builder {
       deleteSelected: () => this.map.delete_selected(),
       undo: () => this.map.undo_stack.undo(),
       redo: () => this.map.undo_stack.redo(),
-      alignVertical: () => this.map.alignVertical(),
-      alignHorizontal: () => this.map.alignHorizontal(),
+      align_vertical: () => this.map.align_vertical(),
+      align_horizontal: () => this.map.align_horizontal(),
       togglePrimary: () => this.map.toggle_selected_node_primary(),
       cyclePrimary: () => this.map.cycle_primary_node(),
       selectAll: () => this.map.select_all(),
       selectNone: () => this.map.select_none(),
       invertSelection: () => this.map.invert_selection(),
-      zoomIn: () => this.zoomContainer.zoomIn(),
-      zoomOut: () => this.zoomContainer.zoomOut(),
+      zoom_in: () => this.zoom_container.zoom_in(),
+      zoom_out: () => this.zoom_container.zoom_out(),
       zoomExtentNodes: () => this.map.zoom_extent_nodes(),
       zoomExtentCanvas: () => this.map.zoom_extent_canvas(),
-      fullScreen: () => this.fullScreen(),
+      full_screen: () => this.full_screen(),
       search: () => this.passPropsSearchBar({ display: true }),
       toggleBeziers: () => this.map.toggle_beziers(),
       renderSettingsMenu: () => this.passPropsSettingsMenu({ display: true })
@@ -732,10 +732,10 @@ class Builder {
       mode: this.mode,
       settings: this.settings,
       setMode: mode => this._setMode(mode),
-      zoomContainer: this.zoomContainer,
+      zoomContainer: this.zoom_container,
       map: this.map,
       buildInput: this.build_input,
-      fullScreen: () => this.fullScreen()
+      full_screen: () => this.full_screen()
     })
 
     // redraw when mode changes
@@ -761,7 +761,7 @@ class Builder {
     // brush
     this.brush.toggle(mode === 'brush')
     // zoom
-    this.zoomContainer.togglePanDrag(mode === 'zoom' || mode === 'view')
+    this.zoom_container.togglePanDrag(mode === 'zoom' || mode === 'view')
     // resize canvas
     this.map.canvas.toggleResize(mode !== 'view')
 
@@ -965,7 +965,7 @@ class Builder {
   /**
    * Clear the map
    */
-  clearMap () {
+  clear_map () { // eslint-disable-line camelcase
     this.callback_manager.run('clear_map')
     this.map.clearMapData()
     this._updateData(true, true, ['reaction', 'metabolite'], false)
@@ -1104,22 +1104,22 @@ class Builder {
    */
   getKeys () {
     const map = this.map
-    const zoomContainer = this.zoomContainer
+    const zoom_container = this.zoom_container
     return {
       save: {
         key: 'ctrl+s',
         target: map,
         fn: map.save
       },
-      saveSvg: {
+      save_svg: {
         key: 'ctrl+shift+s',
         target: map,
-        fn: map.saveSvg
+        fn: map.save_svg
       },
-      savePng: {
+      save_png: {
         key: 'ctrl+shift+p',
         target: map,
-        fn: map.savePng
+        fn: map.save_png
       },
       load: {
         key: 'ctrl+o',
@@ -1150,24 +1150,24 @@ class Builder {
       },
       zoom_in_ctrl: {
         key: 'ctrl+=',
-        target: zoomContainer,
-        fn: zoomContainer.zoomIn
+        target: zoom_container,
+        fn: zoom_container.zoom_in
       },
       zoom_in: {
         key: '=',
-        target: zoomContainer,
-        fn: zoomContainer.zoomIn,
+        target: zoom_container,
+        fn: zoom_container.zoom_in,
         ignoreWithInput: true
       },
       zoom_out_ctrl: {
         key: 'ctrl+-',
-        target: zoomContainer,
-        fn: zoomContainer.zoomOut
+        target: zoom_container,
+        fn: zoom_container.zoom_out
       },
       zoom_out: {
         key: '-',
-        target: zoomContainer,
-        fn: zoomContainer.zoomOut,
+        target: zoom_container,
+        fn: zoom_container.zoom_out,
         ignoreWithInput: true
       },
       extent_nodes_ctrl: {
@@ -1269,15 +1269,15 @@ class Builder {
         ignoreWithInput: true,
         requires: 'enable_editing'
       },
-      alignVertical: {
+      align_vertical: {
         key: 'alt+l',
         target: map,
-        fn: map.alignVertical
+        fn: map.align_vertical
       },
-      alignHorizontal: {
+      align_horizontal: {
         key: 'shift+alt+l',
         target: map,
-        fn: map.alignHorizontal
+        fn: map.align_horizontal
       },
       toggle_primary: {
         key: 'p',
@@ -1378,7 +1378,7 @@ class Builder {
   /**
    * Toggle full screen mode.
    */
-  fullScreen () {
+  full_screen () { // eslint-disable-line camelcase
     // these settings can update in full screen if provided
     const fullScreenSettings = [
       'menu',
@@ -1449,7 +1449,7 @@ class Builder {
 
       // set escape listener
       this.clearFullScreenEscape = this.map.key_manager.addEscapeListener(
-        () => this.fullScreen()
+        () => this.full_screen()
       )
     }
     this.map.zoom_extent_canvas()

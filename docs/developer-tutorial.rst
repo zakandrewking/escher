@@ -111,10 +111,7 @@ Custom tooltips
 We've designed the tooltip customization process to be as easy and modular as
 possible. The Builder will generate a ``div`` element to display your tooltip
 whenever you mouse over a label or map object associated with a reaction or
-metabolite. (The only consideration that must be made is that a getSize function
-that returns an object with both height and width properties should be implemented
-within the tooltip. Otherwise the Builder will assume that your tooltip is 270px
-wide and 100px tall.)
+metabolite.
 
 Method 1: Tooltip with random pics
 ==================================

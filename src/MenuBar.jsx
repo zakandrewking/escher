@@ -43,17 +43,17 @@ class MenuBar extends Component {
           />
           <MenuButton
             name={'Export as SVG' + (enableKeys ? ' (Ctrl+Shift+S)' : '')}
-            onClick={() => this.props.saveSvg()}
+            onClick={() => this.props.save_svg()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name={'Export as PNG' + (enableKeys ? ' (Ctrl+Shift+P)' : '')}
-            onClick={() => this.props.savePng()}
+            onClick={() => this.props.save_png()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Clear map'
-            onClick={() => this.props.clearMap()}
+            onClick={() => this.props.clear_map()}
             disabledButtons={disabledButtons}
           />
         </Dropdown>
@@ -167,12 +167,12 @@ class MenuBar extends Component {
           <li name='divider' />
           <MenuButton
             name={`Align vertical${enableKeys ? ' (Alt+L)' : ''}`}
-            onClick={this.props.alignVertical}
+            onClick={this.props.align_vertical}
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name={`Align horizontal${enableKeys ? ' (Shift+Alt+L)' : ''}`}
-            onClick={this.props.alignHorizontal}
+            onClick={this.props.align_horizontal}
             disabledButtons={disabledButtons}
           />
           <MenuButton
@@ -205,12 +205,12 @@ class MenuBar extends Component {
         <Dropdown name='View' rightMenu='true' dropdownVisible={this.props.dropdownVisible}>
           <MenuButton
             name={`Zoom in${enableKeys ? ' (+)' : ''}`}
-            onClick={() => this.props.zoomIn()}
+            onClick={() => this.props.zoom_in()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name={`Zoom out${enableKeys ? ' (-)' : ''}`}
-            onClick={() => this.props.zoomOut()}
+            onClick={() => this.props.zoom_out()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
@@ -238,7 +238,7 @@ class MenuBar extends Component {
           {fullScreenButtonEnabled &&
             <MenuButton
               name={'Full screen'}
-              onClick={() => this.props.fullScreen()}
+              onClick={() => this.props.full_screen()}
               checkMark={this.props.isFullScreen}
               disabledButtons={disabledButtons}
             />
