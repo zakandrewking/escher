@@ -87,6 +87,10 @@
   border-collapse: collapse;
 }
 
+.escher-container .settingsBox label {
+  display: inline;
+}
+
 .escher-container .settingsBox .radioSelection {
   cursor: default;
 }

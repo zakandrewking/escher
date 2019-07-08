@@ -19,8 +19,11 @@
   box-sizing: border-box;
   font-size: 12px;
   border-radius: 3px;
-  margin-bottom: 0;
-  font-weight: normal!important;
+
+  /* these sometimes get overridden */
+  margin: 0 !important;
+  font-weight: normal !important;
+
   text-align: center;
   vertical-align: middle;
   -ms-touch-action: none;
@@ -132,8 +135,11 @@
 .escher-container .menu li, .menu label {
   font-size: 15px;
   display: block;
-  font-weight: normal!important;
   color: #444444;
+
+  /* these sometimes get overridden */
+  font-weight: normal !important;
+  margin: 0 !important;
 }
 
 .escher-container .menu.ul.li {
