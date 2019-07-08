@@ -82,11 +82,14 @@ if (base) {
               Object.keys(builder.settings.streams).map(key => {
                 if (this.model.keys().includes(key)) {
                   const val = this.model.get(key)
-                  // ignore null because that means to use the default
-                  if (val !== null) builder.settings.set(key, val)
-
-                  // TODO remove
-                  console.log(key, val)
+                  if (val !== null) {
+                    // if set, use the value from Python
+                    builder.settings.set(key, val)
+                  } else {
+                    // otherwise use the default from JavaScript
+                    this.model.set(key, builder.settings.get(key))
+                  }
+                  this.model.save_changes()
 
                   // reactive updates
                   this.model.on(`change:${key}`, () => {
@@ -94,8 +97,6 @@ if (base) {
                     // ignore null because that means to use the default
                     if (val !== null) {
                       builder.settings.set(key, val)
-
-                      console.log(key, val)
 
                       // default to drawing everything, unless it's a common
                       // option where that's not necessary
