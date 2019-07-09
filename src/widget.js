@@ -107,7 +107,6 @@ if (base) {
                     const val = this.model.get(key)
                     // stop if hasn't changed
                     if (!_.isEqual(val, builder.settings.get(key))) {
-                      console.log('setting builder', key, val)
                       if (key in WITH_API_FUNCTIONS) {
                         builder[WITH_API_FUNCTIONS[key]](val)
                       } else {
@@ -126,7 +125,6 @@ if (base) {
                 stream.onValue(val => {
                   // avoid a loop with a deep comparison
                   if (!_.isEqual(val, this.model.get(key))) {
-                    console.log('setting model', key, val)
                     this.model.set(key, val)
                     this.model.save_changes()
                   }
