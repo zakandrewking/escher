@@ -613,11 +613,19 @@ class Builder {
         }
         this.map.save()
       },
-      loadMap: (file) => this.load_map(file),
+      loadMap: file => this.load_map(file),
+      assignKeyLoadMap: fn => {
+        // connect the key for this input
+        this.map.key_manager.assignedKeys.load_map.fn = fn
+      },
       save_svg: () => this.map.save_svg(),
       save_png: () => this.map.save_png(),
       clear_map: () => { this.clear_map() },
       loadModel: file => this.load_model(file, true),
+      assignKeyLoadModel: fn => {
+        // connect the key for this input
+        this.map.key_manager.assignedKeys.load_model.fn = fn
+      },
       clearModel: () => {
         this.load_model(null)
         this.callback_manager.run('clear_model')
@@ -1092,7 +1100,7 @@ class Builder {
    */
   getKeys () {
     const map = this.map
-    const zoom_container = this.zoom_container
+    const zoom_container = this.zoom_container // eslint-disable-line camelcase
     return {
       save: {
         key: 'ctrl+s',
@@ -1109,7 +1117,7 @@ class Builder {
         target: map,
         fn: map.save_png
       },
-      load: {
+      load_map: {
         key: 'ctrl+o',
         fn: null // defined by button
       },

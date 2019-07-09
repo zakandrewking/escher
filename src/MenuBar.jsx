@@ -38,6 +38,7 @@ class MenuBar extends Component {
           <MenuButton
             name={'Load map JSON' + (enableKeys ? ' (Ctrl+O)' : '')}
             onClick={file => this.props.loadMap(file)}
+            assignKey={this.props.assignKeyLoadMap}
             type='load'
             disabledButtons={disabledButtons}
           />
@@ -61,6 +62,7 @@ class MenuBar extends Component {
           <MenuButton
             name={'Load COBRA model JSON' + (enableKeys ? ' (Ctrl+M)' : '')}
             onClick={file => this.props.loadModel(file)}
+            assignKey={this.props.assignKeyLoadModel}
             type='load'
             disabledButtons={disabledButtons}
           />
