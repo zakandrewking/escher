@@ -184,13 +184,13 @@ class Builder {
 
     // make data settings reactive
     this.settings.streams.reaction_data.onValue(val => {
-      this.set_reaction_data(val, false)
+      this.set_reaction_data(val)
     })
     this.settings.streams.metabolite_data.onValue(val => {
-      this.set_metabolite_data(val, false)
+      this.set_metabolite_data(val)
     })
     this.settings.streams.gene_data.onValue(val => {
-      this.set_gene_data(val, false, false)
+      this.set_gene_data(val)
     })
 
     // Warn if full/fill screen options conflict
@@ -624,8 +624,11 @@ class Builder {
       },
       updateRules: () => this.map.convert_map(),
       setReactionData: d => this.set_reaction_data(d),
+      clearReactionData: () => this.set_reaction_data(null),
       setGeneData: d => this.set_gene_data(d),
+      clearGeneData: () => this.set_gene_data(null, true),
       setMetaboliteData: d => this.set_metabolite_data(d),
+      clearMetaboliteData: d => this.set_metabolite_data(null),
       setMode: mode => this._setMode(mode),
       deleteSelected: () => this.map.delete_selected(),
       undo: () => this.map.undo_stack.undo(),
@@ -842,12 +845,10 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_reaction_data (data, setInSettings = true) { // eslint-disable-line camelcase
-    // If the change came from the setting stream already, then don't update the
-    // stream again
-    if (setInSettings) {
-      this.settings.set('reaction_data', data)
-    }
+  set_reaction_data (data) { // eslint-disable-line camelcase
+    // If the data has not changed, exit
+    if (this.settings.get('reaction_data') === data) return
+    else (this.settings.set('reaction_data', data))
 
     // clear gene data
     if (data) {
@@ -879,21 +880,19 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_gene_data (data, clearGeneReactionRules, setInSettings = true) { // eslint-disable-line camelcase
+  set_gene_data (data, clearGeneReactionRules = false) { // eslint-disable-line camelcase
+    // If the data has not changed, exit
+    if (this.settings.get('gene_data') === data) return
+    else (this.settings.set('gene_data', data))
+
     if (clearGeneReactionRules) {
-      // default undefined
       this.settings.set('show_gene_reaction_rules', false)
     }
 
-    // If the change came from the setting stream already, then don't update the
-    // stream again
-    if (setInSettings) {
-      this.settings.set('gene_data', data)
-    }
-
-    // clear reaction data
+    // clear reaction data; show gene reaction rules
     if (data) {
       this.settings._options.reaction_data = null
+      this.settings.set('show_gene_reaction_rules', true)
     }
 
     this._updateData(true, true, ['reaction'])
@@ -917,12 +916,10 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_metabolite_data (data, setInSettings = true) { // eslint-disable-line camelcase
-    // If the change came from the setting stream already, then don't update the
-    // stream again
-    if (setInSettings) {
-      this.settings.set('metabolite_data', data)
-    }
+  set_metabolite_data (data) { // eslint-disable-line camelcase
+    // If the data has not changed, exit
+    if (this.settings.get('metabolite_data') === data) return
+    else (this.settings.set('metabolite_data', data))
 
     this._updateData(true, true, ['metabolite'])
     this.map.set_status('')
@@ -1123,21 +1120,6 @@ class Builder {
       load_model: {
         key: 'ctrl+m',
         fn: null // defined by button
-      },
-      clear_model: {
-        fn: this.load_model.bind(this, null, true)
-      },
-      load_reaction_data: { fn: null }, // defined by button
-      clear_reaction_data: {
-        fn: () => this.set_reaction_data(null)
-      },
-      load_metabolite_data: { fn: null }, // defined by button
-      clear_metabolite_data: {
-        fn: () => this.set_metabolite_data(null)
-      },
-      load_gene_data: { fn: null }, // defined by button
-      clear_gene_data: {
-        fn: () => this.set_gene_data(null, true)
       },
       zoom_in_ctrl: {
         key: 'ctrl+=',

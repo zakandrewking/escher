@@ -59,7 +59,7 @@ export default class Scale {
       // stats changes
       map.callback_manager.set(`calc_data_stats__${type}`, changed => {
         if (changed) {
-          this.setScale(type, settings.get('reaction_scale'), getDataStatistics)
+          this.setScale(type, settings.get(`${type}_scale`), getDataStatistics)
         }
       })
     })

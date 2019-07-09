@@ -84,7 +84,7 @@ class MenuBar extends Component {
           />
           <MenuButton
             name='Clear reaction data'
-            onClick={() => this.props.setReactionData(null)}
+            onClick={() => this.props.clearReactionData()}
             disabledButtons={disabledButtons}
           />
           <li name='divider' />
@@ -96,7 +96,7 @@ class MenuBar extends Component {
           />
           <MenuButton
             name='Clear gene data'
-            onClick={() => this.props.setGeneData(null)}
+            onClick={() => this.props.clearGeneData()}
             disabledButtons={disabledButtons}
           />
           <li name='divider' />
@@ -108,7 +108,7 @@ class MenuBar extends Component {
           />
           <MenuButton
             name='Clear metabolite data'
-            onClick={() => this.props.setMetaboliteData(null)}
+            onClick={() => this.props.clearMetaboliteData()}
             disabledButtons={disabledButtons}
           />
         </Dropdown>
