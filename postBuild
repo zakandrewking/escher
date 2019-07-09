@@ -3,5 +3,5 @@
 # For Binder
 cd py
 pip install -e .
-jupyter nbextension install --py --symlink escher
-jupyter nbextension enable --py escher
+jupyter nbextension install --py --symlink --sys-prefix escher
+jupyter nbextension enable --py --sys-prefix escher
