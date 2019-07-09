@@ -20,10 +20,10 @@ import SearchBar from './SearchBar'
 import ButtonPanel from './ButtonPanel'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
+import scalePresets from './scalePresets'
 import _ from 'underscore'
 import {
   select as d3Select,
-  selectAll as d3SelectAll,
   selection as d3Selection
 } from 'd3-selection'
 
@@ -110,9 +110,8 @@ class Builder {
       reaction_data: null,
       reaction_styles: ['color', 'size', 'text'],
       reaction_compare_style: 'log2_fold',
-      reaction_scale: [ { type: 'min', color: '#c8c8c8', size: 12 },
-                        { type: 'median', color: '#9696ff', size: 20 },
-                        { type: 'max', color: '#ff0000', size: 25 } ],
+      reaction_scale: null,
+      reaction_scale_preset: 'GaBuGeRd',
       reaction_no_data_color: '#dcdcdc',
       reaction_no_data_size: 8,
       // gene
@@ -122,9 +121,8 @@ class Builder {
       metabolite_data: null,
       metabolite_styles: ['color', 'size', 'text'],
       metabolite_compare_style: 'log2_fold',
-      metabolite_scale: [ { type: 'min', color: '#fffaf0', size: 20 },
-                          { type: 'median', color: '#f1c470', size: 30 },
-                          { type: 'max', color: '#800000', size: 40 } ],
+      metabolite_scale: null,
+      metabolite_scale_preset: 'WhYlRd',
       metabolite_no_data_color: '#ffffff',
       metabolite_no_data_size: 10,
       // View and build options
@@ -139,8 +137,6 @@ class Builder {
       tooltip_component: DefaultTooltip,
       enable_tooltips: ['label'],
       enable_keys_with_tooltip: true,
-      reaction_scale_preset: null,
-      metabolite_scale_preset: null,
       // Callbacks
       first_load_callback: null
     }, {
@@ -195,13 +191,6 @@ class Builder {
     })
     this.settings.streams.gene_data.onValue(val => {
       this.set_gene_data(val, false, false)
-    })
-
-    // Warn if scales are too short
-    ;['reaction_scale', 'metabolite_scale'].map(scaleType => {
-      if (this.settings.get(scaleType) && this.settings.get(scaleType).length < 2) {
-        console.warn(`Bad value for option "${scaleType}". Scales must have at least 2 points.`)
-      }
     })
 
     // Warn if full/fill screen options conflict
@@ -1044,7 +1033,7 @@ class Builder {
       clearTimeout(this.update_model_timer)
     }
 
-    var delay = 5
+    const delay = 5
     this.update_model_timer = setTimeout(() => {
       // metabolite_data
       if (updateMetaboliteData && updateModel && this.cobra_model !== null) {

@@ -5,7 +5,7 @@ import ScaleSlider from './ScaleSlider'
 import ScaleSelection from './ScaleSelection'
 import _ from 'underscore'
 import './SettingsMenu.css'
-import scalePresets from './colorPresets'
+import scalePresets from './scalePresets'
 
 /**
  * SettingsMenu. Handles the functions associated with the UI for changing
@@ -256,7 +256,7 @@ class SettingsMenu extends Component {
                       name={key}
                       scale={value}
                       onClick={() => {
-                        settings.set('reaction_scale', value)
+                        settings.set('reaction_scale_preset', key)
                       }}
                     />
                   )
