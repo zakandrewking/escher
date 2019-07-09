@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# For Binder
+cd py && pip install -e .
