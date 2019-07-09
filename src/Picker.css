@@ -54,14 +54,16 @@
 
 .escher-container .colorOptions .colorText {
   padding: 3px 0px;
-  width: -webkit-fill-available;
+  width: 100%;
 }
 
 .escher-container .colorOptions .colorWheel {
-  padding: 0px 2px;
+  padding: 0px;
   position: absolute;
   right: 0;
-  width: 24px
+  height: 24px;
+  width: 21px;
+  border: 1px solid black;
 }
 
 .escher-container .picker .trashDiv {

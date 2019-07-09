@@ -17,7 +17,7 @@ class ScaleSelection extends Component {
   render () {
     return (
       <div className='scaleSelection' onClick={() => this.props.onClick()}>
-        <div className='scaleName'>
+        <div>
           {this.props.name}
         </div>
         <div className='scaleColors'>

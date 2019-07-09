@@ -153,8 +153,8 @@ jupyter nbextension enable --py escher
 If you are using virtualenv or conda, you can add the `--sys-prefix` flag to
 those commands to keep your environment isolated and reproducible.
 
-When you make changes, you will need to `yarn copy` and refresh notebook browser
-tab.
+When you make changes, you will need to `yarn build && yarn copy` and refresh
+notebook browser tab.
 
 For Jupyter Lab, run (in the root directory):
 

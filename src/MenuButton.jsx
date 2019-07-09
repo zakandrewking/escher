@@ -12,6 +12,11 @@ import utils from './utils'
 import * as dataStyles from './dataStyles'
 
 class MenuButton extends Component {
+  constructor (props) {
+    super(props)
+    this.assignKeyForInput = this.assignKeyForInput.bind(this)
+  }
+
   handleFileInput (target) {
     const file = target.files[0]
     const reader = new window.FileReader()
@@ -23,6 +28,12 @@ class MenuButton extends Component {
     }
     // reset input
     target.value = null
+  }
+
+  assignKeyForInput (node) {
+    if (this.props.assignKey) {
+      this.props.assignKey(() => node.click())
+    }
   }
 
   render () {
@@ -38,6 +49,7 @@ class MenuButton extends Component {
             type='file'
             onChange={event => this.handleFileInput(event.target)}
             disabled={disabled}
+            ref={this.assignKeyForInput}
           />
           {this.props.name}
         </label>

@@ -87,6 +87,10 @@
   border-collapse: collapse;
 }
 
+.escher-container .settingsBox label {
+  display: inline;
+}
+
 .escher-container .settingsBox .radioSelection {
   cursor: default;
 }
@@ -187,14 +191,6 @@
 .escher-container .scaleSelection:hover {
   background-color: dodgerblue;
   color: white;
-}
-
-.escher-container .icon-blank {
-  margin: -3px -3px;
-}
-
-.escher-container .scaleName {
-  margin-right: 15px;
 }
 
 .escher-container .settingsBox .icon-sort-down {

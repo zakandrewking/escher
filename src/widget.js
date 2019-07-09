@@ -26,10 +26,17 @@ if (base) {
     'enable_editing',
     'enable_keys',
     'full_screen_button',
+    // these already redraw
     'reaction_data',
     'metabolite_data',
     'gene_data'
   ]
+
+  const WITH_API_FUNCTIONS = {
+    reaction_data: 'set_reaction_data',
+    metabolite_data: 'set_metabolite_data',
+    gene_data: 'set_gene_data'
+  }
 
   /**
    * Jupyter widget implementation for the Escher Builder.
@@ -78,24 +85,33 @@ if (base) {
                 builder.load_model(this.getModelData())
               })
 
-              // set the rest of the options
-              Object.keys(builder.settings.streams).map(key => {
+              // sync changes from options (only after they have been accepted)
+              _.mapObject(builder.settings.acceptedStreams, (stream, key) => {
                 if (this.model.keys().includes(key)) {
                   const val = this.model.get(key)
-                  // ignore null because that means to use the default
-                  if (val !== null) builder.settings.set(key, val)
-
-                  // TODO remove
-                  console.log(key, val)
+                  if (val !== null) {
+                    // if set, use the value from Python
+                    if (key in WITH_API_FUNCTIONS) {
+                      builder[WITH_API_FUNCTIONS[key]](val)
+                    } else {
+                      builder.settings.set(key, val)
+                    }
+                  } else {
+                    // otherwise use the default from JavaScript
+                    this.model.set(key, builder.settings.get(key))
+                    this.model.save_changes()
+                  }
 
                   // reactive updates
                   this.model.on(`change:${key}`, () => {
                     const val = this.model.get(key)
-                    // ignore null because that means to use the default
-                    if (val !== null) {
-                      builder.settings.set(key, val)
-
-                      console.log(key, val)
+                    // stop if hasn't changed
+                    if (!_.isEqual(val, builder.settings.get(key))) {
+                      if (key in WITH_API_FUNCTIONS) {
+                        builder[WITH_API_FUNCTIONS[key]](val)
+                      } else {
+                        builder.settings.set(key, val)
+                      }
 
                       // default to drawing everything, unless it's a common
                       // option where that's not necessary
@@ -105,13 +121,10 @@ if (base) {
                     }
                   })
                 }
-              })
 
-              // get changes from options (only after they have been accepted)
-              _.mapObject(builder.settings.acceptedStreams, (stream, key) => {
                 stream.onValue(val => {
-                  // avoid a loop
-                  if (val !== this.model.get(key)) {
+                  // avoid a loop with a deep comparison
+                  if (!_.isEqual(val, this.model.get(key))) {
                     this.model.set(key, val)
                     this.model.save_changes()
                   }

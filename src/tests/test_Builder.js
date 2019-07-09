@@ -190,42 +190,4 @@ describe('Builder', () => {
       }
     })
   })
-
-  it('sets reaction then gene data, with streams', done => {
-    const sel = makeParentSel(d3Body)
-    Builder(getMap(), null, '', sel, {
-      first_load_callback: builder => {
-        // These just need to run right now
-        const reactionData = { GAPD: 2.0 }
-        const geneData = { b1779: 2.0 }
-        builder.settings.set('reaction_data', reactionData)
-        assert.deepEqual(builder.settings.get('reaction_data'), reactionData)
-        builder.settings.set('gene_data', geneData)
-        assert.strictEqual(builder.settings.get('reaction_data'), null)
-        assert.deepEqual(builder.settings.get('gene_data'), geneData)
-        builder.settings.set('gene_data', null)
-        assert.strictEqual(builder.settings.get('gene_data'), null)
-        done()
-      }
-    })
-  })
-
-  it('sets gene then reaction data, with streams', done =>{
-    const sel = makeParentSel(d3Body)
-    Builder(getMap(), null, '', sel, {
-      first_load_callback: builder => {
-        // These just need to run right now
-        const reactionData = { GAPD: 2.0 }
-        const geneData = { b1779: 2.0 }
-        builder.settings.set('gene_data', geneData)
-        assert.deepEqual(builder.settings.get('gene_data'), geneData)
-        builder.settings.set('reaction_data', reactionData)
-        assert.strictEqual(builder.settings.get('gene_data'), null)
-        assert.deepEqual(builder.settings.get('reaction_data'), reactionData)
-        builder.settings.set('reaction_data', null)
-        assert.strictEqual(builder.settings.get('reaction_data'), null)
-        done()
-      }
-    })
-  })
 })

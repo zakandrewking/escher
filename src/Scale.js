@@ -1,3 +1,4 @@
+import scalePresets from './scalePresets'
 import { scaleLinear } from 'd3-scale'
 
 export default class Scale {
@@ -14,26 +15,53 @@ export default class Scale {
   }
 
   connectToSettings (settings, map, getDataStatistics) {
-    // scale changes
-    settings.streams['reaction_scale'].onValue(scale => {
-      this.setReactionScale(scale, getDataStatistics)
-    })
-    settings.streams['metabolite_scale'].onValue(scale => {
-      this.setMetaboliteScale(scale, getDataStatistics)
-    })
+    // Wire up default scales. First warn if preset and scale are set. Use
+    // presets to set scales, avoiding loops.
+    const types = [ 'reaction', 'metabolite' ]
+    types.forEach(type => {
+      const scale = `${type}_scale`
+      const preset = `${type}_scale_preset`
 
-    // stats changes
-    map.callback_manager.set('calc_data_stats__reaction', changed => {
-      if (changed) {
-        this.setReactionScale(settings.get('reaction_scale'),
-                              getDataStatistics)
+      // initial
+      const presetVal = settings.get(preset)
+      const scaleVal = settings.get(scale)
+      if (presetVal && scaleVal && scaleVal !== scalePresets[presetVal]) {
+        console.warn(`Both ${scale} and ${preset} are defined. Ignoring ${preset}. Set ${preset} to "false" to hide this warning.`)
+        settings.set(preset, null)
+      } else if (presetVal) {
+        settings.set(scale, scalePresets[presetVal])
+      } else if (!scaleVal) {
+        console.error(`Must provide a ${scale} or ${preset}`)
       }
-    })
-    map.callback_manager.set('calc_data_stats__metabolite', changed => {
-      if (changed) {
-        this.setMetaboliteScale(settings.get('metabolite_scale'),
-                                getDataStatistics)
+
+      // Warn if scales are too short
+      if (settings.get(scale) && settings.get(scale).length < 2) {
+        console.error(`Bad value for option ${scale}. Scales must have at least 2 points.`)
+      } else {
+        this.setScale(type, scale, getDataStatistics)
       }
+
+      // reactive
+      settings.streams[scale].onValue(val => {
+        // if the scale did not come from the preset, then reset the preset setting
+        if (val && val !== scalePresets[settings.get(preset)]) {
+          settings.set(preset, null)
+        }
+        this.setScale(type, val, getDataStatistics)
+      })
+      settings.streams[preset].onValue(val => {
+        // if there is a new preset, then set the scale
+        if (val) {
+          settings.set(scale, scalePresets[val])
+        }
+      })
+
+      // stats changes
+      map.callback_manager.set(`calc_data_stats__${type}`, changed => {
+        if (changed) {
+          this.setScale(type, settings.get(`${type}_scale`), getDataStatistics)
+        }
+      })
     })
   }
 
@@ -55,6 +83,14 @@ export default class Scale {
       domain: sorted.map(x => { return x.v }),
       color_range: sorted.map(x => { return x.color }),
       size_range: sorted.map(x => { return x.size })
+    }
+  }
+
+  setScale (type, scale, getDataStatistics) {
+    if (type === 'reaction') {
+      this.setReactionScale(scale, getDataStatistics)
+    } else {
+      this.setMetaboliteScale(scale, getDataStatistics)
     }
   }
 

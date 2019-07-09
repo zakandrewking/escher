@@ -159,7 +159,8 @@ export default class Settings {
    * directly. To set options that respect the Settings menu Accept/Abandon, use
    * setConditional().
    * @param {String} name - The option name
-   * @param {} value - The new value
+   * @param {Any} value - The new value
+   * can check whether the change was made internally to avoid loops.
    */
   set (name, value) {
     if (!(name in this.busses)) {

@@ -5,7 +5,7 @@ import ScaleSlider from './ScaleSlider'
 import ScaleSelection from './ScaleSelection'
 import _ from 'underscore'
 import './SettingsMenu.css'
-import scalePresets from './colorPresets'
+import scalePresets from './scalePresets'
 
 /**
  * SettingsMenu. Handles the functions associated with the UI for changing
@@ -203,7 +203,7 @@ class SettingsMenu extends Component {
                 />
                 Use 3D transform for responsive panning and zooming
               </label>
-              <table>
+              <table style={{marginTop: '5px'}}>
                 <tr title='Determines over which elements tooltips will display for reactions, metabolites, and genes'>
                   <td>
                       Show tooltips over:
@@ -256,7 +256,7 @@ class SettingsMenu extends Component {
                       name={key}
                       scale={value}
                       onClick={() => {
-                        settings.set('reaction_scale', value)
+                        settings.set('reaction_scale_preset', key)
                       }}
                     />
                   )
@@ -343,7 +343,7 @@ class SettingsMenu extends Component {
                 </td>
               </tr>
               <tr title='The function that will be used to compare datasets, when paired data is loaded'>
-                <td className='optionLabel'>Comparison</td>
+                <td className='optionLabel'>Comparison:</td>
                 <td>
                   <label className='optionGroup'>
                     <input
@@ -504,7 +504,7 @@ class SettingsMenu extends Component {
                 </td>
               </tr>
               <tr title='The function that will be used to compare datasets, when paired data is loaded'>
-                <td className='optionLabel'>Comparison</td>
+                <td className='optionLabel'>Comparison:</td>
                 <td>
                   <label className='optionGroup'>
                     <input

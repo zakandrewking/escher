@@ -10,6 +10,9 @@
 .escher-container .button-panel>li {
   margin-top: 5px;
   display: block;
+
+  /* these sometimes get overridden */
+  margin-left: 0 !important;
 }
 
 .escher-container .grouping {

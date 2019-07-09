@@ -280,7 +280,7 @@ export default class ZoomContainer {
       this._goToSvg(scale, translate)
     }
 
-    this.callbackManager.run('goTo')
+    this.callbackManager.run('go_to')
   }
 
   /**
@@ -353,7 +353,7 @@ export default class ZoomContainer {
    * and less than 1 zooms out.
    */
   zoomBy (amount) {
-    var size = this.getSize()
+    var size = this.get_size()
     var shift = {
       x: size.width / 2 - ((size.width / 2 - this.windowTranslate.x) * amount +
                            this.windowTranslate.x),
@@ -367,14 +367,14 @@ export default class ZoomContainer {
   /**
    * Zoom in by the default amount with the default options.
    */
-  zoomIn () {
+  zoom_in () {
     this.zoomBy(1.5)
   }
 
   /**
    * Zoom out by the default amount with the default options.
    */
-  zoomOut () {
+  zoom_out () {
     this.zoomBy(0.667)
   }
 
@@ -383,7 +383,7 @@ export default class ZoomContainer {
    * width or height is not defined.
    * @returns {Object} The size coordinates, e.g. { x: 2, y: 3 }.
    */
-  getSize () {
+  get_size () {
     const {width, height} = this.selection.node().getBoundingClientRect()
     return { width, height }
   }
@@ -395,7 +395,7 @@ export default class ZoomContainer {
     // TODO BUG not accounting for scale correctly
 
     var margin = 120 // pixels
-    var size = this.getSize()
+    var size = this.get_size()
     var current = {
       x: {
         min: -this.windowTranslate.x / this.windowScale +
