@@ -182,17 +182,6 @@ class Builder {
     // they are aliases
     this.settings = new Settings(optionsWithDefaults, conditional)
 
-    // make data settings reactive
-    this.settings.streams.reaction_data.onValue(val => {
-      this.set_reaction_data(val)
-    })
-    this.settings.streams.metabolite_data.onValue(val => {
-      this.set_metabolite_data(val)
-    })
-    this.settings.streams.gene_data.onValue(val => {
-      this.set_gene_data(val)
-    })
-
     // Warn if full/fill screen options conflict
     if (this.settings.get('fill_screen') && this.settings.get('full_screen_button')) {
       this.settings.set('full_screen_button', false)
@@ -854,9 +843,7 @@ class Builder {
    * For documentation of this function, see docs/javascript_api.rst.
    */
   set_reaction_data (data) { // eslint-disable-line camelcase
-    // If the data has not changed, exit
-    if (this.settings.get('reaction_data') === data) return
-    else (this.settings.set('reaction_data', data))
+    this.settings.set('reaction_data', data)
 
     // clear gene data
     if (data) {
@@ -889,9 +876,7 @@ class Builder {
    * For documentation of this function, see docs/javascript_api.rst.
    */
   set_gene_data (data, clearGeneReactionRules = false) { // eslint-disable-line camelcase
-    // If the data has not changed, exit
-    if (this.settings.get('gene_data') === data) return
-    else (this.settings.set('gene_data', data))
+    this.settings.set('gene_data', data)
 
     if (clearGeneReactionRules) {
       this.settings.set('show_gene_reaction_rules', false)
@@ -925,9 +910,7 @@ class Builder {
    * For documentation of this function, see docs/javascript_api.rst.
    */
   set_metabolite_data (data) { // eslint-disable-line camelcase
-    // If the data has not changed, exit
-    if (this.settings.get('metabolite_data') === data) return
-    else (this.settings.set('metabolite_data', data))
+    this.settings.set('metabolite_data', data)
 
     this._updateData(true, true, ['metabolite'])
     this.map.set_status('')

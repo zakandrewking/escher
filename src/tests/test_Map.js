@@ -34,7 +34,9 @@ describe('Map', () => {
     // streams are required for these options
     const requiredOptions = {
       reaction_scale: [],
+      reaction_scale_preset: null,
       metabolite_scale: [],
+      metabolite_scale_preset: null,
       reaction_styles: [],
       reaction_compare_style: 'diff',
       metabolite_styles: [],
