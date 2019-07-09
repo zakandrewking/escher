@@ -1,15 +1,7 @@
 import sys
-from sys import argv
-from subprocess import call
-import threading
-import webbrowser
-import os
-from shutil import copy, move, rmtree
-from os.path import join, dirname, realpath, exists
-from glob import glob
-import re
+from os.path import join, dirname, realpath
 
-from setuptools import setup, find_packages, Command
+from setuptools import setup, find_packages
 
 directory = dirname(realpath(__file__))
 sys.path.insert(0, join(directory, 'escher'))
