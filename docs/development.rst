@@ -29,7 +29,7 @@ Source maps are also hosted there::
 
 If you want a particular version of escher, add a version tag like this::
 
-  https://unpkg.com/escher@1.7.0-beta.17/dist/escher.js
+  https://unpkg.com/escher@1.7.0-beta.19/dist/escher.js
 
 Or, if you use NPM, you can simply install `escher`::
 

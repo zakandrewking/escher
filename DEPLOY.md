@@ -27,9 +27,16 @@ python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-ur
 python -m ipython kernel install --user --name=env
 ipython, jupyter, etc.
 cd -
+deactivate
 twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
 
 # Docs
 
 If changes have been made to example notebooks, then save them with widget state
-in Jupyter Notebook (not lab).
+in Jupyter Notebook (not lab). You might have to do another push to master after
+the npm release to get the latest version embedded. If you are having trouble,
+try:
+
+- Clearing widget state in notebook
+- Restarting Jupyter notebook
+- Rerunning and saving widget state
