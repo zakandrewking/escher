@@ -193,14 +193,6 @@
   color: white;
 }
 
-.escher-container .icon-blank {
-  margin: -3px -3px;
-}
-
-.escher-container .scaleName {
-  margin-right: 15px;
-}
-
 .escher-container .settingsBox .icon-sort-down {
   position: absolute;
   top: 0;
