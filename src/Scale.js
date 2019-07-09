@@ -25,7 +25,7 @@ export default class Scale {
       // initial
       const presetVal = settings.get(preset)
       const scaleVal = settings.get(scale)
-      if (presetVal && scaleVal) {
+      if (presetVal && scaleVal && scaleVal !== scalePresets[presetVal]) {
         console.warn(`Both ${scale} and ${preset} are defined. Ignoring ${preset}. Set ${preset} to "false" to hide this warning.`)
         settings.set(preset, null)
       } else if (presetVal) {
