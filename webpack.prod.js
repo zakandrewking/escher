@@ -9,6 +9,7 @@ const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 module.exports = merge.smart(common, {
+  mode: 'production',
   entry: {
     'escher': './src/main.js',
     'escher.min': './src/main.js'

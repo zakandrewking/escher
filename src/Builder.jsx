@@ -20,7 +20,6 @@ import SearchBar from './SearchBar'
 import ButtonPanel from './ButtonPanel'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
-import scalePresets from './scalePresets'
 import _ from 'underscore'
 import {
   select as d3Select,

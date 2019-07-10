@@ -21,6 +21,7 @@ const istanbulLoader = {
 const rules = isCoverage ? [istanbulLoader, cssNullLoader] : [cssNullLoader]
 
 module.exports = merge.smart(common, {
+  mode: 'development',
  // Webpack should emit node.js compatible code
   target: 'node',
   // Ignore all modules in node_modules folder from bundling

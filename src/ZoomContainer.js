@@ -230,15 +230,15 @@ export default class ZoomContainer {
    * @param {Object} translate - The location, of the form {x: 2.0, y: 3.0}.
    */
   goTo (scale, translate) {
-    utils.check_undefined(arguments, [ 'scale', 'translate' ])
-
     // Check inputs
     if (!scale) {
-      throw new Error('Bad scale value')
+      console.error('Bad scale value')
+      return
     }
     if (!translate || !('x' in translate) || !('y' in translate) ||
         _.isNaN(translate.x) || _.isNaN(translate.y)) {
-      throw new Error('Bad translate value')
+      console.error('Bad translate value')
+      return
     }
 
     // Save to zoom behavior, which will call _goTo_callback
