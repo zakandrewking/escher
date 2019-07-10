@@ -1,6 +1,6 @@
 environment:
   matrix:
-    - python: 'C:\\Python36-x64'
+    - python: 'C:\\Python37-x64'
 
 install:
   # Add python to PATH
