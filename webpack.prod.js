@@ -1,7 +1,7 @@
 const path = require('path')
-const webpack = require('webpack')
 const merge = require('webpack-merge')
 const common = require('./webpack.common.js')
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
 // to visualize the webpack bundle contents:
 // yarn add -D webpack-bundle-analyzer
@@ -9,6 +9,7 @@ const common = require('./webpack.common.js')
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin
 
 module.exports = merge.smart(common, {
+  mode: 'production',
   entry: {
     'escher': './src/main.js',
     'escher.min': './src/main.js'
@@ -19,12 +20,14 @@ module.exports = merge.smart(common, {
     library: 'escher',
     libraryTarget: 'umd'
   },
-  plugins: [
-    new webpack.optimize.UglifyJsPlugin({
-      include: /\.min\.js$/,
-      sourceMap: true
-    })
-    // new BundleAnalyzerPlugin()
-  ],
+  optimization: {
+    minimizer: [
+      new UglifyJsPlugin({
+        include: /\.min\.js$/,
+        sourceMap: true
+      })
+    ]
+  },
+  // plugins: [new BundleAnalyzerPlugin()],
   externals: ['@jupyter-widgets/base']
 })
