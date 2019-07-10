@@ -177,11 +177,7 @@ JavaScript API
 
        .. js:attribute:: options.reaction_scale
 
-          Default::
-
-            [ { type: 'min', color: '#c8c8c8', size: 12 },
-              { type: 'median', color: '#9696ff', size: 20 },
-              { type: 'max', color: '#ff0000', size: 25 } ]
+          Default: ``null`` (``options.reaction_scale_preset`` used instead)
 
           An array of objects that define stops on the data scale.
 
@@ -210,6 +206,13 @@ JavaScript API
 
           ``{ type: 'value', value: 8.5, color: '#333', size: 50 }`` Specifies
           that reactions near 8.5 value have the given color and size.
+
+       .. js:attribute:: options.reaction_scale_preset
+
+          (Default:: ``'GaBuGeRd'``) A preset metabolite scale that will set
+          ``options.reaction_scale`` for you. The available scales are here:
+
+          https://github.com/zakandrewking/escher/blob/master/src/scalePresets.js
 
        .. js:attribute:: options.reaction_no_data_color
 
@@ -254,15 +257,18 @@ JavaScript API
 
        .. js:attribute:: options.metabolite_scale
 
-          Default::
-
-            [ { type: 'min', color: '#fffaf0', size: 20 },
-              { type: 'median', color: '#f1c470', size: 30 },
-              { type: 'max', color: '#800000', size: 40 } ]
+          Default: ``null`` (``options.metabolite_scale_preset`` used instead)
 
           An array of objects that define stops on the data scale. See the
           description of **options.reaction_scale** for an explanation of the
           format.
+
+       .. js:attribute:: options.metabolite_scale_preset
+
+          (Default: ``'WhYlRd'``) A preset metabolite scale that will set
+          ``options.metabolite_scale`` for you. The available scales are here:
+
+          https://github.com/zakandrewking/escher/blob/master/src/scalePresets.js
 
        .. js:attribute:: options.metabolite_no_data_color
 
@@ -303,7 +309,7 @@ JavaScript API
           show when hoving over reactions, metabolites, and genes. See
           ``escher.Tooltip.DefaultTooltip`` in the source code for an example of
           a Preact component that defines the default tooltips. And see the
-          :doc:`Tooltip Tutorial <development-tutorial>` for more tips on
+          :doc:`Tooltip Tutorial <developer-tutorial>` for more tips on
           getting started with custom tooltips.
 
           For correct placement of the tooltip, the tooltip component should

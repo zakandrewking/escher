@@ -174,7 +174,7 @@ Build and run the docs::
 
 ```
 cd docs
-make html
+./build_docs
 cd _build/html
 python -m SimpleHTTPServer # python 2
 python -m http.server # python 3

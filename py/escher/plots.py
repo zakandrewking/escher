@@ -604,12 +604,7 @@ class Builder(widgets.DOMWidget):
 
             The name of the HTML file.
 
-        TODO apply options from self
-
         """
-
-        #     options = transform(self.options)
-        # get options
         options = {}
         for key in self.traits(option=True):
             val = getattr(self, key)
