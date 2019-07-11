@@ -1,8 +1,5 @@
-Validate and convert maps
--------------------------
-
-Validate an Escher map
-======================
+Validate Escher maps
+--------------------
 
 Escher maps follow a specification using the `JSON Schema`_ format. Therefore,
 any JSON Schema validator can be used to validate an Escher map by comparing it
