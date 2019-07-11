@@ -1,10 +1,10 @@
+[![Gitter.im](https://img.shields.io/gitter/room/zakandrewking/escher.svg)](https://gitter.im/zakandrewking/escher)
 [![PyPi](https://img.shields.io/pypi/v/Escher.svg)](https://pypi.python.org/pypi/Escher)
 [![NPM](https://img.shields.io/npm/v/escher.svg)](https://www.npmjs.com/package/escher)
-[![Gitter.im](https://img.shields.io/gitter/room/zakandrewking/escher.svg)](https://gitter.im/zakandrewking/escher)
-[![MIT](https://img.shields.io/pypi/l/Escher.svg)](https://github.com/zakandrewking/escher/blob/master/LICENSE)
 [![Documentation Status](https://readthedocs.org/projects/escher/badge/?version=latest)](https://escher.readthedocs.io/en/latest/?badge=latest)
 [![Travis](https://img.shields.io/travis/zakandrewking/escher/master.svg)](https://travis-ci.org/zakandrewking/escher)
 [![Coverage Status](https://img.shields.io/coveralls/zakandrewking/escher/master.svg)](https://coveralls.io/github/zakandrewking/escher?branch=master)
+[![MIT](https://img.shields.io/pypi/l/Escher.svg)](https://github.com/zakandrewking/escher/blob/master/LICENSE)
 
 # Escher
 
