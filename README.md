@@ -89,28 +89,27 @@ pip install escher
 
 ## Jupyter extensions
 
-To install the Jupyter lab extension, simply install Escher with pip then
+When you `pip install escher`, the Jupyter notebook extension should be
+installed automatically. If that doesn't work, try:
+
+```bash
+# The notebook extenstion should install automatically. You can check by running:
+jupyter nbextension list
+# Make sure you have version >=5 of the `notebook` package
+pip install "notebook>=5"
+# To manually install the extension
+jupyter nbextension install --py escher
+jupyter nbextension enable --py escher
+# depending on you environment, you might need the `--sysprefix` flag with those commands
+```
+
+To install the Jupyter lab extension, simply install Escher with `pip install escher` then
 install the extension:
 
 ```bash
-pip install escher
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
 jupyter labextension install escher
 ```
-
-To install the Jupyter notebook extension, run the following:
-
-```bash
-pip install escher
-# you'll need version >=5 of the `notebook` package
-pip install "notebook>=5"
-jupyter nbextension install --py escher
-jupyter nbextension enable --py escher
-```
-
-Note: depending on you environment, you might want to add the `--sysprefix` flag
-to the nbextension commands. You might also need to use `sudo` to get around
-permissions issues.
 
 ## Python/Jupyter Development
 
