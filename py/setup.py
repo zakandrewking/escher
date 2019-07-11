@@ -48,7 +48,7 @@ setup(
         'Jinja2>=2.7.3,<3',
         'pytest>=4.0.1,<5',
         'cobra>=0.5.0',
-        'jsonschema>=2.4.0,<3',
+        'jsonschema>=3.0.1,<4',
         'ipywidgets>=7.4.0,<8',
         'pandas>=0.18'
     ],
