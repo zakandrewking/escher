@@ -31,7 +31,6 @@ export default class Behavior {
     this.selectableDrag = this.emptyBehavior
     this.nodeMouseover = null
     this.nodeMouseout = null
-    this.labelMousedown = null
     this.labelMouseover = this.emptyBehavior
     this.labelMouseout = null
     this.labelTouch = null

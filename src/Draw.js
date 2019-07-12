@@ -173,7 +173,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   const show_gene_reaction_rules = this.settings.get('show_gene_reaction_rules')
   const hide_all_labels = this.settings.get('hide_all_labels')
   const gene_font_size = this.settings.get('gene_font_size')
-  const label_mousedown_fn = this.behavior.labelMousedown
   const label_mouseover_fn = this.behavior.labelMouseover
   const label_mouseout_fn = this.behavior.labelMouseout
   const label_touch_fn = this.behavior.labelTouch
@@ -200,7 +199,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
         }
         return t
       })
-      // .on('mousedown', label_mousedown_fn)
       // .on('mouseover', function (d) {
       //   label_mouseover_fn('reaction_label', d)
       // })
@@ -761,7 +759,6 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var metabolite_data_styles = this.settings.get('metabolite_styles')
   var no_data_style = { color: this.settings.get('metabolite_no_data_color'),
                         size: this.settings.get('metabolite_no_data_size') }
-  var label_mousedown_fn = this.behavior.labelMousedown
   var label_mouseover_fn = this.behavior.labelMouseover
   var label_mouseout_fn = this.behavior.labelMouseout
   var label_touch_fn = this.behavior.labelTouch
@@ -847,9 +844,8 @@ function update_node (update_selection, scale, has_data_on_nodes,
           t += ' ' + d.data_string
         return t
       })
-      // .call(this.behavior.turnOffDrag)
-      // .call(label_drag_behavior)
-      // .on('mousedown', label_mousedown_fn)
+      .call(this.behavior.turnOffDrag)
+      .call(label_drag_behavior)
       // .on('mouseover', function (d) {
       //   label_mouseover_fn('node_label', d)
       // })
