@@ -1,5 +1,5 @@
-import map from '../docs/_static/example_data/S5_iJO1366.Glycolysis_PPP_AA_Nucleotides.json'
-import model from '../docs/_static/example_data/iJO1366.json'
+import map from '/Users/zaking/repos/escher.github.io/1-0-0/6/maps/Homo sapiens/RECON1.Amino acid metabolism (partial).json'
+import model from '/Users/zaking/repos/escher.github.io/1-0-0/6/models/Homo sapiens/RECON1.json'
 import { Builder, libs } from '../src/main'
 
 window.builder = new Builder( // eslint-disable-line no-new
