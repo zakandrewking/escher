@@ -183,8 +183,8 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
     .attr('transform', function(d) {
       return 'translate(' + d.label_x + ',' + d.label_y + ')'
     })
-    // .call(this.behavior.turnOffDrag)
-    // .call(this.behavior.reactionLabelDrag)
+    .call(this.behavior.turnOffDrag)
+    .call(this.behavior.reactionLabelDrag)
 
   // update label visibility
   var label = update_selection.select('.reaction-label')
@@ -674,10 +674,10 @@ function update_bezier(update_selection, show_beziers, drag_behavior,
 
   // Draw bezier points
   update_selection.select('.bezier-circle')
-    // .call(this.behavior.turnOffDrag)
-    // .call(drag_behavior)
-    // .on('mouseover', mouseover)
-    // .on('mouseout', mouseout)
+    .call(this.behavior.turnOffDrag)
+    .call(drag_behavior)
+    .on('mouseover', mouseover)
+    .on('mouseout', mouseout)
     .attr('transform', function (d) {
       if (d.x === null || d.y === null) return ''
       return 'translate(' + d.x + ',' + d.y + ')'
@@ -805,10 +805,10 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return null
     })
-    // .call(this.behavior.turnOffDrag)
-    // .call(drag_behavior)
-    // .on('mousedown', mousedown_fn)
-    // .on('click', click_fn)
+    .call(this.behavior.turnOffDrag)
+    .call(drag_behavior)
+    .on('mousedown', mousedown_fn)
+    .on('click', click_fn)
     // .on('mouseover', function (d) {
     //   if (d.node_type === 'metabolite') {
     //     const mouseEvent = d3_mouse(this.parentNode)
@@ -883,10 +883,10 @@ function create_text_label (enter_selection) {
 }
 
 function update_text_label (update_selection) {
-  var mousedown_fn = this.behavior.textLabelMousedown
-  var click_fn = this.behavior.textLabelClick
-  var drag_behavior = this.behavior.selectableDrag
-  var turn_off_drag = this.behavior.turnOffDrag
+  const mousedown = this.behavior.textLabelMousedown
+  const click = this.behavior.textLabelClick
+  const turnOffDrag = this.behavior.turnOffDrag
+  const drag = this.behavior.selectableDrag
 
   update_selection
     .select('.label')
@@ -894,10 +894,10 @@ function update_text_label (update_selection) {
     .attr('transform', function (d) {
       return 'translate(' + d.x + ',' + d.y + ')'
     })
-    // .on('mousedown', mousedown_fn)
-    // .on('click', click_fn)
-    // .call(turn_off_drag)
-    // .call(drag_behavior)
+    .on('mousedown', mousedown)
+    .on('click', click)
+    .call(turnOffDrag)
+    .call(drag)
 
   this.callback_manager.run('update_text_label', this, update_selection)
 }

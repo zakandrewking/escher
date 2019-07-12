@@ -1,8 +1,10 @@
+/* global requestAnimationFrame */
+
 import utils from './utils'
 import CallbackManager from './CallbackManager'
 
 import _ from 'underscore'
-import { selection as d3Selection, event } from 'd3-selection'
+import { event } from 'd3-selection'
 import {
   zoom as d3Zoom,
   zoomIdentity as d3ZoomIdentity
@@ -105,7 +107,7 @@ export default class ZoomContainer {
       this.zoomedSel.style('cursor', 'grab')
     } else {
       // turn off the hand
-      if (_.contains(['grab', 'grabbing'], this.zoomedSel.style('cursor'))) {
+      if (this.zoomedSel.style('cursor') === 'grab') {
         this.zoomedSel.style('cursor', null)
       }
     }
@@ -142,12 +144,6 @@ export default class ZoomContainer {
     // d3 related to d3 using the global this.document. TODO look into this.
     this._zoomBehavior = d3Zoom()
       .on('start', () => {
-        // Be sure to use an inline style instead of a class to avoid layout
-        if (event.sourceEvent &&
-            event.sourceEvent.type === 'mousedown') {
-          this.zoomedSel.style('cursor', 'grabbing')
-        }
-
         // Prevent default zoom behavior, specifically for mobile pinch zoom
         if (event.sourceEvent !== null) {
           event.sourceEvent.stopPropagation()
@@ -159,12 +155,6 @@ export default class ZoomContainer {
           x: event.transform.x,
           y: event.transform.y
         })
-      })
-      .on('end', () => {
-        if (event.sourceEvent &&
-            event.sourceEvent.type === 'mouseup') {
-          this.zoomedSel.style('cursor', 'grab')
-        }
       })
 
     // Set it up
@@ -332,14 +322,14 @@ export default class ZoomContainer {
   /**
    * Zoom in by the default amount with the default options.
    */
-  zoom_in () {
+  zoom_in () { // eslint-disable-line camelcase
     this.zoomBy(1.5)
   }
 
   /**
    * Zoom out by the default amount with the default options.
    */
-  zoom_out () {
+  zoom_out () { // eslint-disable-line camelcase
     this.zoomBy(0.667)
   }
 
@@ -348,7 +338,7 @@ export default class ZoomContainer {
    * width or height is not defined.
    * @returns {Object} The size coordinates, e.g. { x: 2, y: 3 }.
    */
-  get_size () {
+  get_size () { // eslint-disable-line camelcase
     const {width, height} = this.selection.node().getBoundingClientRect()
     return { width, height }
   }
