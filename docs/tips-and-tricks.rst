@@ -52,3 +52,23 @@ other subsystems.
 
 .. _escher.github.io: https://www.github.com/escher/escher.github.io/
 .. _`BiGG Database`: http://bigg.ucsd.edu
+
+Escher performance with large maps
+----------------------------------
+
+Escher works best with maps that have less than about 200 reactions. If you are
+working with more reactions, we recommend splitting your map into multiple small
+maps. A trick for splitting up a map is to first select the reactions you want
+to keep, then choose "Edit > Invert Selection" and then "Edit > Delete".
+
+If you really want to work with larger maps, the following can help improve
+performance:
+
+- Turn off tooltips in the settings menu, especially tooltips over Objects
+- Try the "Use 3D Transform" option in the settings menu. Depending on your
+  browser, this can increase responsiveness when moving around the map.
+- Turn off labels, gene reaction rules, and/or secondary metabolites in the
+  settings menu.
+
+We are always trying to make Escher faster, so let us know if you find any
+unexpected performance issues.
