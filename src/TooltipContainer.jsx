@@ -127,12 +127,8 @@ export default class TooltipContainer {
       const windowScale = this.zoomContainer.windowScale
       const mapSize = this.map !== null ? this.map.get_size() : { width: 1000, height: 1000 }
       const offset = {x: 0, y: 0}
-      const startPosX = (type.replace('reaction_', '').replace('node_', '').replace('gene_', '') === 'object')
-                      ? d.xPos
-                      : d.label_x
-      const startPosY = (type.replace('reaction_', '').replace('node_', '').replace('gene_', '') === 'object')
-                      ? d.yPos
-                      : d.label_y
+      const startPosX = type === 'reaction_object' ? d.xPos : d.label_x
+      const startPosY = type === 'reaction_object' ? d.yPos : d.label_y
       const rightEdge = windowScale * startPosX + windowTranslate.x + tooltipSize.width
       const bottomEdge = windowScale * startPosY + windowTranslate.y + tooltipSize.height
       if (mapSize.width < 500) {

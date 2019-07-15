@@ -32,9 +32,6 @@ var utils = require('./utils')
 var dataStyles = require('./dataStyles')
 var CallbackManager = require('./CallbackManager').default
 var d3_format = require('d3-format').format
-var d3_select = require('d3-selection').select
-var d3_mouse = require('d3-selection').mouse
-var d3_touch = require('d3-selection').touch
 
 var Draw = utils.make_class()
 // instance methods
@@ -321,9 +318,10 @@ function update_segment (update_selection, scale, cobra_model,
   const hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
   const primary_r = this.settings.get('primary_metabolite_radius')
   const secondary_r = this.settings.get('secondary_metabolite_radius')
-  const object_mouseover_fn = this.behavior.objectMouseover
-  const object_mouseout_fn = this.behavior.objectMouseout
-  const object_touch_fn = this.behavior.objectTouch
+
+  const objectMouseover = this.behavior.reactionObjectMouseover
+  const objectMouseout = this.behavior.reactionObjectMouseout
+
   const get_arrow_size = function (data, should_size) {
     let width = 20
     let height = 13
@@ -416,22 +414,9 @@ function update_segment (update_selection, scale, cobra_model,
         return null
       }
     })
-    // .attr('pointer-events', 'visibleStroke')
-    // .on('mouseover', function (d) {
-    //   const mouseEvent = d3_mouse(this)
-    //   // Add the current mouse position to the segment's datum
-    //   object_mouseover_fn('reaction_object', Object.assign(
-    //     {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-    //   ))
-    // })
-    // .on('touchend', function (d) {
-    //   const touchEvent = d3_touch(this.parentNode, 0)
-    //   // Add last touch position to the segment's datum
-    //   object_touch_fn('reaction_object', Object.assign(
-    //     {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-    //   ))
-    // })
-    // .on('mouseout', object_mouseout_fn)
+    .attr('pointer-events', 'visibleStroke')
+    .on('mouseover', objectMouseover)
+    .on('mouseout', objectMouseout)
 
   // new arrowheads
   var arrowheads = update_selection.select('.arrowheads')
@@ -759,9 +744,8 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var labelMouseover = this.behavior.nodeLabelMouseover
   var labelMouseout = this.behavior.nodeLabelMouseout
   var labelTouch = this.behavior.nodeLabelTouch
-  var object_mouseover_fn = this.behavior.objectMouseover
-  var object_mouseout_fn = this.behavior.objectMouseout
-  var object_touch_fn = this.behavior.objectTouch
+  var objectMouseover = this.behavior.nodeObjectMouseover
+  var objectMouseout = this.behavior.nodeObjectMouseout
 
   var mg = update_selection
       .select('.node-circle')
@@ -803,25 +787,8 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
-    // .on('mouseover', function (d) {
-    //   if (d.node_type === 'metabolite') {
-    //     const mouseEvent = d3_mouse(this.parentNode)
-    //     // Add current mouse position to the node's datum
-    //     object_mouseover_fn('node_object', Object.assign(
-    //       {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-    //     ))
-    //   }
-    // })
-    // .on('mouseout', object_mouseout_fn)
-    // .on('touchend', function (d) {
-    //   if (d.node_type === 'metabolite') {
-    //     touchEvent = d3_touch(this.parentNode, 0)
-    //     // Add the touch position to the node's datum
-    //     object_touch_fn('node_object', Object.assign(
-    //       {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-    //     ))
-    //   }
-    // })
+    .on('mouseover', objectMouseover)
+    .on('mouseout', objectMouseout)
 
   // update node label visibility
   var node_label = update_selection

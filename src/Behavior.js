@@ -5,6 +5,7 @@ import * as d3Selection from 'd3-selection'
 
 const d3Select = d3Selection.select
 const d3Mouse = d3Selection.mouse
+const d3Touch = d3Selection.touch
 
 /**
  * Behavior. Defines the set of click and drag behaviors for the map, and keeps
@@ -39,6 +40,11 @@ export default class Behavior {
     this.geneLabelMouseover = null
     this.geneLabelTouch = null
     this.geneLabelMouseout = null
+
+    this.nodeObjectMouseover = null
+    this.nodeObjectMouseout = null
+    this.reactionObjectMouseover = null
+    this.reactionObjectMouseout = null
 
     this.bezierDrag = this.emptyBehavior
     this.bezierMouseover = null
@@ -370,9 +376,21 @@ export default class Behavior {
       // Show/hide tooltip.
       // @param {String} type - 'reaction_object' or 'node_object'
       // @param {Object} d - D3 data for DOM element
-      const getMouseover = type => d => {
-        if (!this.dragging) {
-          this.map.callback_manager.run('show_tooltip', null, type, d)
+      const getMouseover = type => {
+        const behavior = this
+        return function (d) {
+          if (!behavior.dragging) {
+            if (type === 'reaction_object') {
+              const mouseEvent = d3Mouse(this)
+              // Add the current mouse position to the segment's datum
+              const newD = Object.assign(
+                {}, d, { xPos: mouseEvent[0], yPos: mouseEvent[1] }
+              )
+              behavior.map.callback_manager.run('show_tooltip', null, type, newD)
+            } else {
+              behavior.map.callback_manager.run('show_tooltip', null, type, d)
+            }
+          }
         }
       }
       const mouseout = () => {
@@ -382,15 +400,11 @@ export default class Behavior {
       this.nodeObjectMouseout = mouseout
       this.reactionObjectMouseover = getMouseover('reaction_object')
       this.reactionObjectMouseout = mouseout
-      this.geneObjectMouseover = getMouseover('gene_object')
-      this.geneObjectMouseout = mouseout
     } else {
       this.nodeObjectMouseover = null
       this.nodeObjectMouseout = null
       this.reactionObjectMouseover = null
       this.reactionObjectMouseout = null
-      this.geneObjectMouseover = null
-      this.geneObjectMouseout = null
     }
   }
 
