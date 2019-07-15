@@ -1,5 +1,3 @@
-/* global requestAnimationFrame */
-
 import utils from './utils'
 import CallbackManager from './CallbackManager'
 
@@ -279,7 +277,7 @@ export default class ZoomContainer {
   _goTo3dFrame () {
     if (!this._requestedFrame) {
       this._requestedFrame = true
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         this._requestedFrame = false
         const transform = this._3dTransform
         if (transform) {
@@ -320,7 +318,7 @@ export default class ZoomContainer {
   _goToSvgFrame (callback = null) {
     if (!this._requestedFrame || callback) {
       this._requestedFrame = true
-      requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
         this._requestedFrame = false
 
         // reset the 3d transform

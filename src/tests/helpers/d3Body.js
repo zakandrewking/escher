@@ -5,7 +5,7 @@ const { JSDOM } = jsdom
 const d3Select = require('d3-selection').select
 
 // body selection
-const dom = new JSDOM()
+const dom = new JSDOM('', { pretendToBeVisual: true })
 const document = dom.window.document
 const d3Body = d3Select(document).select('body')
 

@@ -38,11 +38,41 @@ function assertLabelDragAttrsOff (behavior) {
 }
 
 function assertLabelMouseoverAttrsOn (behavior) {
-  assert.isFunction(behavior.labelMouseover)
+  assert.isNotNull(behavior.nodeLabelMouseover)
+  assert.isNotNull(behavior.nodeLabelTouch)
+  assert.isNotNull(behavior.nodeLabelMouseout)
+  assert.isNotNull(behavior.reactionLabelMouseover)
+  assert.isNotNull(behavior.reactionLabelTouch)
+  assert.isNotNull(behavior.reactionLabelMouseout)
+  assert.isNotNull(behavior.geneLabelMouseover)
+  assert.isNotNull(behavior.geneLabelTouch)
+  assert.isNotNull(behavior.geneLabelMouseout)
 }
 
 function assertLabelMouseoverAttrsOff (behavior) {
-  assert.strictEqual(behavior.labelMouseover, behavior.emptyBehavior)
+  assert.isNull(behavior.nodeLabelMouseover)
+  assert.isNull(behavior.nodeLabelTouch)
+  assert.isNull(behavior.nodeLabelMouseout)
+  assert.isNull(behavior.reactionLabelMouseover)
+  assert.isNull(behavior.reactionLabelTouch)
+  assert.isNull(behavior.reactionLabelMouseout)
+  assert.isNull(behavior.geneLabelMouseover)
+  assert.isNull(behavior.geneLabelTouch)
+  assert.isNull(behavior.geneLabelMouseout)
+}
+
+function assertObjectMouseoverAttrsOn (behavior) {
+  assert.isNotNull(behavior.nodeObjectMouseover)
+  assert.isNotNull(behavior.nodeObjectMouseout)
+  assert.isNotNull(behavior.reactionObjectMouseover)
+  assert.isNotNull(behavior.reactionObjectMouseout)
+}
+
+function assertObjectMouseoverAttrsOff (behavior) {
+  assert.isNull(behavior.nodeObjectMouseover)
+  assert.isNull(behavior.nodeObjectMouseout)
+  assert.isNull(behavior.reactionObjectMouseover)
+  assert.isNull(behavior.reactionObjectMouseout)
 }
 
 describe('Behavior', () => {
@@ -53,24 +83,6 @@ describe('Behavior', () => {
 
   it('loads the map', () => {
     assert.strictEqual(behavior.map, map)
-  })
-
-  it('turnEverythingOn', () => {
-    behavior.turnEverythingOff()
-    behavior.turnEverythingOn()
-    assertSelectableClickAttrsOn(behavior)
-    assertSelectableDragAttrsOn(behavior)
-    assertLabelDragAttrsOn(behavior)
-    assertLabelMouseoverAttrsOn(behavior)
-  })
-
-  it('turnEverythingOff', () => {
-    behavior.turnEverythingOn()
-    behavior.turnEverythingOff()
-    assertSelectableClickAttrsOff(behavior)
-    assertSelectableDragAttrsOff(behavior)
-    assertLabelDragAttrsOff(behavior)
-    assertLabelMouseoverAttrsOff(behavior)
   })
 
   it('toggleSelectableClick', () => {
@@ -99,5 +111,12 @@ describe('Behavior', () => {
     assertLabelMouseoverAttrsOn(behavior)
     behavior.toggleLabelMouseover(false)
     assertLabelMouseoverAttrsOff(behavior)
+  })
+
+  it('toggleObjectMouseover', () => {
+    behavior.toggleObjectMouseover(true)
+    assertObjectMouseoverAttrsOn(behavior)
+    behavior.toggleObjectMouseover(false)
+    assertObjectMouseoverAttrsOff(behavior)
   })
 })
