@@ -50,14 +50,14 @@ describe('ZoomContainer', () => {
     assert.strictEqual(zoomTransform.k, 2.0)
     assert.strictEqual(zoomTransform.x, 10.0)
     assert.strictEqual(zoomTransform.y, -20.5)
-    _.defer(() => {
+    _.delay(() => {
       // check node transform attribute
       const transform = d3_transform_catch(zc.zoomedSel.attr('transform'))
       assert.strictEqual(transform.scale, 2.0)
       assert.strictEqual(transform.translate[0], 10.0)
       assert.strictEqual(transform.translate[1], -20.5)
       done()
-    })
+    }, 100)
   })
 
   // TODO waiting on

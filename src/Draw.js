@@ -32,9 +32,6 @@ var utils = require('./utils')
 var dataStyles = require('./dataStyles')
 var CallbackManager = require('./CallbackManager').default
 var d3_format = require('d3-format').format
-var d3_select = require('d3-selection').select
-var d3_mouse = require('d3-selection').mouse
-var d3_touch = require('d3-selection').touch
 
 var Draw = utils.make_class()
 // instance methods
@@ -173,10 +170,12 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   const show_gene_reaction_rules = this.settings.get('show_gene_reaction_rules')
   const hide_all_labels = this.settings.get('hide_all_labels')
   const gene_font_size = this.settings.get('gene_font_size')
-  const label_mousedown_fn = this.behavior.labelMousedown
-  const label_mouseover_fn = this.behavior.labelMouseover
-  const label_mouseout_fn = this.behavior.labelMouseout
-  const label_touch_fn = this.behavior.labelTouch
+  const reactionLabelMouseover = this.behavior.reactionLabelMouseover
+  const reactionLabelMouseout = this.behavior.reactionLabelMouseout
+  const reactionLabelTouch = this.behavior.reactionLabelTouch
+  const geneLabelMouseover = this.behavior.geneLabelMouseover
+  const geneLabelMouseout = this.behavior.geneLabelMouseout
+  const geneLabelTouch = this.behavior.geneLabelTouch
 
   // label location
   update_selection
@@ -200,14 +199,9 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
         }
         return t
       })
-      .on('mousedown', label_mousedown_fn)
-      .on('mouseover', function (d) {
-        label_mouseover_fn('reaction_label', d)
-      })
-      .on('mouseout', label_mouseout_fn)
-      .on('touchend', function (d) {
-        label_touch_fn('reaction_label', d)
-      })
+      .on('mouseover', reactionLabelMouseover)
+      .on('mouseout', reactionLabelMouseout)
+      .on('touchend', reactionLabelTouch)
   }
 
   var add_gene_height = function (y, i) {
@@ -254,11 +248,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   gene_g.append('text')
     .attr('class', 'gene-label')
     .style('font-size', gene_font_size + 'px')
-    .on('mousedown', label_mousedown_fn)
-    .on('mouseover', function (d) {
-      label_mouseover_fn('gene_label', d)
-    })
-    .on('mouseout', label_mouseout_fn)
 
   // update
   var gene_update = gene_g.merge(all_genes_g)
@@ -266,9 +255,12 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
     return 'translate(0, ' + add_gene_height(0, i) + ')'
   })
   // update text
-  gene_update.select('text').text(function (d) {
-    return d['text']
-  })
+  gene_update
+    .select('text')
+    .text(d => d.text)
+    .on('mouseover', geneLabelMouseover)
+    .on('mouseout', geneLabelMouseout)
+    .on('touchend', geneLabelTouch)
 
   // exit
   all_genes_g.exit().remove()
@@ -326,9 +318,10 @@ function update_segment (update_selection, scale, cobra_model,
   const hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
   const primary_r = this.settings.get('primary_metabolite_radius')
   const secondary_r = this.settings.get('secondary_metabolite_radius')
-  const object_mouseover_fn = this.behavior.objectMouseover
-  const object_mouseout_fn = this.behavior.objectMouseout
-  const object_touch_fn = this.behavior.objectTouch
+
+  const objectMouseover = this.behavior.reactionObjectMouseover
+  const objectMouseout = this.behavior.reactionObjectMouseout
+
   const get_arrow_size = function (data, should_size) {
     let width = 20
     let height = 13
@@ -422,21 +415,8 @@ function update_segment (update_selection, scale, cobra_model,
       }
     })
     .attr('pointer-events', 'visibleStroke')
-    .on('mouseover', function (d) {
-      const mouseEvent = d3_mouse(this)
-      // Add the current mouse position to the segment's datum
-      object_mouseover_fn('reaction_object', Object.assign(
-        {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-      ))
-    })
-    .on('touchend', function (d) {
-      const touchEvent = d3_touch(this.parentNode, 0)
-      // Add last touch position to the segment's datum
-      object_touch_fn('reaction_object', Object.assign(
-        {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-      ))
-    })
-    .on('mouseout', object_mouseout_fn)
+    .on('mouseover', objectMouseover)
+    .on('mouseout', objectMouseout)
 
   // new arrowheads
   var arrowheads = update_selection.select('.arrowheads')
@@ -761,13 +741,11 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var metabolite_data_styles = this.settings.get('metabolite_styles')
   var no_data_style = { color: this.settings.get('metabolite_no_data_color'),
                         size: this.settings.get('metabolite_no_data_size') }
-  var label_mousedown_fn = this.behavior.labelMousedown
-  var label_mouseover_fn = this.behavior.labelMouseover
-  var label_mouseout_fn = this.behavior.labelMouseout
-  var label_touch_fn = this.behavior.labelTouch
-  var object_mouseover_fn = this.behavior.objectMouseover
-  var object_mouseout_fn = this.behavior.objectMouseout
-  var object_touch_fn = this.behavior.objectTouch
+  var labelMouseover = this.behavior.nodeLabelMouseover
+  var labelMouseout = this.behavior.nodeLabelMouseout
+  var labelTouch = this.behavior.nodeLabelTouch
+  var objectMouseover = this.behavior.nodeObjectMouseover
+  var objectMouseout = this.behavior.nodeObjectMouseout
 
   var mg = update_selection
       .select('.node-circle')
@@ -809,25 +787,8 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
-    .on('mouseover', function (d) {
-      if (d.node_type === 'metabolite') {
-        const mouseEvent = d3_mouse(this.parentNode)
-        // Add current mouse position to the node's datum
-        object_mouseover_fn('node_object', Object.assign(
-          {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-        ))
-      }
-    })
-    .on('mouseout', object_mouseout_fn)
-    .on('touchend', function (d) {
-      if (d.node_type === 'metabolite') {
-        touchEvent = d3_touch(this.parentNode, 0)
-        // Add the touch position to the node's datum
-        object_touch_fn('node_object', Object.assign(
-          {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-        ))
-      }
-    })
+    .on('mouseover', objectMouseover)
+    .on('mouseout', objectMouseout)
 
   // update node label visibility
   var node_label = update_selection
@@ -849,11 +810,9 @@ function update_node (update_selection, scale, has_data_on_nodes,
       })
       .call(this.behavior.turnOffDrag)
       .call(label_drag_behavior)
-      .on('mousedown', label_mousedown_fn)
-      .on('mouseover', function (d) {
-        label_mouseover_fn('node_label', d)
-      })
-      .on('mouseout', label_mouseout_fn)
+      .on('mouseover', labelMouseover)
+      .on('mouseout', labelMouseout)
+      .on('touchend', labelTouch)
   }
 
   this.callback_manager.run('update_node', this, update_selection)
@@ -883,10 +842,10 @@ function create_text_label (enter_selection) {
 }
 
 function update_text_label (update_selection) {
-  var mousedown_fn = this.behavior.textLabelMousedown
-  var click_fn = this.behavior.textLabelClick
-  var drag_behavior = this.behavior.selectableDrag
-  var turn_off_drag = this.behavior.turnOffDrag
+  const mousedown = this.behavior.textLabelMousedown
+  const click = this.behavior.textLabelClick
+  const turnOffDrag = this.behavior.turnOffDrag
+  const drag = this.behavior.selectableDrag
 
   update_selection
     .select('.label')
@@ -894,10 +853,10 @@ function update_text_label (update_selection) {
     .attr('transform', function (d) {
       return 'translate(' + d.x + ',' + d.y + ')'
     })
-    .on('mousedown', mousedown_fn)
-    .on('click', click_fn)
-    .call(turn_off_drag)
-    .call(drag_behavior)
+    .on('mousedown', mousedown)
+    .on('click', click)
+    .call(turnOffDrag)
+    .call(drag)
 
   this.callback_manager.run('update_text_label', this, update_selection)
 }

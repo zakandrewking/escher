@@ -2,7 +2,7 @@ import utils from './utils'
 import CallbackManager from './CallbackManager'
 
 import _ from 'underscore'
-import { selection as d3Selection, event } from 'd3-selection'
+import { event } from 'd3-selection'
 import {
   zoom as d3Zoom,
   zoomIdentity as d3ZoomIdentity
@@ -64,6 +64,8 @@ export default class ZoomContainer {
     this._zoomTimeout = null
     this._svgScale = this.windowScale
     this._svgTranslate = this.windowTranslate
+    this._3dTransform = null
+    this._requestedFrame = false
     // this._lastSvgMs = null
 
     // set up the callbacks
@@ -100,11 +102,13 @@ export default class ZoomContainer {
     }
 
     if (this._panDragOn) {
-      // turn on the hand
+      // turn on the hand. Performance note: In previous versions of Escher, we
+      // enabled the "grabbing" cursor during pan events. However, this causes a
+      // browser layout and costs about 400ms, so we turned it off.
       this.zoomedSel.style('cursor', 'grab')
     } else {
       // turn off the hand
-      if (_.contains(['grab', 'grabbing'], this.zoomedSel.style('cursor'))) {
+      if (this.zoomedSel.style('cursor') === 'grab') {
         this.zoomedSel.style('cursor', null)
       }
     }
@@ -141,12 +145,6 @@ export default class ZoomContainer {
     // d3 related to d3 using the global this.document. TODO look into this.
     this._zoomBehavior = d3Zoom()
       .on('start', () => {
-        // Be sure to use an inline style instead of a class to avoid layout
-        if (event.sourceEvent &&
-            event.sourceEvent.type === 'mousedown') {
-          this.zoomedSel.style('cursor', 'grabbing')
-        }
-
         // Prevent default zoom behavior, specifically for mobile pinch zoom
         if (event.sourceEvent !== null) {
           event.sourceEvent.stopPropagation()
@@ -158,12 +156,6 @@ export default class ZoomContainer {
           x: event.transform.x,
           y: event.transform.y
         })
-      })
-      .on('end', () => {
-        if (event.sourceEvent &&
-            event.sourceEvent.type === 'mouseup') {
-          this.zoomedSel.style('cursor', 'grab')
-        }
       })
 
     // Set it up
@@ -274,6 +266,7 @@ export default class ZoomContainer {
       // redraw the svg
       this._zoomTimeout = _.delay(() => {
         // redraw the svg
+        this._requestedFrame = false
         this._goToSvg(scale, translate)
       }, 100) // between 100 and 600 seems to be usable
     } else { // no 3d transform
@@ -281,6 +274,24 @@ export default class ZoomContainer {
     }
 
     this.callbackManager.run('go_to')
+  }
+
+  _goTo3dFrame () {
+    if (!this._requestedFrame) {
+      this._requestedFrame = true
+      window.requestAnimationFrame(() => {
+        this._requestedFrame = false
+        const transform = this._3dTransform
+        if (transform) {
+          this.css3TransformContainer.style('transform', transform)
+          this.css3TransformContainer.style('-webkit-transform', transform)
+          this.css3TransformContainer.style('transform-origin', '0 0')
+          this.css3TransformContainer.style('-webkit-transform-origin', '0 0')
+        } else {
+          console.warn('No _3dTransform defined')
+        }
+      })
+    }
   }
 
   /**
@@ -292,17 +303,38 @@ export default class ZoomContainer {
                                         utils.c_times_scalar(svgTranslate, nScale))
     const transform = ('translate(' + nTranslate.x + 'px,' + nTranslate.y + 'px) ' +
                        'scale(' + nScale + ')')
-    this.css3TransformContainer.style('transform', transform)
-    this.css3TransformContainer.style('-webkit-transform', transform)
-    this.css3TransformContainer.style('transform-origin', '0 0')
-    this.css3TransformContainer.style('-webkit-transform-origin', '0 0')
+    this._3dTransform = transform
+    this._goTo3dFrame()
   }
 
   _clear3d () {
-    this.css3TransformContainer.style('transform', null)
-    this.css3TransformContainer.style('-webkit-transform', null)
-    this.css3TransformContainer.style('transform-origin', null)
-    this.css3TransformContainer.style('-webkit-transform-origin', null)
+    if (this._3dTransform) {
+      this._3dTransform = null
+      this.css3TransformContainer.style('transform', null)
+      this.css3TransformContainer.style('-webkit-transform', null)
+      this.css3TransformContainer.style('transform-origin', null)
+      this.css3TransformContainer.style('-webkit-transform-origin', null)
+    }
+  }
+
+  _goToSvgFrame (callback = null) {
+    if (!this._requestedFrame || callback) {
+      this._requestedFrame = true
+      window.requestAnimationFrame(() => {
+        this._requestedFrame = false
+
+        // reset the 3d transform
+        this._clear3d()
+
+        const scale = this._svgScale
+        const translate = this._svgTranslate
+        this.zoomedSel
+          .attr('transform',
+                'translate(' + translate.x + ',' + translate.y + ') ' +
+                'scale(' + scale + ')')
+        if (callback) callback()
+      })
+    }
   }
 
   /**
@@ -311,40 +343,12 @@ export default class ZoomContainer {
    * @param {Object} translate - The location, of the form {x: 2.0, y: 3.0}.
    * @param {Function} callback - (optional) A callback to run after scaling.
    */
-  _goToSvg (scale, translate, callback) {
-    this.callbackManager.run('svg_start')
-
-    // defer to update callbacks
-    _.defer(() => {
-      // start time
-      // var start = new Date().getTime()
-
-      // reset the 3d transform
-      this._clear3d()
-
-      // redraw the svg
-      this.zoomedSel
-        .attr('transform',
-              'translate(' + translate.x + ',' + translate.y + ') ' +
-              'scale(' + scale + ')')
-      // save svg location
-      this._svgScale = scale
-      this._svgTranslate = translate
-
-      _.defer(() => {
-        // defer for callback after draw
-        this.callbackManager.run('svg_finish')
-
-        if (!_.isUndefined(callback)) callback()
-
-        // wait a few ms to get a reliable end time
-        // _.delay(function () {
-        //     // end time
-        //     var t = new Date().getTime() - start
-        //     this._lastSvgMs = t
-        // }.bind(this), 20)
-      })
-    })
+  _goToSvg (scale, translate, callback = null) {
+    // redraw the svg
+    // save svg location
+    this._svgScale = scale
+    this._svgTranslate = translate
+    this._goToSvgFrame(callback)
   }
 
   /**
@@ -367,14 +371,14 @@ export default class ZoomContainer {
   /**
    * Zoom in by the default amount with the default options.
    */
-  zoom_in () {
+  zoom_in () { // eslint-disable-line camelcase
     this.zoomBy(1.5)
   }
 
   /**
    * Zoom out by the default amount with the default options.
    */
-  zoom_out () {
+  zoom_out () { // eslint-disable-line camelcase
     this.zoomBy(0.667)
   }
 
@@ -383,7 +387,7 @@ export default class ZoomContainer {
    * width or height is not defined.
    * @returns {Object} The size coordinates, e.g. { x: 2, y: 3 }.
    */
-  get_size () {
+  get_size () { // eslint-disable-line camelcase
     const {width, height} = this.selection.node().getBoundingClientRect()
     return { width, height }
   }

@@ -244,6 +244,11 @@ class Builder {
       this.zoom_container.setScrollBehavior(val)
     })
 
+    // Reactive tooltip settings
+    this.settings.streams.enable_tooltips.onValue(val => {
+      this._updateTooltipSetting(val)
+    })
+
     // Make a container for other map-related tools that will be reset on map load
     // TODO only create these once in the Builder constructor
     this.mapToolsContainer = this.selection.append('div')
@@ -385,6 +390,9 @@ class Builder {
     // Connect status bar
     this._setupStatus(this.map)
     this.map.set_status('Loading map ...')
+
+    // Connect tooltips
+    this._updateTooltipSetting(this.settings.get('enable_tooltips'))
 
     // Set the data for the map
     if (shouldUpdateData) {
@@ -766,8 +774,6 @@ class Builder {
     }
     this.map.behavior.toggleSelectableClick(mode === 'build' || mode === 'brush') // XX
     this.map.behavior.toggleLabelDrag(mode === 'brush') // XX
-    // this.map.behavior.toggleLabelMouseover(true)
-    // this.map.behavior.toggleLabelTouch(true)
     this.map.behavior.toggleTextLabelEdit(mode === 'text') // XX
     this.map.behavior.toggleBezierDrag(mode === 'brush') // XX
 
@@ -1075,6 +1081,11 @@ class Builder {
 
   _setupStatus (map) {
     map.callback_manager.set('set_status', status => this.status_bar.html(status))
+  }
+
+  _updateTooltipSetting (setting) {
+    this.map.behavior.toggleLabelMouseover(setting && setting.includes('label'))
+    this.map.behavior.toggleObjectMouseover(setting && setting.includes('object'))
   }
 
   /**
