@@ -1,7 +1,7 @@
 {
   "name": "escher",
   "author": "Zachary King",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "post_version": null,
   "schema_version": "1-0-0",
   "map_model_version": "6",
@@ -64,7 +64,7 @@
     "d3-request": "^1.0.3",
     "d3-scale": "^1.0.4",
     "d3-selection": "^1.0.3",
-    "d3-zoom": "^1.1.1",
+    "d3-zoom": "^1.7.3",
     "file-saver": "^1.3.3",
     "immutability-helper": "^2.4.0",
     "mousetrap": "^1.5.3",
