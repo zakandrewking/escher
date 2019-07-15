@@ -102,7 +102,9 @@ export default class ZoomContainer {
     }
 
     if (this._panDragOn) {
-      // turn on the hand
+      // turn on the hand. Performance note: In previous versions of Escher, we
+      // enabled the "grabbing" cursor during pan events. However, this causes a
+      // browser layout and costs about 400ms, so we turned it off.
       this.zoomedSel.style('cursor', 'grab')
     } else {
       // turn off the hand
