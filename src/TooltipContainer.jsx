@@ -51,6 +51,8 @@ export default class TooltipContainer {
    */
   disableTooltips () {
     this.settings.set('enable_tooltips', false)
+    // draw to update tooltip settings
+    this.map.draw_everything()
     this.hide()
     this.map.set_status(`Tooltips disabled. You can enable them again in the
                          settings menu.`, 3000)
@@ -74,12 +76,7 @@ export default class TooltipContainer {
 
     // connect callbacks to show tooltip
     map.callback_manager.set('show_tooltip.tooltip_container', (type, d) => {
-      // Check if the current element is in the list of tooltips to display
-      const enableTooltips = map.settings.get('enable_tooltips')
-      const newType = type.replace('reaction_', '').replace('node_', '').replace('gene_', '')
-      if (enableTooltips && enableTooltips.includes(newType)) {
-        this.show(type, d)
-      }
+      this.show(type, d)
     })
 
     // callback to hide / delay hide tooltip

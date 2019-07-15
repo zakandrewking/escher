@@ -29,47 +29,23 @@ export default class Behavior {
     this.textLabelMousedown = null
     this.textLabelClick = null
     this.selectableDrag = this.emptyBehavior
-    this.nodeMouseover = null
-    this.nodeMouseout = null
-    this.labelMouseover = this.emptyBehavior
-    this.labelMouseout = null
-    this.labelTouch = null
-    this.objectMouseover = this.emptyBehavior
-    this.objectTouch = null
-    this.objectMouseout = null
+
+    this.nodeLabelMouseover = null
+    this.nodeLabelTouch = null
+    this.nodeLabelMouseout = null
+    this.reactionLabelMouseover = null
+    this.reactionLabelTouch = null
+    this.reactionLabelMouseout = null
+    this.geneLabelMouseover = null
+    this.geneLabelTouch = null
+    this.geneLabelMouseout = null
+
     this.bezierDrag = this.emptyBehavior
     this.bezierMouseover = null
     this.bezierMouseout = null
     this.reactionLabelDrag = this.emptyBehavior
     this.nodeLabelDrag = this.emptyBehavior
     this.dragging = false
-    this.turnEverythingOn()
-  }
-
-  /**
-   * Toggle everything except rotation mode and text mode.
-   */
-  turnEverythingOn () {
-    this.toggleSelectableClick(true)
-    this.toggleSelectableDrag(true)
-    this.toggleLabelDrag(true)
-    this.toggleLabelMouseover(true)
-    this.toggleLabelTouch(true)
-    this.toggleObjectMouseover(true)
-    this.toggleObjectTouch(true)
-  }
-
-  /**
-   * Toggle everything except rotation mode and text mode.
-   */
-  turnEverythingOff () {
-    this.toggleSelectableClick(false)
-    this.toggleSelectableDrag(false)
-    this.toggleLabelDrag(false)
-    this.toggleLabelMouseover(false)
-    this.toggleLabelTouch(false)
-    this.toggleObjectMouseover(false)
-    this.toggleObjectTouch(false)
   }
 
   averageLocation (nodes) {
@@ -344,48 +320,40 @@ export default class Behavior {
    */
   toggleLabelMouseover (onOff) {
     if (onOff === undefined) {
-      onOff = this.labelMouseover === this.emptyBehavior
+      onOff = this.nodeLabelMouseover === null
     }
 
     if (onOff) {
       // Show/hide tooltip.
       // @param {String} type - 'reactionLabel' or 'nodeLabel'
       // @param {Object} d - D3 data for DOM element
-      this.labelMouseover = (type, d) => {
+      const getMouseover = type => d => {
         if (!this.dragging) {
           this.map.callback_manager.run('show_tooltip', null, type, d)
         }
       }
-
-      this.labelMouseout = () => {
+      const mouseout = () => {
         this.map.callback_manager.run('delay_hide_tooltip')
       }
+      this.nodeLabelMouseover = getMouseover('node_label')
+      this.nodeLabelTouch = getMouseover('node_label')
+      this.nodeLabelMouseout = mouseout
+      this.reactionLabelMouseover = getMouseover('reaction_label')
+      this.reactionLabelTouch = getMouseover('reaction_label')
+      this.reactionLabelMouseout = mouseout
+      this.geneLabelMouseover = getMouseover('gene_label')
+      this.geneLabelTouch = getMouseover('gene_label')
+      this.geneLabelMouseout = mouseout
     } else {
-      this.labelMouseover = this.emptyBehavior
-    }
-  }
-
-  /**
-   * With no argument, toggle the tooltips upon touching of labels.
-   * @param {Boolean} onOff - The new on/off state. If this argument is not
-   *                          provided, then toggle the state.
-   */
-  toggleLabelTouch (onOff) {
-    if (onOff === undefined) {
-      onOff = this.labelTouch === null
-    }
-
-    if (onOff) {
-      // Show/hide tooltip.
-      // @param {String} type - 'reactionLabel' or 'nodeLabel'
-      // @param {Object} d - D3 data for DOM element
-      this.labelTouch = (type, d) => {
-        if (!this.dragging) {
-          this.map.callback_manager.run('show_tooltip', null, type, d)
-        }
-      }
-    } else {
-      this.labelTouch = null
+      this.nodeLabelMouseover = null
+      this.nodeLabelTouch = null
+      this.nodeLabelMouseout = null
+      this.reactionLabelMouseover = null
+      this.reactionLabelTouch = null
+      this.reactionLabelMouseout = null
+      this.geneLabelMouseover = null
+      this.geneLabelTouch = null
+      this.geneLabelMouseout = null
     }
   }
 
@@ -395,24 +363,34 @@ export default class Behavior {
    */
   toggleObjectMouseover (onOff) {
     if (onOff === undefined) {
-      onOff = this.objectMouseover === this.emptyBehavior
+      onOff = this.nodeObjectMouseover === null
     }
 
     if (onOff) {
       // Show/hide tooltip.
       // @param {String} type - 'reaction_object' or 'node_object'
       // @param {Object} d - D3 data for DOM element
-      this.objectMouseover = (type, d) => {
+      const getMouseover = type => d => {
         if (!this.dragging) {
           this.map.callback_manager.run('show_tooltip', null, type, d)
         }
       }
-
-      this.objectMouseout = () => {
+      const mouseout = () => {
         this.map.callback_manager.run('delay_hide_tooltip')
       }
+      this.nodeObjectMouseover = getMouseover('node_object')
+      this.nodeObjectMouseout = mouseout
+      this.reactionObjectMouseover = getMouseover('reaction_object')
+      this.reactionObjectMouseout = mouseout
+      this.geneObjectMouseover = getMouseover('gene_object')
+      this.geneObjectMouseout = mouseout
     } else {
-      this.objectMouseover = this.emptyBehavior
+      this.nodeObjectMouseover = null
+      this.nodeObjectMouseout = null
+      this.reactionObjectMouseover = null
+      this.reactionObjectMouseout = null
+      this.geneObjectMouseover = null
+      this.geneObjectMouseout = null
     }
   }
 

@@ -173,9 +173,12 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   const show_gene_reaction_rules = this.settings.get('show_gene_reaction_rules')
   const hide_all_labels = this.settings.get('hide_all_labels')
   const gene_font_size = this.settings.get('gene_font_size')
-  const label_mouseover_fn = this.behavior.labelMouseover
-  const label_mouseout_fn = this.behavior.labelMouseout
-  const label_touch_fn = this.behavior.labelTouch
+  const reactionLabelMouseover = this.behavior.reactionLabelMouseover
+  const reactionLabelMouseout = this.behavior.reactionLabelMouseout
+  const reactionLabelTouch = this.behavior.reactionLabelTouch
+  const geneLabelMouseover = this.behavior.geneLabelMouseover
+  const geneLabelMouseout = this.behavior.geneLabelMouseout
+  const geneLabelTouch = this.behavior.geneLabelTouch
 
   // label location
   update_selection
@@ -199,13 +202,9 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
         }
         return t
       })
-      // .on('mouseover', function (d) {
-      //   label_mouseover_fn('reaction_label', d)
-      // })
-      // .on('mouseout', label_mouseout_fn)
-      // .on('touchend', function (d) {
-      //   label_touch_fn('reaction_label', d)
-      // })
+      .on('mouseover', reactionLabelMouseover)
+      .on('mouseout', reactionLabelMouseout)
+      .on('touchend', reactionLabelTouch)
   }
 
   var add_gene_height = function (y, i) {
@@ -252,11 +251,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   gene_g.append('text')
     .attr('class', 'gene-label')
     .style('font-size', gene_font_size + 'px')
-    // .on('mousedown', label_mousedown_fn)
-    // .on('mouseover', function (d) {
-    //   label_mouseover_fn('gene_label', d)
-    // })
-    // .on('mouseout', label_mouseout_fn)
 
   // update
   var gene_update = gene_g.merge(all_genes_g)
@@ -264,9 +258,12 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
     return 'translate(0, ' + add_gene_height(0, i) + ')'
   })
   // update text
-  gene_update.select('text').text(function (d) {
-    return d['text']
-  })
+  gene_update
+    .select('text')
+    .text(d => d.text)
+    .on('mouseover', geneLabelMouseover)
+    .on('mouseout', geneLabelMouseout)
+    .on('touchend', geneLabelTouch)
 
   // exit
   all_genes_g.exit().remove()
@@ -759,9 +756,9 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var metabolite_data_styles = this.settings.get('metabolite_styles')
   var no_data_style = { color: this.settings.get('metabolite_no_data_color'),
                         size: this.settings.get('metabolite_no_data_size') }
-  var label_mouseover_fn = this.behavior.labelMouseover
-  var label_mouseout_fn = this.behavior.labelMouseout
-  var label_touch_fn = this.behavior.labelTouch
+  var labelMouseover = this.behavior.nodeLabelMouseover
+  var labelMouseout = this.behavior.nodeLabelMouseout
+  var labelTouch = this.behavior.nodeLabelTouch
   var object_mouseover_fn = this.behavior.objectMouseover
   var object_mouseout_fn = this.behavior.objectMouseout
   var object_touch_fn = this.behavior.objectTouch
@@ -846,10 +843,9 @@ function update_node (update_selection, scale, has_data_on_nodes,
       })
       .call(this.behavior.turnOffDrag)
       .call(label_drag_behavior)
-      // .on('mouseover', function (d) {
-      //   label_mouseover_fn('node_label', d)
-      // })
-      // .on('mouseout', label_mouseout_fn)
+      .on('mouseover', labelMouseover)
+      .on('mouseout', labelMouseout)
+      .on('touchend', labelTouch)
   }
 
   this.callback_manager.run('update_node', this, update_selection)
