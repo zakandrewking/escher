@@ -66,6 +66,7 @@ export default class ZoomContainer {
     this._zoomTimeout = null
     this._svgScale = this.windowScale
     this._svgTranslate = this.windowTranslate
+    this._3dTransform = null
     this._requestedFrame = false
     // this._lastSvgMs = null
 
@@ -246,10 +247,47 @@ export default class ZoomContainer {
    */
   _goToCallback (scale, translate) {
     // if the scale changes, run the zoom_change callback
-    this.windowScale = scale
+    if (this.windowScale !== scale) {
+      this.windowScale = scale
+      this.callbackManager.run('zoom_change')
+    }
     this.windowTranslate = translate
-    this._goToSvg(scale, translate)
+
+    if (this._use3dTransform) { // 3d transform
+      // cancel all timeouts
+      if (!_.isNull(this._zoomTimeout)) {
+        clearTimeout(this._zoomTimeout)
+      }
+
+      // set the 3d transform
+      this._goTo3d(scale, translate, this._svgScale, this._svgTranslate)
+
+      // if another goTo does not happen within the delay time, then
+      // redraw the svg
+      this._zoomTimeout = _.delay(() => {
+        // redraw the svg
+        this._goToSvg(scale, translate)
+      }, 100) // between 100 and 600 seems to be usable
+    } else { // no 3d transform
+      this._goToSvg(scale, translate)
+    }
+
+    this.callbackManager.run('go_to')
   }
+
+  _goTo3dFrame () {
+    if (!this._requestedFrame) {
+      this._requestedFrame = true
+      requestAnimationFrame(() => {
+        this._requestedFrame = false
+        const transform = this._3dTransform
+        this.css3TransformContainer.style('transform', transform)
+        this.css3TransformContainer.style('-webkit-transform', transform)
+        this.css3TransformContainer.style('transform-origin', '0 0')
+        this.css3TransformContainer.style('-webkit-transform-origin', '0 0')
+      })
+    }
+}
 
   /**
    * Zoom & pan the CSS 3D transform container
@@ -260,10 +298,8 @@ export default class ZoomContainer {
                                         utils.c_times_scalar(svgTranslate, nScale))
     const transform = ('translate(' + nTranslate.x + 'px,' + nTranslate.y + 'px) ' +
                        'scale(' + nScale + ')')
-    this.css3TransformContainer.style('transform', transform)
-    this.css3TransformContainer.style('-webkit-transform', transform)
-    this.css3TransformContainer.style('transform-origin', '0 0')
-    this.css3TransformContainer.style('-webkit-transform-origin', '0 0')
+    this._3dTransform = transform
+    this._goTo3dFrame()
   }
 
   _clear3d () {
@@ -273,8 +309,8 @@ export default class ZoomContainer {
     this.css3TransformContainer.style('-webkit-transform-origin', null)
   }
 
-  _goToSvgFrame () {
-    if (!this._requestedFrame) {
+  _goToSvgFrame (callback = null) {
+    if (!this._requestedFrame || callback) {
       this._requestedFrame = true
       requestAnimationFrame(() => {
         this._requestedFrame = false
@@ -284,6 +320,7 @@ export default class ZoomContainer {
           .attr('transform',
                 'translate(' + translate.x + ',' + translate.y + ') ' +
                 'scale(' + scale + ')')
+        if (callback) callback()
       })
     }
   }
@@ -294,12 +331,15 @@ export default class ZoomContainer {
    * @param {Object} translate - The location, of the form {x: 2.0, y: 3.0}.
    * @param {Function} callback - (optional) A callback to run after scaling.
    */
-  _goToSvg (scale, translate, callback) {
+  _goToSvg (scale, translate, callback = null) {
+    // reset the 3d transform
+    this._clear3d()
+
     // redraw the svg
     // save svg location
     this._svgScale = scale
     this._svgTranslate = translate
-    this._goToSvgFrame()
+    this._goToSvgFrame(callback)
   }
 
   /**
