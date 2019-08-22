@@ -68,7 +68,8 @@ def _json_for_name(name: str, kind: str):
         raise Exception('Could not connect to the Escher server')
     match = match_in_index(name, server_index(), kind)
     if len(match) == 0:
-        raise Exception(f'Could not find the {kind} {name} on the server')
+        raise Exception('Could not find the {kind} {name} on the server'
+                        .format(kind=kind, name=name))
     org, name = match[0]
     url = (
         get_url(kind + '_download') +
@@ -526,7 +527,7 @@ class Builder(widgets.DOMWidget):
             model: Model = None,
             model_name: str = None,
             model_json: str = None,
-            **kwargs,
+            **kwargs
     ) -> None:
         # kwargs will instantiate the traitlets
         super().__init__(**kwargs)
