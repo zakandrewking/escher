@@ -72,7 +72,8 @@ def look_for_string(st, substring):
         found = st.find(substring)
         assert found > -1
     except AssertionError:
-        raise AssertionError(f'Could not find\n\n{substring}\n\nin\n\n{st}')
+        raise AssertionError('Could not find\n\n{substring}\n\nin\n\n{st}'
+                             .format(substring=substring, st=st))
 
 
 def test_save_html(tmpdir):
