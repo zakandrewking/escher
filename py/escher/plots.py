@@ -527,7 +527,7 @@ class Builder(widgets.DOMWidget):
             model: Model = None,
             model_name: str = None,
             model_json: str = None,
-            **kwargs,
+            **kwargs
     ) -> None:
         # kwargs will instantiate the traitlets
         super().__init__(**kwargs)
