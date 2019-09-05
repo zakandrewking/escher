@@ -130,6 +130,9 @@ if (base) {
                   }
                 })
               })
+
+              // draw again to get settings visualized
+              builder.map.draw_everything()
             }
           }
         )
