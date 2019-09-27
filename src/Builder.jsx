@@ -641,6 +641,7 @@ class Builder {
       align_horizontal: () => this.map.align_horizontal(),
       togglePrimary: () => this.map.toggle_selected_node_primary(),
       cyclePrimary: () => this.map.cycle_primary_node(),
+      splitMetabolite: () => this.map.split_metabolite(),
       selectAll: () => this.map.select_all(),
       selectNone: () => this.map.select_none(),
       invertSelection: () => this.map.invert_selection(),

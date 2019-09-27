@@ -13,6 +13,7 @@ import SearchIndex from './SearchIndex'
 import bacon from 'baconjs'
 import _ from 'underscore'
 import { select as d3Select } from 'd3-selection'
+import { schemeCategory20 } from '../node_modules/d3-scale';
 
 function _on_array (fn) {
   return function (array) { return fn.apply(null, array) }
@@ -1840,6 +1841,93 @@ export default class Map {
     // 7. select the primary node
     this.select_metabolite_with_id(primary_node_id)
     return
+  }
+
+  /**
+   * Get the current metabolite a split into into separate metabolites for each
+   * connected reaction.
+   */
+  split_metabolite () {
+    // displacement of new nodes
+    const disp = { x: 50, y: 0 }
+    const selectedNodes = this.getSelectedNodes()
+    if (_.isEmpty(selectedNodes)) {
+      this.set_status('Select a metabolite to split it', 3000)
+      return
+    }
+    const keys = Object.keys(selectedNodes)
+    if (keys.length > 1) {
+      this.set_status('Cannot split when multiple metabolites/nodes are selected', 3000)
+      return
+    }
+    const reactionsToDraw = []
+
+    // Get the first node
+    const nodeId = keys[0]
+    const node = this.nodes[nodeId]
+    const nodesToDraw = [nodeId]
+    const newNodes = []
+    const originalNode = utils.clone(node)
+    node.connected_segments.forEach((segmentInfo, i) => {
+      // copy node
+      if (i > 0) {
+        const newNode = utils.clone(node)
+        newNode.x += i * disp.x
+        newNode.y += i * disp.y
+        newNode.label_x += i * disp.x
+        newNode.label_y += i * disp.y
+        // change the connected segment
+        newNode.connected_segments = [segmentInfo]
+        // add the node
+        const newNodeId = String(++this.largest_ids.nodes)
+        nodesToDraw.push(newNodeId)
+        newNodes[newNodeId] = newNode
+
+        // draw the updated reaction
+        reactionsToDraw.push(segmentInfo.reaction_id)
+      }
+    })
+    // drop all but first segment
+    node.connected_segments = [node.connected_segments[0]]
+
+    // add to the undo stack and execute
+    const redo = () => {
+      _.mapObject(newNodes, (newNode, newNodeId) => {
+        this.nodes[newNodeId] = newNode
+
+        // switch the from/to_node_id
+        const segmentInfo = newNode.connected_segments[0]
+        const segment = this.reactions[segmentInfo.reaction_id].segments[segmentInfo.segment_id]
+        if (segment.from_node_id == nodeId) {
+          segment.from_node_id = newNodeId
+        } else {
+          segment.to_node_id = newNodeId
+        }
+
+      })
+      this.nodes[nodeId] = node
+      this.draw_these_nodes(nodesToDraw)
+      this.draw_these_reactions(reactionsToDraw)
+    }
+    const undo = () => {
+      _.mapObject(newNodes, (newNode, newNodeId) => {
+        delete this.nodes[newNodeId]
+
+        // switch the from/to_node_id
+        const segmentInfo = newNode.connected_segments[0]
+        const segment = this.reactions[segmentInfo.reaction_id].segments[segmentInfo.segment_id]
+        if (segment.from_node_id == newNodeId) {
+          segment.from_node_id = nodeId
+        } else {
+          segment.to_node_id = nodeId
+        }
+      })
+      this.nodes[nodeId] = originalNode
+      this.draw_all_nodes(true)
+      this.draw_these_reactions(reactionsToDraw)
+    }
+    this.undo_stack.push(undo, redo)
+    redo()
   }
 
   /**

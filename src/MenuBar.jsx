@@ -177,6 +177,7 @@ class MenuBar extends Component {
             onClick={this.props.align_horizontal}
             disabledButtons={disabledButtons}
           />
+          <li name='divider' />
           <MenuButton
             name={'Toggle primary/secondary' + (enableKeys ? ' (P)' : '')}
             onClick={() => this.props.togglePrimary()}
@@ -185,6 +186,11 @@ class MenuBar extends Component {
           <MenuButton
             name={'Rotate reactant locations' + (enableKeys ? ' (C)' : '')}
             onClick={() => this.props.cyclePrimary()}
+            disabledButtons={disabledButtons}
+          />
+          <MenuButton
+            name={'Split metabolite'}
+            onClick={() => this.props.splitMetabolite()}
             disabledButtons={disabledButtons}
           />
           <li name='divider' />
