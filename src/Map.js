@@ -1247,8 +1247,8 @@ export default class Map {
       // undo
       // redraw the saved nodes, reactions, and segments
 
-      this.extend_nodes(saved_nodes)
-      this.extend_reactions(saved_reactions)
+      this.extend_nodes(utils.clone(saved_nodes))
+      this.extend_reactions(utils.clone(saved_reactions))
       var reaction_ids_to_draw = Object.keys(saved_reactions)
       for (var segment_id in saved_segment_objs_w_segments) {
         var segment_obj = saved_segment_objs_w_segments[segment_id]
@@ -1864,14 +1864,13 @@ export default class Map {
 
     // Get the first node
     const nodeId = keys[0]
-    const node = this.nodes[nodeId]
+    const savedNode = utils.clone(this.nodes[nodeId])
     const nodesToDraw = [nodeId]
-    const newNodes = []
-    const originalNode = utils.clone(node)
-    node.connected_segments.forEach((segmentInfo, i) => {
+    const savedNewNodes = {}
+    savedNode.connected_segments.forEach((segmentInfo, i) => {
       // copy node
       if (i > 0) {
-        const newNode = utils.clone(node)
+        const newNode = utils.clone(savedNode)
         newNode.x += i * disp.x
         newNode.y += i * disp.y
         newNode.label_x += i * disp.x
@@ -1881,19 +1880,17 @@ export default class Map {
         // add the node
         const newNodeId = String(++this.largest_ids.nodes)
         nodesToDraw.push(newNodeId)
-        newNodes[newNodeId] = newNode
-
-        // draw the updated reaction
-        reactionsToDraw.push(segmentInfo.reaction_id)
+        savedNewNodes[newNodeId] = newNode
       }
+
+      // draw the updated reaction
+      reactionsToDraw.push(segmentInfo.reaction_id)
     })
-    // drop all but first segment
-    node.connected_segments = [node.connected_segments[0]]
 
     // add to the undo stack and execute
     const redo = () => {
-      _.mapObject(newNodes, (newNode, newNodeId) => {
-        this.nodes[newNodeId] = newNode
+      _.mapObject(savedNewNodes, (newNode, newNodeId) => {
+        this.nodes[newNodeId] = utils.clone(newNode)
 
         // switch the from/to_node_id
         const segmentInfo = newNode.connected_segments[0]
@@ -1903,14 +1900,17 @@ export default class Map {
         } else {
           segment.to_node_id = newNodeId
         }
-
       })
-      this.nodes[nodeId] = node
+
+      // drop all but first segment
+      const updatedNode = utils.clone(savedNode)
+      updatedNode.connected_segments = [updatedNode.connected_segments[0]]
+      this.nodes[nodeId] = updatedNode
       this.draw_these_nodes(nodesToDraw)
       this.draw_these_reactions(reactionsToDraw)
     }
     const undo = () => {
-      _.mapObject(newNodes, (newNode, newNodeId) => {
+      _.mapObject(savedNewNodes, (newNode, newNodeId) => {
         delete this.nodes[newNodeId]
 
         // switch the from/to_node_id
@@ -1922,7 +1922,7 @@ export default class Map {
           segment.to_node_id = nodeId
         }
       })
-      this.nodes[nodeId] = originalNode
+      this.nodes[nodeId] = utils.clone(savedNode)
       this.draw_all_nodes(true)
       this.draw_these_reactions(reactionsToDraw)
     }
