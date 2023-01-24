@@ -46,18 +46,18 @@ setup(
         )
     ],
     install_requires=[
-        'Jinja2>=2.7.3,<3',
-        'pytest>=4.0.1,<5',
+        'Jinja2>=2.7.3',
+        'pytest>=4.0.1',
         'cobra>=0.5.0',
-        'jsonschema>=3.0.1,<4',
-        'ipywidgets>=7.4.0,<8',
+        'jsonschema>=3.0.1',
+        'ipywidgets>=7.4.0',
         'pandas>=0.18'
     ],
     extras_require={
         'docs': [
-            'sphinx>=2.1.1,<3',
-            'sphinx-rtd-theme>=0.4.3,<0.5',
-            'nbsphinx>=0.4.2,<0.5'
+            'sphinx>=2.1.1',
+            'sphinx-rtd-theme>=0.4.3',
+            'nbsphinx>=0.4.2'
         ],
     },
 )
