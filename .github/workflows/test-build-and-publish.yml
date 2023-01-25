@@ -6,6 +6,7 @@ on:
     types: [ opened, synchronize, reopened, closed ]
     branches:
       - master
+      - feat/publish
 
 jobs:
   test:
@@ -17,8 +18,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Build JS
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
       - name: Install JavaScript dependencies
         run: npm install
       - name: Build JavaScript package
