@@ -23,11 +23,11 @@ jobs:
       - name: Build JS
         uses: actions/setup-node@v3
       - name: Install JavaScript dependencies
-      - run: npm install
+        run: npm install
       - name: Build JavaScript package
-      - run: npm run build
+        run: npm run build
       - name: Copy Package to py directory
-      - run: npm run copy
+        run: npm run copy
       - run: cd py
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -49,11 +49,11 @@ jobs:
     - name: Build JS
       uses: actions/setup-node@v3
     - name: Install JavaScript dependencies
-    - run: npm install
+      run: npm install
     - name: Build JavaScript package
-    - run: npm run build
+      run: npm run build
     - name: Copy Package to py directory
-    - run: npm run copy
+      run: npm run copy
     - run: cd py
     - name: Set up Python
       uses: actions/setup-python@v2
