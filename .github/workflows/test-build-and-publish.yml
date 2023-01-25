@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build JS
-        used: actions/setup-node@v3
+        uses: actions/setup-node@v3
       - name: Install JavaScript dependencies
       - run: npm install
       - name: Build JavaScript package
@@ -45,8 +45,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - run: cd py
     - uses: actions/checkout@v2
+    - name: Build JS
+      uses: actions/setup-node@v3
+    - name: Install JavaScript dependencies
+    - run: npm install
+    - name: Build JavaScript package
+    - run: npm run build
+    - name: Copy Package to py directory
+    - run: npm run copy
+    - run: cd py
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
