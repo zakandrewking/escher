@@ -46,14 +46,16 @@ setup(
         )
     ],
     install_requires=[
-        'Jinja2>=2.7.3,<3',
-        'pytest>=4.0.1,<5',
+        'Jinja2>=3.0.3,<4',
         'cobra>=0.5.0',
-        'jsonschema>=3.0.1,<4',
-        'ipywidgets>=7.4.0,<8',
+        'jsonschema>=4.17.3,<5',
+        'ipywidgets>=8.1.1,<9',
         'pandas>=0.18'
     ],
     extras_require={
+        'test': [
+            'pytest>=4.3.0,<8',
+        ],
         'docs': [
             'sphinx>=2.1.1,<3',
             'sphinx-rtd-theme>=0.4.3,<0.5',
