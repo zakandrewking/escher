@@ -126,7 +126,8 @@ Then in the `py` directory, install the Python package:
 
 ```
 cd py
-pip install -e . # installs escher in develop mode and dependencies
+pip install -r requirements.txt
+pip install -e . # installs escher in develop mode
 ```
 
 For Python testing, run this in the `py` directory:
