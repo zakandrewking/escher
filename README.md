@@ -130,6 +130,12 @@ pip install -r requirements.txt
 pip install -e . # installs escher in develop mode
 ```
 
+To use the widgets within notebooks from jupyterlab, you also need to run the following from the escher root directory:
+```bash
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter labextension install escher
+```
+
 For Python testing, run this in the `py` directory:
 
 ```

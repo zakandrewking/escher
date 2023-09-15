@@ -49,7 +49,7 @@ setup(
         'Jinja2>=3.0.3,<4',
         'cobra>=0.5.0',
         'jsonschema>=4.17.3,<5',
-        'ipywidgets>=8.1.1,<9',
+        'ipywidgets==7.7.0',
         'pandas>=0.18'
     ],
     extras_require={
@@ -60,6 +60,10 @@ setup(
             'sphinx>=2.1.1,<3',
             'sphinx-rtd-theme>=0.4.3,<0.5',
             'nbsphinx>=0.4.2,<0.5'
+        ],
+        'jupyter': [
+            'jupyterlab-widgets==1.1.1',
+            'jupyterlab==3.6.3',
         ],
     },
 )
