@@ -49,7 +49,7 @@ setup(
         'Jinja2>=3.0.3,<4',
         'cobra>=0.5.0',
         'jsonschema>=4.17.3,<5',
-        'ipywidgets==7.7.0',
+        'ipywidgets>=7.7.0,<8',
         'pandas>=0.18'
     ],
     extras_require={
