@@ -50,6 +50,12 @@ First, install dependencies with [npm](https://www.npmjs.com) (or you can use
 [yarn](https://yarnpkg.com)):
 
 ```
+brew install nvm pyenv
+pyenv install 3.10.12
+pyenv shell 3.10.12
+python -m venv .venv
+source .venv/bin/activate
+nvm use
 npm install
 ```
 
@@ -126,7 +132,14 @@ Then in the `py` directory, install the Python package:
 
 ```
 cd py
-pip install -e . # installs escher in develop mode and dependencies
+pip install -r requirements.txt
+pip install -e . # installs escher in develop mode
+```
+
+To use the widgets within notebooks from jupyterlab, you also need to run the following from the escher root directory:
+```bash
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter labextension install escher
 ```
 
 For Python testing, run this in the `py` directory:
