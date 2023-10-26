@@ -1,13 +1,15 @@
 # npm
 
-update version in package.json
-yarn clean
-yarn install
-yarn build
-yarn copy # for docs to build
-git commit version change
-git tag version
-git push commit & tags
+source .venv/bin/activate
+nvm use
+(update version in package.json)
+npm run clean
+npm install
+npm run build
+npm run copy # for docs to build
+git commit -m "version change"
+git tag <version>
+git push 
 npm login # last time i tried, yarn wasn't working for login & publish
 npm publish
 
