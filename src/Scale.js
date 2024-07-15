@@ -10,6 +10,7 @@ export default class Scale {
     this.size = scaleLinear()
     this.reaction_color = scaleLinear().clamp(true)
     this.reaction_size = scaleLinear().clamp(true)
+    this.reaction_animation_duration = scaleLinear().clamp(true)
     this.metabolite_color = scaleLinear().clamp(true)
     this.metabolite_size = scaleLinear().clamp(true)
   }
@@ -75,14 +76,15 @@ export default class Scale {
       } else {
         throw new Error('Bad domain type ' + x.type)
       }
-      return { v, color: x.color, size: x.size }
+      return { v, color: x.color, size: x.size, duration: x.duration}
     }).sort((a, b) => {
       return a.v - b.v
     })
     return {
       domain: sorted.map(x => { return x.v }),
       color_range: sorted.map(x => { return x.color }),
-      size_range: sorted.map(x => { return x.size })
+      size_range: sorted.map(x => { return x.size }),
+      duration_range: sorted.map(x => { return x.duration })
     }
   }
 
@@ -101,8 +103,10 @@ export default class Scale {
       const out = this.sortScale(scale, stats)
       this.reaction_color.domain(out.domain)
       this.reaction_size.domain(out.domain)
+      this.reaction_animation_duration.domain(out.domain)
       this.reaction_color.range(out.color_range)
       this.reaction_size.range(out.size_range)
+      this.reaction_animation_duration.range(out.duration_range)
     }
   }
 

@@ -113,6 +113,7 @@ class Builder {
       reaction_scale_preset: 'GaBuGeRd',
       reaction_no_data_color: '#dcdcdc',
       reaction_no_data_size: 8,
+      show_reaction_data_animation: false,
       // gene
       gene_data: null,
       and_method_in_gene_reaction_rule: 'mean',

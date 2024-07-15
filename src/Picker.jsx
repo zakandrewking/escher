@@ -169,6 +169,21 @@ class Picker extends Component {
             value={this.props.size}
             disabled={this.props.disabled}
           />
+          {
+            this.props.duration && <input
+              type='text'
+              className='option'
+              onInput={(event) => {
+                if (this.props.onChange) this.props.onChange('duration', parseInt(event.target.value))
+              }}
+              onFocus={(event) => {
+                event.target.select()
+                if (this.props.focus) this.props.focus()
+              }}
+              value={this.props.duration}
+              disabled={this.props.disabled}
+            />
+          }
         </div>
       </div>
     )

@@ -46,7 +46,7 @@
 }
 
 .escher-container .scaleLabels label {
-  margin-bottom: 6px;
+  padding: 4px 0;
 }
 
 .escher-container .noDataStyle {

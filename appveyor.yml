@@ -1,6 +1,9 @@
+version: 1.0.{build}
+image: Visual Studio 2019  # Choose an environment that includes Python 3.10
+
 environment:
   matrix:
-    - python: 'C:\\Python37-x64'
+    - python: 'C:\\Python310-x64'
 
 install:
   # Add python to PATH
@@ -8,14 +11,13 @@ install:
   - python --version
   # Install python packages
   - python -m pip install --upgrade pip
+  - python -m pip install pytest
   - cd py
-  - python -m pip install -e .
-  - cd ..
+  - python -m pip install -r requirements.txt
 
 build: off
 
 test_script:
-  - cd py
   - python -m pytest
   - cd ..
 

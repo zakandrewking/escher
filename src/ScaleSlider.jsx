@@ -101,7 +101,8 @@ class ScaleSlider extends Component {
         value: event.layerX / event.target.clientWidth * this.props.stats.max +
             (1 - event.layerX / event.target.clientWidth) * this.props.stats.min,
         color: '#9696ff',
-        size: 20
+        size: 20,
+        duration: 1
       }]
     })
     this.props.onChange(newScale)
@@ -194,6 +195,7 @@ class ScaleSlider extends Component {
             }
             color={stop.color}
             size={stop.size}
+            duration={stop.duration}
             zIndex={this.state.focusedPicker === i ? '2' : '0'}
             showTrash={this.props.scale.length >= 3}
           />
@@ -214,6 +216,7 @@ class ScaleSlider extends Component {
             value={stop.value}
             color={stop.color}
             size={stop.size}
+            duration={stop.duration}
             zIndex={this.state.focusedPicker === i ? '2' : '0'}
             showTrash={this.props.scale.length >= 3}
           />
@@ -242,6 +245,7 @@ class ScaleSlider extends Component {
         </div>
         <div className='scaleLabels'>
           <label>Value:</label><label>Color:</label><label>Size:</label>
+          {this.props.type === "Reaction" && <label title="How many seconds are required to animate every 100 units of the SVG path length">Duration:</label>}
         </div>
         <div className='noDataStyle'>
           <label className='styleHeader'>Styles for reactions with no data</label>

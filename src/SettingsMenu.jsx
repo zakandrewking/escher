@@ -123,6 +123,16 @@ class SettingsMenu extends Component {
                 />
                 Scroll to zoom (instead of scroll to pan)
               </label>
+              <label title="If checked, then show the animation when reaction data is loaded.">
+                <input
+                  type="checkbox"
+                  onClick={() => {
+                      settings.set('show_reaction_data_animation', !settings.get('show_reaction_data_animation'))
+                  }}
+                  checked={settings.get('show_reaction_data_animation')}
+                />
+                Show reaction data animation
+              </label>
               <label title='If checked, then only the primary metabolites will be displayed.'>
                 <input
                   type='checkbox'
