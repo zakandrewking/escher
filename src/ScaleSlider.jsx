@@ -245,7 +245,7 @@ class ScaleSlider extends Component {
         </div>
         <div className='scaleLabels'>
           <label>Value:</label><label>Color:</label><label>Size:</label>
-          {this.props.type === "Reaction" && <label title="How many seconds are needed to complete the animation for every 100 SVG paths">Duration:</label>}
+          {this.props.type === "Reaction" && <label title="How many seconds are required to animate every 100 units of the SVG path length">Duration:</label>}
         </div>
         <div className='noDataStyle'>
           <label className='styleHeader'>Styles for reactions with no data</label>
