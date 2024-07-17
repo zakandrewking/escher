@@ -308,6 +308,57 @@ function create_segment (enter_selection) {
  */
 function update_segment (update_selection, scale, cobra_model,
                          drawn_nodes, defs, has_data_on_reactions) {
+
+
+  // define the function to handle the animation of the reaction data
+  function handleAnimation(entries, observer) {
+    entries.forEach(entry => {
+      // get the node
+      const node = entry.target;
+      // check if the element is in the viewport
+      if (entry.isIntersecting) {
+        // show the animation when the element is in the viewport
+        const dataBindByD3 = node.__data__;
+        if (has_data_on_reactions && show_reaction_data_animation && dataBindByD3.data) {
+          const fluxData = dataBindByD3.data;
+          const velocity = scale.reaction_animation_duration(fluxData);
+          // Check if the animation is already running and the velocity has changed
+          if (node.animation && node.animation.data !== velocity) {
+            node.animation.kill()
+            node.animation = null
+          }
+
+          if(!node.animation) {
+            const node_length = node.getTotalLength();
+            const direction = dataBindByD3.data_string.startsWith("-") ? 1 : -1;
+            node.setAttribute("stroke-dasharray", `${scale.reaction_size(fluxData)}, ${scale.reaction_size(fluxData)}`);
+            node.animation = gsap.to(node, {
+              strokeDashoffset: direction * node_length * 2,
+              repeat: -1,
+              ease: "none",
+              // insure the animation restarts if the velocity changes
+              immediateRender: true,
+              duration: velocity * node_length / 100,
+              data: velocity
+            });
+          }else {
+            node.setAttribute("stroke-dasharray", `${scale.reaction_size(fluxData)}, ${scale.reaction_size(fluxData)}`);
+            node.animation.play(); // show the animation
+          }
+        }
+      } else {
+        // stop the animation when the element is not in the viewport
+        if (node.animation) {
+          node.removeAttribute("stroke-dasharray");
+          node.animation.pause(); // stop the animation
+        }
+      }
+    });
+  }
+
+  // define the observer for the intersection to stop the animation when the element is not in the viewport
+  const observer = new IntersectionObserver(handleAnimation, { threshold: 0.1 });
+
   const reaction_data_styles = this.settings.get('reaction_styles')
   const should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1)
   const should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') !== -1)
@@ -419,36 +470,10 @@ function update_segment (update_selection, scale, cobra_model,
     })
     .each(function (d, i, nodes) {
       const node = nodes[0]
-      var f = d.data
-      const velocity = scale.reaction_animation_duration(f)
-      const kill_node_animation = (node) => {
-        if (node.animation) {
-          node.animation.kill(); // Stop the animation
-          node.animation = null; // Clean up the reference
-        }
-      }
-
-      if (show_reaction_data_animation && has_data_on_reactions && d.data) {
-        // Check if the animation is already running and the velocity has changed
-        if (node.animation && node.animation.data !== velocity) {
-          kill_node_animation(node)
-        }
-        const node_length = node.getTotalLength()
-        const direction = d.data_string.startsWith("-") ? 1 : -1;
-        node.setAttribute('stroke-dasharray', `${scale.reaction_size(f), scale.reaction_size(f)}` );
-        node.animation = gsap.to(node, {
-          strokeDashoffset: direction * node_length * 2,
-          repeat: -1,
-          ease: "none",
-          // insure the animation restarts if the velocity changes
-          immediateRender: true,
-          duration: velocity * node_length / 100,
-          data: velocity
-        });
-      }else {
-        node.removeAttribute('stroke-dasharray');
-        kill_node_animation(node)
-      }
+      // make the intersection observer callback can be triggered by the redraw
+      handleAnimation([{ target: node }], observer)
+      // observe the node
+      observer.observe(node);
     })
     .attr('pointer-events', 'visibleStroke')
     .on('mouseover', objectMouseover)
