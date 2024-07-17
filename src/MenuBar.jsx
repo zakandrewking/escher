@@ -89,7 +89,7 @@ class MenuBar extends Component {
             onClick={() => this.props.clearReactionData()}
             disabledButtons={disabledButtons}
           />
-          <li name='divider' />
+          <li name='divider'/>
           <MenuButton
             name='Load gene data'
             onClick={d => this.props.setGeneData(d)}
@@ -101,7 +101,7 @@ class MenuBar extends Component {
             onClick={() => this.props.clearGeneData()}
             disabledButtons={disabledButtons}
           />
-          <li name='divider' />
+          <li name='divider'/>
           <MenuButton
             name='Load metabolite data'
             onClick={d => this.props.setMetaboliteData(d)}
@@ -150,7 +150,7 @@ class MenuBar extends Component {
             onClick={() => this.props.setMode('text')}
             disabledButtons={disabledButtons}
           />
-          <li name='divider' />
+          <li name='divider'/>
           <MenuButton
             name={'Delete' + (enableKeys ? ' (Del)' : '')}
             onClick={() => this.props.deleteSelected()}
@@ -166,7 +166,7 @@ class MenuBar extends Component {
             onClick={() => this.props.redo()}
             disabledButtons={disabledButtons}
           />
-          <li name='divider' />
+          <li name='divider'/>
           <MenuButton
             name={`Align vertical${enableKeys ? ' (Alt+L)' : ''}`}
             onClick={this.props.align_vertical}
@@ -187,7 +187,7 @@ class MenuBar extends Component {
             onClick={() => this.props.cyclePrimary()}
             disabledButtons={disabledButtons}
           />
-          <li name='divider' />
+          <li name='divider'/>
           <MenuButton
             name={'Select all' + (enableKeys ? ' (Ctrl+A)' : '')}
             onClick={() => this.props.selectAll()}
@@ -235,7 +235,7 @@ class MenuBar extends Component {
             onClick={() => this.props.toggleBeziers()}
             disabledButtons={disabledButtons}
           />
-          <li name='divider' />
+          <li name='divider'/>
           {/* TODO use preact X to combine the following 2 blocks */}
           {fullScreenButtonEnabled &&
             <MenuButton
@@ -246,7 +246,7 @@ class MenuBar extends Component {
             />
           }
           {fullScreenButtonEnabled &&
-            <li name='divider' />
+            <li name='divider'/>
           }
           <MenuButton
             name={`Settings${enableKeys ? ' (,)' : ''}`}
@@ -255,6 +255,19 @@ class MenuBar extends Component {
             type='settings'
           />
         </Dropdown>
+        <div className="switch-container">
+          <label className="switch tooltip">
+            <input type="checkbox"
+                   onClick={() => {
+                     this.props.settings.set('show_reaction_data_animation', !this.props.settings.get('show_reaction_data_animation'))
+                     this.props.settings.acceptChanges()
+                   }}
+                   checked={this.props.settings.get('show_reaction_data_animation')}
+            />
+            <span className="slider"></span>
+            <span className="tooltiptext">If checked, then show the animation when reaction data is loaded.</span>
+          </label>
+        </div>
         <a className='helpButton' target='#' href='https://escher.readthedocs.org'>?</a>
       </ul>
     )
