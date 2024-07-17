@@ -64,7 +64,8 @@ module.exports = {
   name_to_url: name_to_url,
   get_document: get_document,
   get_window: get_window,
-  d3_transform_catch: d3_transform_catch
+  d3_transform_catch: d3_transform_catch,
+  process_reaction_data: process_reaction_data,
   // check_browser: check_browser
 }
 
@@ -1006,6 +1007,29 @@ function get_document (node) {
  */
 function get_window (node) {
   return get_document(node).defaultView
+}
+
+// filter the data which is less than threshold
+function process_reaction_data (arr) {
+  const obj = arr[0];
+  const threshold = Math.pow(10, -6);  // define threshold
+
+  // call the function for each key in the object
+  for (let key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      let value = obj[key];
+
+      // check if value is an object, if it is, call the function again
+      if (typeof value === 'object' && value !== null) {
+        processObject(value);
+      } else if (typeof value === 'number' && value < threshold) {
+        // if value is a number and less than threshold, set it to 0
+        obj[key] = 0;
+      }
+    }
+  }
+
+  return [obj];
 }
 
 /**

@@ -849,10 +849,12 @@ class Builder {
    * For documentation of this function, see docs/javascript_api.rst.
    */
   set_reaction_data (data) { // eslint-disable-line camelcase
-    this.settings.set('reaction_data', data)
+    const filteredData = data ? utils.process_reaction_data(data) : data;
+
+    this.settings.set('reaction_data', filteredData)
 
     // clear gene data
-    if (data) {
+    if (filteredData) {
       this.settings._options.gene_data = null
     }
 
@@ -867,12 +869,12 @@ class Builder {
     const buttonName = 'Clear reaction data'
     const geneButtonName = 'Clear gene data'
     const index = disabledButtons.indexOf(buttonName)
-    if (data && index !== -1) {
+    if (filteredData && index !== -1) {
       disabledButtons.splice(index, 1)
       const gInd = disabledButtons.indexOf(geneButtonName)
       if (gInd === -1) disabledButtons.push(geneButtonName)
       this.settings.set('disabled_buttons', disabledButtons)
-    } else if (!data && index === -1) {
+    } else if (!filteredData && index === -1) {
       disabledButtons.push(buttonName)
       this.settings.set('disabled_buttons', disabledButtons)
     }
