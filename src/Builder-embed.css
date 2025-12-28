@@ -56,12 +56,20 @@ svg.escher-svg g.selected .node-circle{
 svg.escher-svg g.selected .label {
   fill: rgb(20, 113, 199);
 }
+/* svg.escher-svg .metabolite-circle {
+  stroke: rgb(162, 69, 16);
+  fill: rgb(224, 134, 91);
+} */
 svg.escher-svg .metabolite-circle {
   stroke: rgb(162, 69, 16);
   fill: rgb(224, 134, 91);
 }
+
+
+
 svg.escher-svg g.selected .metabolite-circle {
   stroke: rgb(5, 2, 0);
+  fill: rgb(162, 26, 16)
 }
 svg.escher-svg .segment {
   stroke: #334E75;
@@ -126,4 +134,8 @@ svg.escher-svg .highlight {
 }
 svg.escher-svg .node-to-combine {
   stroke-width: 12px !important;
+}
+
+svg.escher-svg .reaction-label.selected {
+  fill: rgb(20, 113, 199) !important;
 }

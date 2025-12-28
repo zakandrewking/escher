@@ -190,6 +190,16 @@ export default class Map {
       // clear all the connected segments
       node.connected_segments = []
 
+      // Check and apply custom colors if they exist
+      if (node.fillColor !== undefined) {
+
+        node.fillColor = node.fillColor
+      }
+      if (node.strokeColor !== undefined) {
+       
+        node.strokeColor = node.strokeColor
+      }
+
       //  populate the nodes search index.
       if (enable_search) {
         if (node.node_type !== 'metabolite') continue
@@ -2182,14 +2192,21 @@ export default class Map {
       var attrs
       if (node.node_type === 'metabolite') {
         attrs = ['node_type', 'x', 'y', 'bigg_id', 'name', 'label_x', 'label_y',
-                 'node_is_primary']
+                 'node_is_primary', 'fillColor', 'strokeColor']  // Add fillColor and strokeColor
       } else {
         attrs = ['node_type', 'x', 'y']
       }
       attrs.forEach(function(attr) {
-        new_node[attr] = node[attr]
+        if (node[attr] !== undefined) {  // Only add the attribute if it exists
+          new_node[attr] = node[attr]
+        }
       })
       out[1].nodes[n_id] = new_node
+      
+      // Add this logging
+      if (new_node.fillColor || new_node.strokeColor) {
+        console.log('Saving node colors:', n_id, new_node.fillColor, new_node.strokeColor)
+      }
     }
     for (var t_id in out[1].text_labels) {
       var text_label = out[1].text_labels[t_id]

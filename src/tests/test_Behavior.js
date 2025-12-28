@@ -91,6 +91,7 @@ describe('Behavior', () => {
     behavior.toggleSelectableClick(false)
     assertSelectableClickAttrsOff(behavior)
   })
+  
 
   it('toggleSelectableDrag', () => {
     behavior.toggleSelectableDrag(true)

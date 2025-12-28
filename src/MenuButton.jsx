@@ -12,31 +12,31 @@ import utils from './utils'
 import * as dataStyles from './dataStyles'
 
 class MenuButton extends Component {
-  constructor (props) {
+  constructor(props) {
     super(props)
     this.assignKeyForInput = this.assignKeyForInput.bind(this)
   }
 
-  handleFileInput (target) {
+  handleFileInput(target) {
     const file = target.files[0]
-    const reader = new window.FileReader()
-    reader.onload = () => {
-      utils.load_json_or_csv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
-    }
-    if (file !== undefined) {
-      reader.readAsText(file)
-    }
+    utils.load_json_or_csv(file, dataStyles.csv_converter, (e, d) => {
+      if (e) {
+        window.alert(e)
+      } else {
+        this.props.onClick(d)
+      }
+    })
     // reset input
     target.value = null
   }
 
-  assignKeyForInput (node) {
+  assignKeyForInput(node) {
     if (this.props.assignKey) {
       this.props.assignKey(() => node.click())
     }
   }
 
-  render () {
+  render() {
     const disabled = _.contains(this.props.disabledButtons, this.props.name.replace(/ \(.*\)$/, ''))
     if (this.props.type === 'load') {
       return (

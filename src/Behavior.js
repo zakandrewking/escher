@@ -2,6 +2,7 @@ import utils from './utils'
 import * as build from './build'
 import { drag as d3Drag } from 'd3-drag'
 import * as d3Selection from 'd3-selection'
+import { color as d3Color } from 'd3-color'
 
 const d3Select = d3Selection.select
 const d3Mouse = d3Selection.mouse
@@ -201,22 +202,12 @@ export default class Behavior {
     if (onOff) {
       const map = this.map
       this.selectableMousedown = d => {
-        // stop propogation for the buildinput to work right
         d3Selection.event.stopPropagation()
-        // this.parentNode.__data__.wasSelected = d3Select(this.parentNode).classed('selected')
-        // d3Select(this.parentNode).classed('selected', true)
       }
       this.selectableClick = function (d) {
-        // stop propogation for the buildinput to work right
         d3Selection.event.stopPropagation()
-        // click suppressed. This DOES have en effect.
         if (d3Selection.event.defaultPrevented) return
-        // turn off the temporary selection so select_selectable
-        // works. This is a bit of a hack.
-        // if (!this.parentNode.__data__.wasSelected)
-        //     d3Select(this.parentNode).classed('selected', false)
         map.select_selectable(this, d, d3Selection.event.shiftKey)
-        // this.parentNode.__data__.wasSelected = false
       }
       this.nodeMouseover = function (d) {
         d3Select(this).style('stroke-width', null)
@@ -228,6 +219,92 @@ export default class Behavior {
       this.nodeMouseout = function (d) {
         d3Select(this).style('stroke-width', null)
       }
+      this.map.sel.select('#nodes')
+      .selectAll('.node-circle')
+      .on('dblclick', function(d) {
+        console.log('Node double-clicked:', d);
+        const defaultFillColor = 'rgb(224, 134, 91)';  // Original Orange
+        const defaultStrokeColor = 'rgb(162, 69, 16)';  // Default stroke color (black)
+        const currentFillColor = d3Select(this).style('fill');
+        console.log(`Current fill color: ${currentFillColor}`);
+        
+        if (!d.isToggled) {
+          // Create color selection prompt
+          const colorPrompt = d3Select('body').append('div')
+            .style('position', 'fixed')
+            .style('left', '50%')
+            .style('top', '50%')
+            .style('transform', 'translate(-50%, -50%)')
+            .style('background-color', 'white')
+            .style('border', '1px solid black')
+            .style('padding', '20px')
+            .style('z-index', '1000');
+
+          colorPrompt.append('p')
+            .text('Select color:')
+            .style('margin-bottom', '10px');
+
+          const colorOptions = {
+            'Red': '#ff0000',
+            'Green': '#00ff00',
+            'Blue': '#0000ff',
+            'Original Orange': 'rgb(224, 134, 91)'
+          };
+          
+          Object.entries(colorOptions).forEach(([colorName, colorValue]) => {
+            colorPrompt.append('button')
+              .text(colorName)
+              .style('margin', '5px')
+              .style('padding', '5px 10px')
+              .style('background-color', colorValue)
+              .style('color', colorValue === '#ffffff' ? 'black' : 'white')
+              .style('border', 'none')
+              .style('cursor', 'pointer')
+              .on('click', () => {
+                const darkerColor = colorValue === '#ffffff' ? '#000000' : d3Color(colorValue).darker(0.8);
+                d3Select(this)
+                  .transition()
+                  .duration(300)
+                  .style('fill', colorValue)
+                  .style('stroke', darkerColor);
+                
+                d.fillColor = colorValue;
+                d.strokeColor = darkerColor;
+                d.isToggled = true;
+                
+                colorPrompt.remove();
+                console.log(`Node colors changed. Fill: ${d.fillColor}, Stroke: ${d.strokeColor}, isToggled: ${d.isToggled}`);
+              });
+          });
+
+          // Add cancel button
+          colorPrompt.append('button')
+            .text('Cancel')
+            .style('margin', '5px')
+            .style('padding', '5px 10px')
+            .style('cursor', 'pointer')
+            .on('click', () => {
+              colorPrompt.remove();
+            });
+
+        } else {
+          // Second double-click: Change back to default
+          d3Select(this)
+            .transition()
+            .duration(300)
+            .style('fill', defaultFillColor)
+            .style('stroke', defaultStrokeColor);
+          
+          // Remove the saved colors
+          delete d.fillColor;
+          delete d.strokeColor;
+          d.isToggled = false;
+        }
+
+        console.log(`Node colors changed. isToggled: ${d.isToggled}`);
+        d3Selection.event.stopPropagation();
+      });
+
     } else {
       this.selectableMousedown = null
       this.selectableClick = null

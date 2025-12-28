@@ -14,7 +14,7 @@ import { event } from 'd3-selection'
  *                                canvas element (e.g. '.canvas-group').
  */
 export default class Brush {
-  constructor (selection, isEnabled, map, insertAfter) {
+  constructor(selection, isEnabled, map, insertAfter) {
     this.brushSel = selection.append('g').attr('id', 'brush-container')
     const node = this.brushSel.node()
     const insertBeforeNode = selection.select(insertAfter).node().nextSibling
@@ -29,7 +29,7 @@ export default class Brush {
    * Returns a boolean for the on/off status of the brush
    * @return {Boolean}
    */
-  brushIsEnabled () {
+  brushIsEnabled() {
     return this.map.sel.select('.brush').empty()
   }
 
@@ -37,7 +37,7 @@ export default class Brush {
    * Turn the brush on or off
    * @param {Boolean} on_off
    */
-  toggle (onOff) {
+  toggle(onOff) {
     if (onOff === undefined) {
       onOff = !this.enabled
     }
@@ -51,14 +51,14 @@ export default class Brush {
   /**
    * Turn off the mouse crosshair
    */
-  turnOffCrosshair (sel) {
+  turnOffCrosshair(sel) {
     sel.selectAll('rect').attr('cursor', null)
   }
 
-  setupSelectionBrush () {
+  setupSelectionBrush() {
     const map = this.map
     const selection = this.brushSel
-    const selectableSelection = map.sel.selectAll('#nodes,#text-labels')
+    const selectableSelection = map.sel.selectAll('#nodes,#text-labels,#reactions')
     const sizeAndLocation = map.canvas.sizeAndLocation()
     const width = sizeAndLocation.width
     const height = sizeAndLocation.height
@@ -74,55 +74,55 @@ export default class Brush {
     let clearingFlag = false
 
     var brush = d3Brush()
-        .extent([ [ x, y ], [ x + width, y + height ] ])
-        .on('start', () => {
-          this.turnOffCrosshair(selection)
-          // unhide secondary metabolites if they are hidden
-          if (map.settings.get('hide_secondary_metabolites')) {
-            map.settings.set('hide_secondary_metabolites', false)
-            map.draw_everything()
-            map.set_status('Showing secondary metabolites. You can hide them ' +
-                           'again in Settings.', 2000)
-          }
-        })
-        .on('brush', function () {
-          const shiftKeyOn = event.sourceEvent.shiftKey
-          const rect = d3BrushSelection(this)
-          // Check for no selection (e.g. after clearing brush)
-          if (rect !== null) {
-            // When shift is pressed, ignore the currently selected nodes.
-            // Otherwise, brush all nodes.
-            var selection = shiftKeyOn
-                ? selectableSelection.selectAll('.node:not(.selected),.text-label:not(.selected)')
-                : selectableSelection.selectAll('.node,.text-label')
-            selection.classed('selected', d => {
-              const sx = d.x
-              const sy = d.y
-              return (rect[0][0] <= sx && sx < rect[1][0] &&
-                      rect[0][1] <= sy && sy < rect[1][1])
-            })
-          }
-        })
-        .on('end', function () {
-          turnOffCrosshair(selection)
-          // Clear brush
-          var rect = d3BrushSelection(this)
-          if (rect === null) {
-            if (clearingFlag) {
-              clearingFlag = false
-            } else {
-              // Empty selection, deselect all
-              map.select_none()
-            }
+      .extent([[x, y], [x + width, y + height]])
+      .on('start', () => {
+        this.turnOffCrosshair(selection)
+        // unhide secondary metabolites if they are hidden
+        if (map.settings.get('hide_secondary_metabolites')) {
+          map.settings.set('hide_secondary_metabolites', false)
+          map.draw_everything()
+          map.set_status('Showing secondary metabolites. You can hide them ' +
+            'again in Settings.', 2000)
+        }
+      })
+      .on('brush', function () {
+        const shiftKeyOn = event.sourceEvent.shiftKey
+        const rect = d3BrushSelection(this)
+        // Check for no selection (e.g. after clearing brush)
+        if (rect !== null) {
+          // When shift is pressed, ignore the currently selected nodes.
+          // Otherwise, brush all nodes.
+          var selection = shiftKeyOn
+            ? selectableSelection.selectAll('.node:not(.selected),.text-label:not(.selected),.reaction-label:not(.selected)')
+            : selectableSelection.selectAll('.node,.text-label,.reaction-label')
+          selection.classed('selected', d => {
+            const sx = d.x !== undefined ? d.x : d.label_x
+            const sy = d.y !== undefined ? d.y : d.label_y
+            return (rect[0][0] <= sx && sx < rect[1][0] &&
+              rect[0][1] <= sy && sy < rect[1][1])
+          })
+        }
+      })
+      .on('end', function () {
+        turnOffCrosshair(selection)
+        // Clear brush
+        var rect = d3BrushSelection(this)
+        if (rect === null) {
+          if (clearingFlag) {
+            clearingFlag = false
           } else {
-            // Not empty, then clear the box
-            clearingFlag = true
-            selection.call(brush.move, null)
+            // Empty selection, deselect all
+            map.select_none()
           }
-        })
+        } else {
+          // Not empty, then clear the box
+          clearingFlag = true
+          selection.call(brush.move, null)
+        }
+      })
 
     selection
-    // Initialize brush
+      // Initialize brush
       .call(brush)
 
     // Turn off the pan grab icons

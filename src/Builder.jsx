@@ -38,7 +38,7 @@ import './Builder.css'
 import builderEmbed from '!!raw-loader!./Builder-embed.css'
 
 class Builder {
-  constructor (mapData, modelData, embeddedCss, selection, options) {
+  constructor(mapData, modelData, embeddedCss, selection, options) {
     // Defaults
     if (!selection) {
       selection = d3Select('body').append('div')
@@ -150,7 +150,7 @@ class Builder {
     // Check the location
     if (utils.check_for_parent_tag(this.selection, 'svg')) {
       throw new Error('Builder cannot be placed within an svg node ' +
-                      'because UI elements are html-based.')
+        'because UI elements are html-based.')
     }
 
     // The options that are erased when the settings menu is canceled
@@ -210,8 +210,8 @@ class Builder {
 
     // Set up the zoom container
     this.zoom_container = new ZoomContainer(this.selection,
-                                            this.settings.get('scroll_behavior'),
-                                            this.settings.get('use_3d_transform'))
+      this.settings.get('scroll_behavior'),
+      this.settings.get('use_3d_transform'))
     // Zoom container status changes
     // this.zoom_container.callbackManager.set('svg_start', () => {
     //   if (this.map) this.map.set_status('Drawing ...')
@@ -223,8 +223,8 @@ class Builder {
       if (this.settings.get('semantic_zoom')) {
         const scale = this.zoom_container.windowScale
         const optionObject = this.settings.get('semantic_zoom')
-                                 .sort((a, b) => a.zoomLevel - b.zoomLevel)
-                                 .find(a => a.zoomLevel > scale)
+          .sort((a, b) => a.zoomLevel - b.zoomLevel)
+          .find(a => a.zoomLevel > scale)
         if (optionObject) {
           let didChange = false
           _.mapObject(optionObject.options, (value, key) => {
@@ -252,7 +252,7 @@ class Builder {
     // Make a container for other map-related tools that will be reset on map load
     // TODO only create these once in the Builder constructor
     this.mapToolsContainer = this.selection.append('div')
-                                 .attr('class', 'map-tools-container')
+      .attr('class', 'map-tools-container')
 
     // Status in both modes
     this._createStatus(this.selection)
@@ -262,8 +262,8 @@ class Builder {
 
     // Append the bars and menu divs to the document
     var s = this.selection
-                .append('div').attr('class', 'search-menu-container')
-                .append('div').attr('class', 'search-menu-container-inline')
+      .append('div').attr('class', 'search-menu-container')
+      .append('div').attr('class', 'search-menu-container-inline')
     this.menu_div = s.append('div')
     this.search_bar_div = s.append('div')
     this.button_div = this.selection.append('div')
@@ -303,19 +303,19 @@ class Builder {
   }
 
   // builder.options is deprecated
-  get options () {
+  get options() {
     throw new Error('builder.options is deprecated. Use builder.settings.get() ' +
-                    'and builder.settings.set() instead.')
+      'and builder.settings.set() instead.')
   }
-  set options (_) {
+  set options(_) {
     throw new Error('builder.options is deprecated. Use builder.settings.get() ' +
-                    'and builder.settings.set() instead.')
+      'and builder.settings.set() instead.')
   }
 
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  load_model (modelData, shouldUpdateData = true) { // eslint-disable-line camelcase
+  load_model(modelData, shouldUpdateData = true) { // eslint-disable-line camelcase
     // Check the cobra model
     if (_.isNull(modelData)) {
       this.cobra_model = null
@@ -339,7 +339,7 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst
    */
-  load_map (mapData, shouldUpdateData = true) { // eslint-disable-line camelcase
+  load_map(mapData, shouldUpdateData = true) { // eslint-disable-line camelcase
     // Store map options that might be changed by semantic_zoom function
     const tempSemanticOptions = {}
     if (this.settings.get('semantic_zoom')) {
@@ -368,23 +368,23 @@ class Builder {
     if (mapData !== null) {
       // import map
       this.map = Map.from_data(mapData,
-                               svg,
-                               this.embeddedCss,
-                               zoomedSel,
-                               this.zoom_container,
-                               this.settings,
-                               this.cobra_model,
-                               this.settings.get('enable_search'))
+        svg,
+        this.embeddedCss,
+        zoomedSel,
+        this.zoom_container,
+        this.settings,
+        this.cobra_model,
+        this.settings.get('enable_search'))
     } else {
       // new map
       this.map = new Map(svg,
-                         this.embeddedCss,
-                         zoomedSel,
-                         this.zoom_container,
-                         this.settings,
-                         this.cobra_model,
-                         this.settings.get('canvas_size_and_loc'),
-                         this.settings.get('enable_search'))
+        this.embeddedCss,
+        zoomedSel,
+        this.zoom_container,
+        this.settings,
+        this.cobra_model,
+        this.settings.get('canvas_size_and_loc'),
+        this.settings.get('enable_search'))
     }
 
     // Connect status bar
@@ -401,11 +401,11 @@ class Builder {
 
     // Set up the reaction input with complete.ly
     this.build_input = new BuildInput(this.mapToolsContainer, this.map,
-                                      this.zoom_container, this.settings)
+      this.zoom_container, this.settings)
 
     // Set up the text edit input
     this.text_edit_input = new TextEditInput(this.mapToolsContainer, this.map,
-                                             this.zoom_container)
+      this.zoom_container)
 
     // Set up the Brush
     this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
@@ -420,8 +420,8 @@ class Builder {
 
     // share a parent container for menu bar and search bar
     const sel = this.mapToolsContainer
-                    .append('div').attr('class', 'search-menu-container')
-                    .append('div').attr('class', 'search-menu-container-inline')
+      .append('div').attr('class', 'search-menu-container')
+      .append('div').attr('class', 'search-menu-container-inline')
     this.setUpMenuBar(sel)
     this.setUpSearchBar(sel)
 
@@ -454,6 +454,11 @@ class Builder {
       // get keys given latest settings
       this.map.key_manager.toggle(val)
     })
+    // redraw when gene_font_size changes
+    this.settings.streams.gene_font_size.onValue(() => {
+      this.map.draw_all_reactions(true, false)
+      this.map.draw_all_nodes(false)
+    })
 
     // Disable clears
     const newDisabledButtons = this.settings.get('disabled_buttons') || []
@@ -478,7 +483,7 @@ class Builder {
     if (this.settings.get('zoom_to_element')) {
       const type = this.settings.get('zoom_to_element').type
       const elementId = this.settings.get('zoom_to_element').id
-      if (_.isUndefined(type) || [ 'reaction', 'node' ].indexOf(type) === -1) {
+      if (_.isUndefined(type) || ['reaction', 'node'].indexOf(type) === -1) {
         throw new Error('zoom_to_element type must be "reaction" or "node"')
       }
       if (_.isUndefined(elementId)) {
@@ -497,7 +502,51 @@ class Builder {
         const size = this.zoom_container.get_size()
         const startCoords = { x: size.width / 2, y: size.height / 4 }
         this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
-                                           startCoords, 90)
+          startCoords, 90)
+        this.map.zoom_extent_nodes()
+      } else if (this.cobra_model !== null) {
+        // Auto-layout based on subsystems
+        const subsystems = {}
+        const subsystemPadding = 600 // spacing between subsystems
+        const reactionPadding = 80 // spacing between reactions in a subsystem
+        const reactionsPerCol = 10;
+
+        // Group reactions by subsystem
+        for (let r_id in this.cobra_model.reactions) {
+          const reaction = this.cobra_model.reactions[r_id]
+          const sub = reaction.subsystem || 'Unassigned'
+          if (!subsystems[sub]) subsystems[sub] = []
+          subsystems[sub].push(reaction.bigg_id)
+        }
+
+        // Arrange subsystems in a grid
+        const subsList = Object.keys(subsystems).sort()
+        const subCols = Math.ceil(Math.sqrt(subsList.length))
+
+        let subX = 0
+        let subY = 0
+
+        subsList.forEach((sub, i) => {
+          // Calculate subsystem origin
+          const col = i % subCols
+          const row = Math.floor(i / subCols)
+          const originX = col * subsystemPadding * 1.5
+          const originY = row * subsystemPadding * 1.5 // Extra vertical space
+
+          // Add label for subsystem (using a text node trick or just reaction placement)
+          // Since we don't have a direct "add label" easily exposed here without ID management,
+          // we'll just place reactions.
+
+          subsystems[sub].forEach((r_id, j) => {
+            const rCol = Math.floor(j / reactionsPerCol)
+            const rRow = j % reactionsPerCol
+
+            const x = originX + (rCol * reactionPadding * 3)
+            const y = originY + (rRow * reactionPadding)
+
+            this.map.new_reaction_from_scratch(r_id, { x, y }, 90)
+          })
+        })
         this.map.zoom_extent_nodes()
       } else {
         this.map.zoom_extent_canvas()
@@ -534,14 +583,14 @@ class Builder {
    * rerender the component
    * @param {Object} props - Props that the settings menu will use
    */
-  passPropsSettingsMenu (props = {}) {
+  passPropsSettingsMenu(props = {}) {
     this.map.callback_manager.run('pass_props_settings_menu', null, props)
   }
 
   /**
    * Initialize the settings menu
    */
-  setUpSettingsMenu (sel) {
+  setUpSettingsMenu(sel) {
     this.settingsMenuRef = null
     renderWrapper(
       SettingsMenu,
@@ -564,20 +613,20 @@ class Builder {
 
     // recalculate data when switching to/from absolute value
     this.settings.streams.reaction_styles
-        .map(x => _.contains(x, 'abs'))
-        .skipDuplicates()
-        .onValue(() => this._updateData(false, true))
+      .map(x => _.contains(x, 'abs'))
+      .skipDuplicates()
+      .onValue(() => this._updateData(false, true))
     this.settings.streams.metabolite_styles
-        .map(x => _.contains(x, 'abs'))
-        .skipDuplicates()
-        .onValue(() => this._updateData(false, true))
+      .map(x => _.contains(x, 'abs'))
+      .skipDuplicates()
+      .onValue(() => this._updateData(false, true))
   }
 
   /**
    * Function to pass props for the menu bar
    * @param {Object} props - Props that the menu bar will use
    */
-  passPropsMenuBar (props = {}) {
+  passPropsMenuBar(props = {}) {
     this.map.callback_manager.run('pass_props_menu_bar', null, props)
   }
 
@@ -585,7 +634,7 @@ class Builder {
    * Initialize the menu bar
    * @param {D3 Selection} sel - The d3 selection to render in.
    */
-  setUpMenuBar (sel) {
+  setUpMenuBar(sel) {
     this.menuBarRef = null
     renderWrapper(
       MenuBar,
@@ -684,7 +733,7 @@ class Builder {
    * Function to pass props for the search bar
    * @param {Object} props - Props that the search bar will use
    */
-  passPropsSearchBar (props = {}) {
+  passPropsSearchBar(props = {}) {
     this.map.callback_manager.run('pass_props_search_bar', null, props)
   }
 
@@ -692,7 +741,7 @@ class Builder {
    * Initialize the search bar
    * @param {D3 Selection} sel - The d3 selection to render in.
    */
-  setUpSearchBar (sel) {
+  setUpSearchBar(sel) {
     this.searchBarRef = null
     renderWrapper(
       SearchBar,
@@ -711,14 +760,14 @@ class Builder {
    * Function to pass props for the button panel
    * @param {Object} props - Props that the tooltip will use
    */
-  passPropsButtonPanel (props = {}) {
+  passPropsButtonPanel(props = {}) {
     this.map.callback_manager.run('pass_props_button_panel', null, props)
   }
 
   /**
    * Initialize the button panel
    */
-  setUpButtonPanel (sel) {
+  setUpButtonPanel(sel) {
     renderWrapper(
       ButtonPanel,
       null,
@@ -750,7 +799,7 @@ class Builder {
   /**
    * Set the mode
    */
-  _setMode (mode) {
+  _setMode(mode) {
     this.mode = mode
 
     // input
@@ -793,42 +842,42 @@ class Builder {
   }
 
   /** For documentation of this function, see docs/javascript_api.rst. */
-  view_mode () { // eslint-disable-line camelcase
+  view_mode() { // eslint-disable-line camelcase
     this.callback_manager.run('view_mode')
     this._setMode('view')
   }
 
   /** For documentation of this function, see docs/javascript_api.rst. */
-  build_mode () { // eslint-disable-line camelcase
+  build_mode() { // eslint-disable-line camelcase
     this.callback_manager.run('build_mode')
     this._setMode('build')
   }
 
   /** For documentation of this function, see docs/javascript_api.rst. */
-  brush_mode () { // eslint-disable-line camelcase
+  brush_mode() { // eslint-disable-line camelcase
     this.callback_manager.run('brush_mode')
     this._setMode('brush')
   }
 
   /** For documentation of this function, see docs/javascript_api.rst. */
-  zoom_mode () { // eslint-disable-line camelcase
+  zoom_mode() { // eslint-disable-line camelcase
     this.callback_manager.run('zoom_mode')
     this._setMode('zoom')
   }
 
   /** For documentation of this function, see docs/javascript_api.rst. */
-  rotate_mode () { // eslint-disable-line camelcase
+  rotate_mode() { // eslint-disable-line camelcase
     this.callback_manager.run('rotate_mode')
     this._setMode('rotate')
   }
 
   /** For documentation of this function, see docs/javascript_api.rst. */
-  text_mode () { // eslint-disable-line camelcase
+  text_mode() { // eslint-disable-line camelcase
     this.callback_manager.run('text_mode')
     this._setMode('text')
   }
 
-  _reactionCheckAddAbs () {
+  _reactionCheckAddAbs() {
     const currStyle = this.settings.get('reaction_styles')
     if (
       this.settings.get('reaction_data') &&
@@ -838,7 +887,7 @@ class Builder {
       this.settings.set('reaction_styles', currStyle.concat('abs'))
       return () => {
         this.map.set_status('Visualizing absolute value of reaction data. ' +
-                            'Change this option in Settings.', 5000)
+          'Change this option in Settings.', 5000)
       }
     }
     return null
@@ -847,7 +896,7 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_reaction_data (data) { // eslint-disable-line camelcase
+  set_reaction_data(data) { // eslint-disable-line camelcase
     this.settings.set('reaction_data', data)
 
     // clear gene data
@@ -880,7 +929,7 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_gene_data (data, clearGeneReactionRules = false) { // eslint-disable-line camelcase
+  set_gene_data(data, clearGeneReactionRules = false) { // eslint-disable-line camelcase
     this.settings.set('gene_data', data)
 
     if (clearGeneReactionRules) {
@@ -914,7 +963,7 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_metabolite_data (data) { // eslint-disable-line camelcase
+  set_metabolite_data(data) { // eslint-disable-line camelcase
     this.settings.set('metabolite_data', data)
 
     this._updateData(true, true, ['metabolite'])
@@ -932,7 +981,7 @@ class Builder {
     }
   }
 
-  _makeGeneDataObject (geneData, cobraModel, map) {
+  _makeGeneDataObject(geneData, cobraModel, map) {
     const allReactions = {}
     if (cobraModel !== null) {
       utils.extend(allReactions, cobraModel.reactions)
@@ -949,9 +998,10 @@ class Builder {
   /**
    * Clear the map
    */
-  clear_map () { // eslint-disable-line camelcase
+  clear_map() { // eslint-disable-line camelcase
     this.callback_manager.run('clear_map')
     this.map.clearMapData()
+    this.map.reset_containers()
     this._updateData(true, true, ['reaction', 'metabolite'], false)
     this.map.draw_everything()
   }
@@ -965,7 +1015,7 @@ class Builder {
    * should_draw: (Optional, Default: true) Whether to redraw the update sections
    * of the map.
    */
-  _updateData (
+  _updateData(
     updateModel = false,
     updateMap = false,
     kind = ['reaction', 'metabolite'],
@@ -984,7 +1034,7 @@ class Builder {
     // metabolite data
     if (updateMetaboliteData && updateMap && this.map !== null) {
       metaboliteDataObject = dataStyles.importAndCheck(this.settings.get('metabolite_data'),
-                                                       'metabolite_data')
+        'metabolite_data')
       this.map.apply_metabolite_data_to_map(metaboliteDataObject)
       if (shouldDraw) {
         this.map.draw_all_nodes(false)
@@ -995,14 +1045,14 @@ class Builder {
     if (updateReactionData) {
       if (this.settings.get('reaction_data') && updateMap && this.map !== null) {
         reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
-                                                       'reaction_data')
+          'reaction_data')
         this.map.apply_reaction_data_to_map(reactionDataObject)
         if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
         }
       } else if (this.settings.get('gene_data') && updateMap && this.map !== null) {
         geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
-                                                  this.cobra_model, this.map)
+          this.cobra_model, this.map)
         this.map.apply_gene_data_to_map(geneDataObject)
         if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
@@ -1033,11 +1083,11 @@ class Builder {
         // if we haven't already made this
         if (!metaboliteDataObject) {
           metaboliteDataObject = dataStyles.importAndCheck(this.settings.get('metabolite_data'),
-                                                           'metabolite_data')
+            'metabolite_data')
         }
         this.cobra_model.apply_metabolite_data(metaboliteDataObject,
-                                               this.settings.get('metabolite_styles'),
-                                               this.settings.get('metabolite_compare_style'))
+          this.settings.get('metabolite_styles'),
+          this.settings.get('metabolite_compare_style'))
       }
 
       // reaction data
@@ -1046,44 +1096,44 @@ class Builder {
           // if we haven't already made this
           if (!reactionDataObject) {
             reactionDataObject = dataStyles.importAndCheck(this.settings.get('reaction_data'),
-                                                           'reaction_data')
+              'reaction_data')
           }
           this.cobra_model.apply_reaction_data(reactionDataObject,
-                                               this.settings.get('reaction_styles'),
-                                               this.settings.get('reaction_compare_style'))
+            this.settings.get('reaction_styles'),
+            this.settings.get('reaction_compare_style'))
         } else if (this.settings.get('gene_data') && updateModel && this.cobra_model !== null) {
           if (!geneDataObject) {
             geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
-                                                      this.cobra_model, this.map)
+              this.cobra_model, this.map)
           }
           this.cobra_model.apply_gene_data(geneDataObject,
-                                           this.settings.get('reaction_styles'),
-                                           this.settings.get('identifiers_on_map'),
-                                           this.settings.get('reaction_compare_style'),
-                                           this.settings.get('and_method_in_gene_reaction_rule'))
+            this.settings.get('reaction_styles'),
+            this.settings.get('identifiers_on_map'),
+            this.settings.get('reaction_compare_style'),
+            this.settings.get('and_method_in_gene_reaction_rule'))
         } else if (updateModel && this.cobra_model !== null) {
           // clear the data
           this.cobra_model.apply_reaction_data(null,
-                                               this.settings.get('reaction_styles'),
-                                               this.settings.get('reaction_compare_style'))
+            this.settings.get('reaction_styles'),
+            this.settings.get('reaction_compare_style'))
         }
       }
 
       // callback
       this.callback_manager.run('update_data', null, updateModel, updateMap,
-                                kind, shouldDraw)
+        kind, shouldDraw)
     }, delay)
   }
 
-  _createStatus (selection) {
+  _createStatus(selection) {
     this.status_bar = selection.append('div').attr('id', 'status')
   }
 
-  _setupStatus (map) {
+  _setupStatus(map) {
     map.callback_manager.set('set_status', status => this.status_bar.html(status))
   }
 
-  _updateTooltipSetting (setting) {
+  _updateTooltipSetting(setting) {
     this.map.behavior.toggleLabelMouseover(setting && setting.includes('label'))
     this.map.behavior.toggleObjectMouseover(setting && setting.includes('object'))
   }
@@ -1091,7 +1141,7 @@ class Builder {
   /**
    * Define keyboard shortcuts
    */
-  getKeys () {
+  getKeys() {
     const map = this.map
     const zoom_container = this.zoom_container // eslint-disable-line camelcase
     return {
@@ -1343,16 +1393,16 @@ class Builder {
   /**
    * Ask if the user wants to exit the page (to avoid unplanned refresh).
    */
-  _setupConfirmBeforeExit () {
+  _setupConfirmBeforeExit() {
     window.onbeforeunload = _ => this.settings.get('never_ask_before_quit')
-                               ? null
-                               : 'You will lose any unsaved changes.'
+      ? null
+      : 'You will lose any unsaved changes.'
   }
 
   /**
    * Toggle full screen mode.
    */
-  full_screen () { // eslint-disable-line camelcase
+  full_screen() { // eslint-disable-line camelcase
     // these settings can update in full screen if provided
     const fullScreenSettings = [
       'menu',
@@ -1394,20 +1444,20 @@ class Builder {
       if (_.isObject(fullScreenButton)) {
         this.savedFullScreenSettings = (
           _.chain(fullScreenButton)
-           .pairs()
-           .map(([k, v]) => {
-             if (_.contains(fullScreenSettings, k)) {
-               const currentSetting = this.settings.get(k)
-               this.settings.set(k, v)
-               return [k, currentSetting]
-             } else {
-               console.warn(`${k} not recognized as an option for full_screen_button`)
-               return [null, null]
-             }
-           })
-           .filter(([k, v]) => k)
-           .object()
-           .value()
+            .pairs()
+            .map(([k, v]) => {
+              if (_.contains(fullScreenSettings, k)) {
+                const currentSetting = this.settings.get(k)
+                this.settings.set(k, v)
+                return [k, currentSetting]
+              } else {
+                console.warn(`${k} not recognized as an option for full_screen_button`)
+                return [null, null]
+              }
+            })
+            .filter(([k, v]) => k)
+            .object()
+            .value()
         )
       }
 

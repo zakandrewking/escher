@@ -29,5 +29,7 @@ module.exports = merge.smart(common, {
     ]
   },
   // plugins: [new BundleAnalyzerPlugin()],
-  externals: ['@jupyter-widgets/base']
+  externals: {
+    '@jupyter-widgets/base': 'JupyterWidgets'
+  }
 })

@@ -12,6 +12,14 @@ Escher is a web-based tool to build, view, share, and embed metabolic maps. The
 easiest way to use Escher is to browse or build maps on the
 [Escher website](http://escher.github.io/).
 
+> [!NOTE]
+> This is a modified version of Escher developed by **forxhunter**.
+>
+> **New Features:**
+> 1.  Color customization
+> 2.  Show and unshown GPR rule
+> 3.  Auto layout (will be added soon)
+
 Visit the [documentation](http://escher.readthedocs.org/) to get started with
 Escher and explore the API.
 

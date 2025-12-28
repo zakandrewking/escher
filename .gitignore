@@ -15,7 +15,7 @@ envset/
 *.tar.gz
 *.whl
 .tmp/
-
+.vscode/
 # built files
 dist/
 coverage/
@@ -33,3 +33,6 @@ docs/iJO1366.json
 docs/e_coli_core.json
 docs/iAB_RBC_283.json
 docs/example_map.html
+
+# Agent
+.agent/
