@@ -1,5 +1,5 @@
-import utils from './utils'
-import * as build from './build'
+import utils from './utils.js'
+import * as build from './build.js'
 import { drag as d3Drag } from 'd3-drag'
 import * as d3Selection from 'd3-selection'
 

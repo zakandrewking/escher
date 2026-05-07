@@ -31,7 +31,11 @@ function getMap () {
                        null, true)
 }
 
-// waiting on fix for d3 + jsdom issue
+// waiting on fix for d3 + jsdom issue — tests commented out pending resolution
+describe('Brush', () => {
+  it.skip('pending d3 + jsdom fix', () => {})
+})
+
 // describe('Brush', () => {
 //   it('d3 + jsdom issue', () => {
 //     // throws syntax error

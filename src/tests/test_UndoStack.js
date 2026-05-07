@@ -1,4 +1,4 @@
-import UndoStack from '../UndoStack'
+import UndoStack from '../UndoStack.js'
 
 import { describe, it } from 'mocha'
 import { assert } from 'chai'

@@ -1,8 +1,8 @@
-import ZoomContainer from '../ZoomContainer'
-import { d3_transform_catch } from '../utils'
+import ZoomContainer from '../ZoomContainer.js'
+import { d3_transform_catch } from '../utils.js'
 import { describe, it, beforeEach, afterEach } from 'mocha'
 import { assert } from 'chai'
-import d3Body from './helpers/d3Body'
+import d3Body from './helpers/d3Body.js'
 import _ from 'underscore'
 import { zoomTransform as d3ZoomTransform } from 'd3-zoom'
 

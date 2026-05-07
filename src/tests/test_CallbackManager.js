@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from 'mocha'
 import { assert } from 'chai'
-import CallbackManager from '../CallbackManager'
+import CallbackManager from '../CallbackManager.js'
 
 describe('CallbackManager', () => {
   let cb
@@ -21,16 +21,18 @@ describe('CallbackManager', () => {
     assert.isTrue(called2)
   })
 
-  it('passes args and this', done => {
+  it('passes args and this', () => {
     const thisObj = {}
+    let called = false
     const fn = function (arg1, arg2) {
       assert.strictEqual(this, thisObj)
       assert.strictEqual(arg1, 1)
       assert.strictEqual(arg2, 2)
-      done()
+      called = true
     }
     cb.set('my_cb', fn)
     cb.run('my_cb', thisObj, 1, 2)
+    assert.isTrue(called)
   })
 
   it('can remove function', () => {

@@ -1,10 +1,10 @@
-import Builder from '../Builder'
-import d3Body from './helpers/d3Body'
+import Builder from '../Builder.jsx'
+import d3Body from './helpers/d3Body.js'
 
 // Should test for the broken function that use utils.draw_array/object
 
-import getMap from './helpers/get_map'
-import getModel from './helpers/get_model'
+import getMap from './helpers/get_map.js'
+import getModel from './helpers/get_model.js'
 
 import { describe, it } from 'mocha'
 import { assert } from 'chai'

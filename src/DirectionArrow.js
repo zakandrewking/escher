@@ -1,4 +1,4 @@
-import * as utils from './utils'
+import * as utils from './utils.js'
 import { drag as d3Drag } from 'd3-drag'
 import {
   mouse as d3Mouse,

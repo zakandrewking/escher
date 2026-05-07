@@ -1,7 +1,7 @@
-import Behavior from '../Behavior'
+import Behavior from '../Behavior.js'
 import { describe, it, beforeEach } from 'mocha'
 import { assert } from 'chai'
-import d3Body from './helpers/d3Body'
+import d3Body from './helpers/d3Body.js'
 
 function assertSelectableClickAttrsOn (behavior) {
   assert.isFunction(behavior.selectableMousedown)

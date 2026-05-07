@@ -8,8 +8,8 @@
 /** @jsx h */
 import { h, Component } from 'preact'
 import _ from 'underscore'
-import utils from './utils'
-import * as dataStyles from './dataStyles'
+import utils from './utils.js'
+import * as dataStyles from './dataStyles.js'
 
 class MenuButton extends Component {
   constructor (props) {

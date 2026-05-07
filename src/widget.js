@@ -1,6 +1,6 @@
 /* global ESCHER_VERSION */
 
-import { default as Builder } from './Builder'
+import { default as Builder } from './Builder.jsx'
 import { select as d3Select } from 'd3-selection'
 import _ from 'underscore'
 

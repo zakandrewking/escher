@@ -41,21 +41,21 @@ import { json as d3_json } from 'd3-request'
 
 export const version = ESCHER_VERSION
 
-export { default as Builder, default } from './Builder'
-export { default as Map } from './Map'
-export { default as Behavior } from './Behavior'
-export { default as KeyManager } from './KeyManager'
-export { default as DataMenu } from './DataMenu'
-export { default as UndoStack } from './UndoStack'
-export { default as CobraModel } from './CobraModel'
-export { default as utils } from './utils'
-export { default as SearchIndex } from './SearchIndex'
-export { default as Settings } from './Settings'
-export { default as dataStyles } from './dataStyles'
-export { default as ZoomContainer } from './ZoomContainer'
+export { default as Builder, default } from './Builder.jsx'
+export { default as Map } from './Map.js'
+export { default as Behavior } from './Behavior.js'
+export { default as KeyManager } from './KeyManager.js'
+export { default as DataMenu } from './DataMenu.js'
+export { default as UndoStack } from './UndoStack.js'
+export { default as CobraModel } from './CobraModel.js'
+export { default as utils } from './utils.js'
+export { default as SearchIndex } from './SearchIndex.js'
+export { default as Settings } from './Settings.js'
+export * as dataStyles from './dataStyles.js'
+export { default as ZoomContainer } from './ZoomContainer.js'
 
 // Jupyter extension
-export { EscherMapView, EscherMapModel } from './widget'
+export { EscherMapView, EscherMapModel } from './widget.js'
 
 export const libs = {
   _: underscore,
