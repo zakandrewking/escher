@@ -2,8 +2,6 @@
 [![NPM](https://img.shields.io/npm/v/escher.svg)](https://www.npmjs.com/package/escher)
 [![Gitter.im](https://img.shields.io/gitter/room/zakandrewking/gitter.svg?color=orange)](https://gitter.im/zakandrewking/escher)
 [![Documentation Status](https://readthedocs.org/projects/escher/badge/?version=latest)](https://escher.readthedocs.io/en/latest/?badge=latest)
-[![Travis](https://img.shields.io/travis/zakandrewking/escher/master.svg)](https://travis-ci.org/zakandrewking/escher)
-[![Coverage Status](https://img.shields.io/coveralls/zakandrewking/escher/master.svg)](https://coveralls.io/github/zakandrewking/escher?branch=master)
 [![MIT](https://img.shields.io/pypi/l/escher.svg?color=blueviolet)](https://github.com/zakandrewking/escher/blob/master/LICENSE)
 
 # Escher
@@ -42,139 +40,105 @@ and [The Novo Nordisk Foundation](http://novonordiskfonden.dk/)
 through [The Center for Biosustainability](https://www.biosustain.dtu.dk/)
 at the Technical University of Denmark (NNF10CC1016517)
 
+# Installing the Python package
+
+```bash
+pip install escher
+```
+
+Escher uses [anywidget](https://anywidget.dev) to render maps in notebooks, so
+no separate Jupyter extensions are required. The widget works in JupyterLab 4,
+Jupyter Notebook 7, VS Code, Cursor, Google Colab, and Marimo.
+
+# Basic usage
+
+```python
+import escher
+
+# Display a map in a notebook
+builder = escher.Builder(map_name='e_coli_core')
+builder
+
+# Overlay reaction flux data
+builder.reaction_data = {'PFK': 1.5, 'PYK': 0.8}
+
+# React to map clicks in Python
+builder.observe(lambda change: print(change['new']), names='selected_reaction')
+```
+
+To overlay flux from a [COBRApy](https://github.com/opencobra/cobrapy) model:
+
+```python
+import cobra
+import escher
+
+model = cobra.io.load_model('textbook')
+solution = model.optimize()
+
+builder = escher.Builder(
+    map_name='e_coli_core',
+    model=model,
+    reaction_data=solution.fluxes.to_dict(),
+)
+builder
+```
+
+The COBRA model is synced into the widget so build mode can add reactions
+directly from it. FBA itself runs in Python.
+
 # Building and testing Escher
+
+The build toolchain uses [Vite](https://vitejs.dev) for the JavaScript
+bundles, [Vitest](https://vitest.dev) for JS tests, and
+[uv](https://github.com/astral-sh/uv) for the Python package.
+
+## Requirements
+
+- [Node.js](https://nodejs.org) 18+
+- [Yarn](https://yarnpkg.com) (classic / v1) — `yarn.lock` is checked in
+- Python 3.8+
+- [uv](https://github.com/astral-sh/uv)
 
 ## JavaScript
 
-First, install dependencies with [npm](https://www.npmjs.com) (or you can use
-[yarn](https://yarnpkg.com)):
-
-```
-npm install
-```
-
-Escher uses webpack to manage the build process. To run typical build steps, just run:
-
-```
-npm run build
+```bash
+yarn install          # install dependencies
+yarn build            # produce dist/escher.js, dist/escher.min.js,
+                      # dist/escher-widget.js, and dist/escher.css
+yarn test             # run JS tests
+yarn copy             # copy build artifacts to py/escher/static/
 ```
 
-You can run a development server with:
+For live development:
 
-```
-npm run start
-# or for live updates when the source code changes:
-npm run watch
-```
-
-To test the JavaScript files, run:
-
-```
-npm run test
+```bash
+yarn watch            # rebuild on source changes
+yarn start            # start the Vite dev server
 ```
 
 ## Python
 
-Escher has a Python package for generating Escher visualizations from within a
-Python data anlaysis session. To learn more about using the features of the
-Python package, check out the documentation:
-
-https://escher.readthedocs.io/en/latest/escher-python.html
-
-You can install it with pip:
-
-```
-pip install escher
-```
-
-## Jupyter extensions
-
-When you `pip install escher`, the Jupyter notebook extension should be
-installed automatically. If that doesn't work, try:
+The JavaScript build artifacts must be present in `py/escher/static/` before
+installing the Python package from source. After running `yarn build && yarn copy`:
 
 ```bash
-# The notebook extenstion should install automatically. You can check by running:
-jupyter nbextension list
-# Make sure you have version >=5 of the `notebook` package
-pip install "notebook>=5"
-# To manually install the extension
-jupyter nbextension install --py escher
-jupyter nbextension enable --py escher
-# depending on you environment, you might need the `--sysprefix` flag with those commands
+cd py
+uv sync --extra dev   # install package and dev dependencies
+uv run pytest         # run Python tests
 ```
 
-To install the Jupyter lab extension, simply install Escher with `pip install escher` then
-install the extension:
+## Full clean build from a fresh checkout
 
 ```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter labextension install escher
+yarn install && yarn build && yarn copy
+cd py && uv sync --extra dev && uv run pytest
 ```
-
-## Python/Jupyter Development
-
-For development of the Python package, first build the JavaScript package and
-copy it over to the `py` directory with these commands in the Escher root:
-
-```
-npm install
-npm run build
-npm run copy
-```
-
-Then in the `py` directory, install the Python package:
-
-```
-cd py
-pip install -e . # installs escher in develop mode and dependencies
-```
-
-For Python testing, run this in the `py` directory:
-
-```
-cd py
-pytest
-```
-
-To develop the Jupyter notebook and Jupyter Lab extensions, you will need
-install them with symlinks.
-
-First, install the Python package for development as described above.
-
-For the Jupyter notebooks, run:
-
-```
-cd py
-jupyter nbextension install --py --symlink escher
-jupyter nbextension enable --py escher
-```
-
-If you are using virtualenv or conda, you can add the `--sys-prefix` flag to
-those commands to keep your environment isolated and reproducible.
-
-When you make changes, you will need to `yarn build && yarn copy` and refresh
-notebook browser tab.
-
-For Jupyter Lab, run (in the root directory):
-
-```
-yarn watch # keep this running as a separate process
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter labextension link
-jupyter lab --watch
-```
-
-If you don't see changes when you edit the code, try refreshing or restarting
-`jupyter lab --watch`.
 
 ## Docs
 
-Build and run the docs::
-
-```
+```bash
 cd docs
 ./build_docs
 cd _build/html
-python -m SimpleHTTPServer # python 2
-python -m http.server # python 3
+python -m http.server
 ```

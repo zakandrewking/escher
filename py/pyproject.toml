@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "escher"
-version = "1.7.3"
+version = "2.0.0"
 description = "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Metabolic Pathways"
 authors = [{name = "Zachary King"}]
 license = {text = "MIT"}
