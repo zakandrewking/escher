@@ -3,39 +3,12 @@ from escher.util import b64dump
 from escher.version import __version__
 from escher import rc
 
+import anywidget
+import traitlets
+import pathlib
 import cobra
 from cobra import Model
 import pandas as pd
-try:
-    import ipywidgets as widgets
-    from traitlets import Unicode, Int, Instance, Any, observe, validate, default
-    _has_ipywidgets = True
-except ImportError:
-    import warnings
-    widgets = None
-    _has_ipywidgets = False
-
-    # No-op stubs so the class body can be parsed without ipywidgets installed.
-    # Widget functionality will raise at runtime if actually used.
-    class _TraitStub:
-        def __init__(self, *args, **kwargs):
-            pass
-        def tag(self, **kwargs):
-            return self
-
-    def _noop_trait(*args, **kwargs):
-        return _TraitStub()
-
-    Unicode = Int = Instance = Any = _noop_trait
-
-    def observe(names, **kwargs):
-        return lambda fn: fn
-
-    def validate(name):
-        return lambda fn: fn
-
-    def default(name):
-        return lambda fn: fn
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -43,13 +16,8 @@ from urllib.request import urlopen
 from urllib.error import URLError
 from urllib.parse import quote as url_escape
 import json
-import shutil
 import re
-from jinja2 import Environment, PackageLoader, Template
-import codecs
-import random
-import string
-import shutil
+from jinja2 import Environment, PackageLoader
 from typing import Optional
 
 # set up jinja2 template location
@@ -183,474 +151,270 @@ def convert_data(data):
     raise Exception
 
 
-_BuilderBase = widgets.DOMWidget if _has_ipywidgets else object
+class _NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that converts numpy scalars to native Python types."""
+    def default(self, obj):
+        if hasattr(obj, 'item'):
+            return obj.item()
+        return super().default(obj)
 
 
-class Builder(_BuilderBase):
+_DATA_TRAITLETS = frozenset(['reaction_data', 'metabolite_data', 'gene_data'])
+
+_KNOWN_OPTIONS = frozenset([
+    'menu', 'scroll_behavior', 'use_3d_transform', 'enable_editing',
+    'enable_keys', 'enable_search', 'zoom_to_element', 'full_screen_button',
+    'disabled_buttons', 'semantic_zoom', 'starting_reaction',
+    'never_ask_before_quit', 'primary_metabolite_radius',
+    'secondary_metabolite_radius', 'marker_radius', 'gene_font_size',
+    'hide_secondary_metabolites', 'show_gene_reaction_rules', 'hide_all_labels',
+    'canvas_size_and_loc', 'reaction_styles', 'reaction_compare_style',
+    'reaction_scale', 'reaction_no_data_color', 'reaction_no_data_size',
+    'and_method_in_gene_reaction_rule', 'metabolite_styles',
+    'metabolite_compare_style', 'metabolite_scale', 'metabolite_no_data_color',
+    'metabolite_no_data_size', 'identifiers_on_map', 'highlight_missing',
+    'allow_building_duplicate_reactions', 'cofactors', 'enable_tooltips',
+    'enable_keys_with_tooltip', 'reaction_scale_preset', 'metabolite_scale_preset',
+])
+
+_FULL_SCREEN_BUTTON_DEFAULT = {
+    'enable_keys': True,
+    'scroll_behavior': 'pan',
+    'enable_editing': True,
+    'menu': 'all',
+    'enable_tooltips': ['label'],
+}
+
+
+class Builder(anywidget.AnyWidget):
     """A Python wrapper for the Escher metabolic map.
 
     This map will also show data on reactions, metabolites, or genes.
 
-    The Builder is a Jupyter widget that can be viewed in a Jupyter notebook or
-    in Jupyter Lab. It can also be used to create a standalone HTML file for
-    the map with the save_html() function.
+    The Builder is a Jupyter widget (anywidget) that can be viewed in
+    JupyterLab, VS Code notebooks, Marimo, and Colab without any Jupyter
+    extension. It can also be used to create a standalone HTML file with
+    save_html().
 
     Maps are downloaded from the Escher website if found by name.
 
     :param int height:
-
         The height of the Escher Jupyter widget in pixels.
 
     :param str map_name:
-
         A string specifying a map to be downloaded from the Escher website.
 
     :param str map_json:
-
         A JSON string, or a file path to a JSON file, or a URL specifying a
         JSON file to be downloaded.
 
     :param model:
-
-        A COBRApy model.
+        A COBRApy model (Python-only; FBA stays in Python).
 
     :param model_name:
-
         A string specifying a model to be downloaded from the Escher web
-        server.
+        server (Python-only).
 
     :param model_json:
-
         A JSON string, or a file path to a JSON file, or a URL specifying a
-        JSON file to be downloaded.
+        JSON file to be downloaded (Python-only).
 
     :param embedded_css:
-
-        The CSS (as a string) to be embedded with the Escher SVG. In Jupyter,
-        if you change embedded_css on an existing builder instance, the Builder
-        must be restarted for this to take effect (e.g. by re-evaluating the
-        widget in a cell). You can use the default embedded css as a starting
-        point:
-
-        https://github.com/zakandrewking/escher/blob/master/src/Builder-embed.css
+        CSS string embedded in the standalone HTML produced by save_html().
+        Has no effect on the Jupyter widget.
 
     :param reaction_data:
-
         A dictionary with keys that correspond to reaction IDs and values that
         will be mapped to reaction arrows and labels.
 
     :param metabolite_data:
-
         A dictionary with keys that correspond to metabolite IDs and values
         that will be mapped to metabolite nodes and labels.
 
     :param gene_data:
-
-        A dictionary with keys that correspond to gene IDs and values that will
-        be mapped to corresponding reactions.
+        A dictionary with keys that correspond to gene IDs and values that
+        will be mapped to corresponding reactions.
 
     **Keyword Arguments**
 
-    You can also pass in any of the following options as keyword arguments. The
-    details on each of these are provided in the JavaScript API documentation:
-
-        - use_3d_transform
-        - menu
-        - scroll_behavior
-        - use_3d_transform
-        - enable_editing
-        - enable_keys
-        - enable_search
-        - zoom_to_element
-        - full_screen_button
-        - disabled_buttons
-        - semantic_zoom
-        - starting_reaction
-        - never_ask_before_quit
-        - primary_metabolite_radius
-        - secondary_metabolite_radius
-        - marker_radius
-        - gene_font_size
-        - hide_secondary_metabolites
-        - show_gene_reaction_rules
-        - hide_all_labels
-        - canvas_size_and_loc
-        - reaction_data
-        - reaction_styles
-        - reaction_compare_style
-        - reaction_scale
-        - reaction_no_data_color
-        - reaction_no_data_size
-        - gene_data
-        - and_method_in_gene_reaction_rule
-        - metabolite_data
-        - metabolite_styles
-        - metabolite_compare_style
-        - metabolite_scale
-        - metabolite_no_data_color
-        - metabolite_no_data_size
-        - identifiers_on_map
-        - highlight_missing
-        - allow_building_duplicate_reactions
-        - cofactors
-        - enable_tooltips
-        - enable_keys_with_tooltip
-        - reaction_scale_preset
-        - metabolite_scale_preset
-        - primary_metabolite_radius
-        - secondary_metabolite_radius
-        - marker_radius
-        - gene_font_size
-        - reaction_no_data_size
-        - metabolite_no_data_size
-
-    If any of these is set to None, the default (or most-recent) value is used.
-    To turn off a setting, use False instead.
-
-    All arguments can also be set by assigning the property of an an existing
-    Builder object, e.g.:
-
-    .. code:: python
-
-        my_builder.map_name = 'iJO1366.Central metabolism'
-
+    Any remaining keyword arguments are treated as display options passed to
+    the JS Builder. See the JavaScript API documentation for details.
     """
 
-    # widget info traitlets
+    _esm = pathlib.Path(__file__).parent / 'static' / 'escher-widget.js'
+    _css = traitlets.Unicode('').tag(sync=True)
 
-    _view_name = Unicode('EscherMapView').tag(sync=True)
-    _model_name = Unicode('EscherMapModel').tag(sync=True)
-    _view_module = Unicode('escher').tag(sync=True)
-    _model_module = Unicode('escher').tag(sync=True)
-    _view_module_version = Unicode(__version__).tag(sync=True)
-    _model_module_version = Unicode(__version__).tag(sync=True)
+    # Synced traitlets (Python ↔ JS)
+    map_json            = traitlets.Unicode('').tag(sync=True)
+    # Any (not Unicode) so the @validate converters can receive dict/Series/None
+    # and convert to JSON string before the value is stored.
+    reaction_data       = traitlets.Any('null').tag(sync=True)
+    metabolite_data     = traitlets.Any('null').tag(sync=True)
+    gene_data           = traitlets.Any('null').tag(sync=True)
+    height              = traitlets.Int(500).tag(sync=True)
+    selected_reaction   = traitlets.Unicode('').tag(sync=True)
+    selected_metabolite = traitlets.Unicode('').tag(sync=True)
+    _escher_version     = traitlets.Unicode(__version__).tag(sync=True)
+    _options_json       = traitlets.Unicode('{}').tag(sync=True)
 
-    # Python package options
-
-    height = Int(500).tag(sync=True)
-
-    embedded_css = Unicode(None, allow_none=True).tag(sync=True)
-
-    @validate('embedded_css')
-    def _validate_embedded_css(self, proposal):
-        css = proposal['value']
-        if css:
-            return css.replace('\n', '')
-        else:
-            return None
-
-    # synced data
-
-    _loaded_map_json = Unicode(None, allow_none=True).tag(sync=True)
-
-    @observe('_loaded_map_json')
-    def _observe_loaded_map_json(self, change):
-        # if map is cleared, then clear these
-        if not change.new:
-            self.map_name = None
-            self.map_json = None
-
-    _loaded_model_json = Unicode(None, allow_none=True).tag(sync=True)
-
-    @observe('_loaded_model_json')
-    def _observe_loaded_model_json(self, change):
-        # if model is cleared, then clear these
-        if not change.new:
-            self.model = None
-            self.model_name = None
-            self.model_json = None
-
-    # Python options that are indirectly synced to the widget
-
-    map_name = Unicode(None, allow_none=True)
-
-    @observe('map_name')
-    def _observe_map_name(self, change):
-        if change.new:
-            self._loaded_map_json = map_json_for_name(change.new)
-        else:
-            self._loaded_map_json = None
-
-    map_json = Unicode(None, allow_none=True)
-
-    @observe('map_json')
-    def _observe_map_json(self, change):
-        if change.new:
-            self._loaded_map_json = _load_resource(change.new, 'map_json')
-        else:
-            self._loaded_map_json = None
-
-    model = Instance(Model, allow_none=True)
-
-    @observe('model')
-    def _observe_model(self, change):
-        if change.new:
-            self._loaded_model_json = cobra.io.to_json(change.new)
-        else:
-            self._loaded_model_json = None
-
-    model_name = Unicode(None, allow_none=True)
-
-    @observe('model_name')
-    def _observe_model_name(self, change):
-        if change.new:
-            self._loaded_model_json = model_json_for_name(change.new)
-        else:
-            self._loaded_model_json = None
-
-    model_json = Unicode(None, allow_none=True)
-
-    @observe('model_json')
-    def _observe_model_json(self, change):
-        if change.new:
-            self._loaded_model_json = _load_resource(change.new, 'model_json')
-        else:
-            self._loaded_model_json = None
-
-    # Synced options passed as an object to JavaScript Builder
-
-    menu = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    scroll_behavior = Any('none', allow_none=False)\
-        .tag(sync=True, option=True)
-    use_3d_transform = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    enable_editing = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    enable_keys = Any(False, allow_none=True)\
-        .tag(sync=True, option=True)
-    enable_search = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    zoom_to_element = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    full_screen_button_default = {
-        'enable_keys': True,
-        'scroll_behavior': 'pan',
-        'enable_editing': True,
-        'menu': 'all',
-        'enable_tooltips': ['label']
-    }
-    full_screen_button = Any(full_screen_button_default, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    disabled_buttons = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    semantic_zoom = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    starting_reaction = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    # This option can be set globally with escher.rc['never_ask_before_quit']
-    never_ask_before_quit = Any(allow_none=True).tag(sync=True, option=True)
-
-    @default('never_ask_before_quit')
-    def _never_ask_before_quit(self):
-        return rc.get('never_ask_before_quit', None)
-
-    primary_metabolite_radius = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    secondary_metabolite_radius = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    marker_radius = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    gene_font_size = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    hide_secondary_metabolites = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    show_gene_reaction_rules = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    hide_all_labels = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    canvas_size_and_loc = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    reaction_data = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    @validate('reaction_data')
+    @traitlets.validate('reaction_data')
     def _validate_reaction_data(self, proposal):
-        try:
-            return convert_data(proposal['value'])
-        except Exception:
-            raise Exception("""Invalid data for reaction_data. Must be pandas
-                            Series, pandas DataFrame, dict, list, or None""")
+        v = proposal['value']
+        if v is None:
+            return 'null'
+        if isinstance(v, str):
+            return v
+        return json.dumps(convert_data(v), cls=_NumpyEncoder)
 
-    reaction_styles = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    reaction_compare_style = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    reaction_scale = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    reaction_no_data_color = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    reaction_no_data_size = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    gene_data = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    @validate('gene_data')
-    def _validate_gene_data(self, proposal):
-        try:
-            return convert_data(proposal['value'])
-        except Exception:
-            raise Exception("""Invalid data for gene_data. Must be pandas
-                            Series, pandas DataFrame, dict, list, or None""")
-
-    and_method_in_gene_reaction_rule = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    metabolite_data = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-
-    @validate('metabolite_data')
+    @traitlets.validate('metabolite_data')
     def _validate_metabolite_data(self, proposal):
-        try:
-            return convert_data(proposal['value'])
-        except Exception:
-            raise Exception("""Invalid data for metabolite_data. Must be pandas
-                            Series, pandas DataFrame, dict, list, or None""")
+        v = proposal['value']
+        if v is None:
+            return 'null'
+        if isinstance(v, str):
+            return v
+        return json.dumps(convert_data(v), cls=_NumpyEncoder)
 
-    metabolite_styles = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    metabolite_compare_style = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    metabolite_scale = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    metabolite_no_data_color = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    metabolite_no_data_size = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    identifiers_on_map = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    highlight_missing = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    allow_building_duplicate_reactions = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    cofactors = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    enable_tooltips = Any(False, allow_none=True)\
-        .tag(sync=True, option=True)
-    enable_keys_with_tooltip = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    reaction_scale_preset = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    metabolite_scale_preset = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    primary_metabolite_radius = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    secondary_metabolite_radius = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    marker_radius = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    gene_font_size = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    reaction_no_data_size = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
-    metabolite_no_data_size = Any(None, allow_none=True)\
-        .tag(sync=True, option=True)
+    @traitlets.validate('gene_data')
+    def _validate_gene_data(self, proposal):
+        v = proposal['value']
+        if v is None:
+            return 'null'
+        if isinstance(v, str):
+            return v
+        return json.dumps(convert_data(v), cls=_NumpyEncoder)
 
     def __init__(
-            self,
-            map_name: str = None,
-            map_json: str = None,
-            model: Model = None,
-            model_name: str = None,
-            model_json: str = None,
-            **kwargs
-    ) -> None:
-        # kwargs will instantiate the traitlets
-        super().__init__(**kwargs)
+        self,
+        map_name=None,
+        map_json=None,
+        model=None,
+        model_name=None,
+        model_json=None,
+        height=500,
+        embedded_css=None,
+        **kwargs
+    ):
+        super().__init__(height=height)
 
+        # Initialize plain instance attrs before any __setattr__ that checks them
+        object.__setattr__(self, '_opts', {})
+        object.__setattr__(self, '_embedded_css', embedded_css)
+        object.__setattr__(self, '_loaded_model_json', None)
+
+        # Resolve map
         if map_json:
             if map_name:
                 warn('map_json overrides map_name')
-            self.map_json = map_json
-        else:
-            self.map_name = map_name
+            self.map_json = _load_resource(map_json, 'map_json')
+        elif map_name:
+            self.map_json = map_json_for_name(map_name)
 
+        # Resolve model (Python-only; used by save_html)
         if model:
             if model_name:
                 warn('model overrides model_name')
             if model_json:
                 warn('model overrides model_json')
-            self.model = model
+            object.__setattr__(self, '_loaded_model_json',
+                               cobra.io.to_json(model))
         elif model_json:
             if model_name:
                 warn('model_json overrides model_name')
-            self.model_json = model_json
-        else:
-            self.model_name = model_name
+            object.__setattr__(self, '_loaded_model_json',
+                               _load_resource(model_json, 'model_json'))
+        elif model_name:
+            object.__setattr__(self, '_loaded_model_json',
+                               model_json_for_name(model_name))
 
-        unavailable_options = {
-            'fill_screen': """The fill_option screen is set automatically by
-            the Escher Python package""",
-            'tooltip_component': """The tooltip_component cannot be customized
-          with the Python API""",
-            'first_load_callback': """The first_load_callback cannot be
-          customized with the Python API""",
-            'unique_map_id': """The option unique_map_id is deprecated""",
-            'ignore_bootstrap': """The option unique_map_id is deprecated""",
+        # Set data traitlets (validators handle Series/DataFrame/dict/None)
+        if 'reaction_data' in kwargs:
+            self.reaction_data = kwargs.pop('reaction_data')
+        if 'metabolite_data' in kwargs:
+            self.metabolite_data = kwargs.pop('metabolite_data')
+        if 'gene_data' in kwargs:
+            self.gene_data = kwargs.pop('gene_data')
+
+        # Collect display options from remaining kwargs
+        unavailable = {
+            'fill_screen', 'tooltip_component', 'first_load_callback',
+            'unique_map_id', 'ignore_bootstrap',
         }
-
         for key, val in kwargs.items():
-            if key in unavailable_options:
-                warn(val)
+            if key in unavailable:
+                warn('Option %s is not available in the Python API' % key)
+            elif key in _KNOWN_OPTIONS:
+                self._opts[key] = val
+
+        # Apply rc default for never_ask_before_quit if not explicitly set
+        if 'never_ask_before_quit' not in self._opts:
+            naqbq = rc.get('never_ask_before_quit', None)
+            if naqbq is not None:
+                self._opts['never_ask_before_quit'] = naqbq
+
+        self._options_json = json.dumps(
+            {k: v for k, v in self._opts.items() if v is not None}
+        )
+
+    def __getattr__(self, name):
+        if name in _KNOWN_OPTIONS:
+            try:
+                return object.__getattribute__(self, '_opts').get(name)
+            except AttributeError:
+                return None
+        raise AttributeError(
+            '{!r} object has no attribute {!r}'.format(type(self).__name__, name)
+        )
+
+    def __setattr__(self, name, value):
+        if name in _DATA_TRAITLETS:
+            # traitlets.Any short-circuits the @validate decorator for None
+            # (allow_none=True path in _validate), so convert to JSON string here.
+            if value is None:
+                super().__setattr__(name, 'null')
+            elif isinstance(value, str):
+                super().__setattr__(name, value)
+            else:
+                super().__setattr__(name,
+                                    json.dumps(convert_data(value), cls=_NumpyEncoder))
+        elif name in _KNOWN_OPTIONS:
+            self._opts[name] = value
+            self._options_json = json.dumps(
+                {k: v for k, v in self._opts.items() if v is not None}
+            )
+        else:
+            super().__setattr__(name, value)
 
     def display_in_notebook(self, *args, **kwargs):
-        """Deprecated.
-
-        The Builder is now a Jupyter Widget, so you can return the Builder
-        object from a cell to display it, or you can manually call the IPython
-        display function:
-
-        from IPython.display import display
-        from escher import Builder
-        b = Builder(...)
-        display(b)
-
-        """
-        raise Exception(('display_in_notebook is deprecated. The Builder is '
-                         'now a Jupyter Widget, so you can return the '
-                         'Builder in a cell to see it, or use the IPython '
-                         'display function (see Escher docs for details)'))
+        """Deprecated."""
+        raise Exception(
+            'display_in_notebook is deprecated. The Builder is now a Jupyter '
+            'Widget — return it from a cell or use IPython.display.display(b).'
+        )
 
     def display_in_browser(self, *args, **kwargs):
-        """Deprecated.
-
-        We recommend using the Jupyter Widget (which now supports all Escher
-        features) or the save_html option to generate a standalone HTML file
-        that loads the map.
-
-        """
-        raise Exception(('display_in_browser is deprecated. We recommend using'
-                         'the Jupyter Widget (which now supports all Escher'
-                         'features) or the save_html option to generate a'
-                         'standalone HTML file that loads the map.'))
+        """Deprecated."""
+        raise Exception(
+            'display_in_browser is deprecated. Use the Jupyter Widget or '
+            'save_html() to generate a standalone HTML file.'
+        )
 
     def save_html(self, filepath):
         """Save an HTML file containing the map.
 
         :param string filepath:
-
             The name of the HTML file.
-
         """
-        options = {}
-        for key in self.traits(option=True):
-            val = getattr(self, key)
-            if val is not None:
-                options[key] = val
+        options = {k: v for k, v in self._opts.items() if v is not None}
         options_json = json.dumps(options)
 
         template = env.get_template('standalone.html')
-        embedded_css_b64 = (b64dump(self.embedded_css)
-                            if self.embedded_css is not None else None)
+        embedded_css_b64 = (b64dump(self._embedded_css)
+                            if self._embedded_css is not None else None)
         html = template.render(
             escher_url=get_url('escher_min'),
             embedded_css_b64=embedded_css_b64,
-            map_data_json_b64=b64dump(self._loaded_map_json),
+            map_data_json_b64=b64dump(self.map_json) if self.map_json else None,
             model_data_json_b64=b64dump(self._loaded_model_json),
             options_json_b64=b64dump(options_json),
         )

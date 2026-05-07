@@ -26,6 +26,7 @@ dependencies = [
     "jsonschema>=4.0",
     "pandas>=1.0",
     "cobra>=0.26",
+    "anywidget>=0.9",
 ]
 
 [project.urls]
@@ -34,7 +35,6 @@ Homepage = "https://escher.github.io"
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
-    "ipywidgets>=7.4",  # still needed until Phase 4 (anywidget migration)
 ]
 docs = [
     "sphinx>=5.0",

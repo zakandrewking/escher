@@ -133,6 +133,6 @@ def test_handling_cobra_fluxes(data, expected):
     b = Builder(reaction_data=data,
                 gene_data=data,
                 metabolite_data=data)
-    assert b.reaction_data == expected
-    assert b.gene_data == expected
-    assert b.metabolite_data == expected
+    assert json.loads(b.reaction_data) == expected
+    assert json.loads(b.gene_data) == expected
+    assert json.loads(b.metabolite_data) == expected
