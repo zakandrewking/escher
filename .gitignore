@@ -24,6 +24,10 @@ coverage/
 # npm and yarn
 package-lock.json
 node_modules/
+
+# uv
+.venv/
+py/.venv/
 .yarnclean
 .mypy_cache/
 /TODO.txt

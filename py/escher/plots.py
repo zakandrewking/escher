@@ -6,8 +6,36 @@ from escher import rc
 import cobra
 from cobra import Model
 import pandas as pd
-import ipywidgets as widgets
-from traitlets import Unicode, Int, Instance, Any, observe, validate, default
+try:
+    import ipywidgets as widgets
+    from traitlets import Unicode, Int, Instance, Any, observe, validate, default
+    _has_ipywidgets = True
+except ImportError:
+    import warnings
+    widgets = None
+    _has_ipywidgets = False
+
+    # No-op stubs so the class body can be parsed without ipywidgets installed.
+    # Widget functionality will raise at runtime if actually used.
+    class _TraitStub:
+        def __init__(self, *args, **kwargs):
+            pass
+        def tag(self, **kwargs):
+            return self
+
+    def _noop_trait(*args, **kwargs):
+        return _TraitStub()
+
+    Unicode = Int = Instance = Any = _noop_trait
+
+    def observe(names, **kwargs):
+        return lambda fn: fn
+
+    def validate(name):
+        return lambda fn: fn
+
+    def default(name):
+        return lambda fn: fn
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -155,7 +183,10 @@ def convert_data(data):
     raise Exception
 
 
-class Builder(widgets.DOMWidget):
+_BuilderBase = widgets.DOMWidget if _has_ipywidgets else object
+
+
+class Builder(_BuilderBase):
     """A Python wrapper for the Escher metabolic map.
 
     This map will also show data on reactions, metabolites, or genes.
