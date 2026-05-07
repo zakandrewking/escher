@@ -242,10 +242,11 @@ class Builder(anywidget.AnyWidget):
     """
 
     _esm = pathlib.Path(__file__).parent / 'static' / 'escher-widget.js'
-    _css = traitlets.Unicode('').tag(sync=True)
+    _css = pathlib.Path(__file__).parent / 'static' / 'escher.css'
 
     # Synced traitlets (Python ↔ JS)
     map_json            = traitlets.Unicode('').tag(sync=True)
+    model_json          = traitlets.Unicode('').tag(sync=True)
     # Any (not Unicode) so the @validate converters can receive dict/Series/None
     # and convert to JSON string before the value is stored.
     reaction_data       = traitlets.Any('null').tag(sync=True)
@@ -310,22 +311,25 @@ class Builder(anywidget.AnyWidget):
         elif map_name:
             self.map_json = map_json_for_name(map_name)
 
-        # Resolve model (Python-only; used by save_html)
+        # Resolve model → synced to JS so the map editor knows available reactions
         if model:
             if model_name:
                 warn('model overrides model_name')
             if model_json:
                 warn('model overrides model_json')
-            object.__setattr__(self, '_loaded_model_json',
-                               cobra.io.to_json(model))
+            _mj = cobra.io.to_json(model)
+            object.__setattr__(self, '_loaded_model_json', _mj)
+            self.model_json = _mj
         elif model_json:
             if model_name:
                 warn('model_json overrides model_name')
-            object.__setattr__(self, '_loaded_model_json',
-                               _load_resource(model_json, 'model_json'))
+            _mj = _load_resource(model_json, 'model_json')
+            object.__setattr__(self, '_loaded_model_json', _mj)
+            self.model_json = _mj
         elif model_name:
-            object.__setattr__(self, '_loaded_model_json',
-                               model_json_for_name(model_name))
+            _mj = model_json_for_name(model_name)
+            object.__setattr__(self, '_loaded_model_json', _mj)
+            self.model_json = _mj
 
         # Set data traitlets (validators handle Series/DataFrame/dict/None)
         if 'reaction_data' in kwargs:

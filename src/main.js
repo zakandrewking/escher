@@ -54,8 +54,6 @@ export { default as Settings } from './Settings.js'
 export * as dataStyles from './dataStyles.js'
 export { default as ZoomContainer } from './ZoomContainer.js'
 
-// Jupyter extension
-export { EscherMapView, EscherMapModel } from './widget.js'
 
 export const libs = {
   _: underscore,

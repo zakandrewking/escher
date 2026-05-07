@@ -58,7 +58,7 @@
     "start": "vite --config vite.dev.config.js",
     "clean": "rm -r dist/*; rm -r py/escher/static/*",
     "test": "vitest run",
-    "copy": "cp dist/escher.min.js dist/index.js && cp package.json py/escher/static/ && cp dist/escher.min.* py/escher/static/ && cp dist/escher-widget.js py/escher/static/ && mkdir -p py/escher/static/jsonschema && cp jsonschema/* py/escher/static/jsonschema/"
+    "copy": "cp dist/escher.min.js dist/index.js && cp package.json py/escher/static/ && cp dist/escher.min.* py/escher/static/ && cp dist/escher-widget.js py/escher/static/ && cp dist/escher.css py/escher/static/ && mkdir -p py/escher/static/jsonschema && cp jsonschema/* py/escher/static/jsonschema/"
   },
   "jupyterlab": {
     "extension": "jupyter/lab-extension"

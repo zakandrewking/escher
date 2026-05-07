@@ -16,8 +16,8 @@ export default defineConfig({
       fileName: () => 'escher-widget.js'
     },
     // No externals — anywidget loads this bundle as a standalone URL; it must
-    // be self-contained. Builder injects its own CSS internally via ?raw, so
-    // no separate CSS file is produced and _css is not needed.
+    // be self-contained. CSS (Builder.css, fontello.css, etc.) is extracted to
+    // dist/escher.css and delivered via the Python _css traitlet in plots.py.
     outDir: 'dist',
     emptyOutDir: false,   // preserve dist/escher.js from the main build
     commonjsOptions: {
