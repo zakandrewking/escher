@@ -31,6 +31,10 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://escher.github.io"
+Repository = "https://github.com/zakandrewking/escher"
+Documentation = "https://escher.readthedocs.io"
+Issues = "https://github.com/zakandrewking/escher/issues"
+Changelog = "https://github.com/zakandrewking/escher/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

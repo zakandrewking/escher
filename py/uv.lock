@@ -740,7 +740,7 @@ wheels = [
 
 [[package]]
 name = "escher"
-version = "1.7.3"
+version = "2.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "anywidget", version = "0.9.21", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
