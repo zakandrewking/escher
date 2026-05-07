@@ -783,6 +783,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return null
     })
+    .attr('data-bigg-id', function(d) { return d.bigg_id !== undefined ? d.bigg_id : null })
     .call(this.behavior.turnOffDrag)
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)
