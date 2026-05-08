@@ -63,8 +63,17 @@ builder
 builder.reaction_data = {'PFK': 1.5, 'PYK': 0.8}
 
 # React to map clicks in Python
+import ipywidgets as widgets
+
+out = widgets.Output()
+display(out)
+
+def on_reaction_click(change):
+    with out:
+        print(change['new']['bigg_id'])
+
 builder.observe(
-    lambda change: print(change['new']['bigg_id']),
+    on_reaction_click,
     names='selected_reaction_event',
 )
 ```
