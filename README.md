@@ -98,6 +98,7 @@ bundles, [Vitest](https://vitest.dev) for JS tests, and
 - [Yarn](https://yarnpkg.com) (classic / v1) — `yarn.lock` is checked in
 - Python 3.8+
 - [uv](https://github.com/astral-sh/uv)
+- [Pandoc](https://pandoc.org/installing.html) for building the docs notebooks
 
 ## JavaScript
 
@@ -136,9 +137,20 @@ cd py && uv sync --extra dev && uv run pytest
 
 ## Docs
 
+The docs are built with Sphinx and nbsphinx. The Python docs dependencies are
+declared in `py/pyproject.toml` under the `docs` extra, and `docs/build_docs`
+will run Sphinx through `uv` when `uv` is available.
+
+Pandoc must also be installed separately because nbsphinx uses it to convert
+notebooks. On macOS:
+
+```bash
+brew install pandoc
+```
+
 ```bash
 cd docs
-./build_docs
+./build_docs          # installs/uses py[docs] through uv, then builds HTML
 cd _build/html
-python -m http.server
+python3 -m http.server
 ```
