@@ -56,7 +56,7 @@ Jupyter Notebook 7, VS Code, Cursor, Google Colab, and Marimo.
 import escher
 
 # Display a map in a notebook
-builder = escher.Builder(map_name='e_coli_core')
+builder = escher.Builder(map_name='e_coli_core.Core metabolism')
 builder
 
 # Overlay reaction flux data
@@ -76,7 +76,7 @@ model = cobra.io.load_model('textbook')
 solution = model.optimize()
 
 builder = escher.Builder(
-    map_name='e_coli_core',
+    map_name='e_coli_core.Core metabolism',
     model=model,
     reaction_data=solution.fluxes.to_dict(),
 )
@@ -85,6 +85,13 @@ builder
 
 The COBRA model is synced into the widget so build mode can add reactions
 directly from it. FBA itself runs in Python.
+
+Map names must match the names in the Escher map index. To inspect available
+maps:
+
+```python
+escher.list_available_maps()
+```
 
 # Building and testing Escher
 
