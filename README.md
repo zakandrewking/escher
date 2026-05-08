@@ -128,6 +128,31 @@ uv sync --extra dev   # install package and dev dependencies
 uv run pytest         # run Python tests
 ```
 
+## Jupyter
+
+For notebook use, run Jupyter from the Python package directory so `uv` uses the
+Escher project environment:
+
+```bash
+cd py
+uv run --with jupyter jupyter lab
+```
+
+For local development, first rebuild and copy the JavaScript assets into the
+Python package, then run Jupyter with the local package installed in editable
+mode:
+
+```bash
+yarn build && yarn copy
+cd py
+uv run --with-editable . --with jupyter jupyter lab
+```
+
+That Jupyter session imports Escher from the local `py/escher/` source tree, so
+Python changes are picked up from the checkout. When changing JavaScript or CSS,
+rerun `yarn build && yarn copy` before restarting or refreshing the notebook
+widget.
+
 ## Full clean build from a fresh checkout
 
 ```bash
