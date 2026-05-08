@@ -1,19 +1,15 @@
 /* global Blob, XMLSerializer, Image, btoa */
 
-var vkbeautify = require('vkbeautify')
-var _ = require('underscore')
-var d3_json = require('d3-request').json
-var d3_text = require('d3-request').text
-var d3_csvParseRows = require('d3-dsv').csvParseRows
-var d3_selection = require('d3-selection').selection
+import vkbeautify from 'vkbeautify'
+import _ from 'underscore'
+import { json as d3_json, text as d3_text } from 'd3-request'
+import { csvParseRows as d3_csvParseRows } from 'd3-dsv'
+import { selection as d3_selection } from 'd3-selection'
+import FileSaver from 'file-saver'
 
-try {
-  var saveAs = require('file-saver').saveAs
-} catch (e) {
-  console.warn('Not a browser, so FileSaver.js not available.')
-}
+const saveAs = FileSaver.saveAs || FileSaver
 
-module.exports = {
+const utils = {
   set_options: set_options,
   remove_child_nodes: remove_child_nodes,
   load_css: load_css,
@@ -67,6 +63,62 @@ module.exports = {
   d3_transform_catch: d3_transform_catch
   // check_browser: check_browser
 }
+
+export {
+  set_options,
+  remove_child_nodes,
+  load_css,
+  load_files,
+  load_the_file,
+  make_class,
+  class_with_optional_new,
+  setup_defs,
+  draw_an_object,
+  draw_a_nested_object,
+  make_array,
+  make_array_ref,
+  compare_arrays,
+  arrayToObject,
+  clone,
+  extend,
+  uniqueConcat,
+  unique_strings_array,
+  debounce,
+  object_slice_for_ids,
+  object_slice_for_ids_ref,
+  c_plus_c,
+  c_minus_c,
+  c_times_scalar,
+  download_json,
+  load_json,
+  load_json_or_csv,
+  downloadSvg,
+  downloadPng,
+  rotate_coords_recursive,
+  rotate_coords,
+  get_angle,
+  to_degrees,
+  angleNorm,
+  to_radians,
+  to_radians_norm,
+  angle_for_event,
+  distance,
+  check_undefined,
+  compartmentalize,
+  decompartmentalize,
+  mean,
+  median,
+  quartiles,
+  random_characters,
+  generate_map_id,
+  check_for_parent_tag,
+  name_to_url,
+  get_document,
+  get_window,
+  d3_transform_catch
+}
+
+export default utils
 
 /**
  * Check if Blob is available, and alert if it is not.
