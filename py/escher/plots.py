@@ -255,6 +255,8 @@ class Builder(anywidget.AnyWidget):
     height              = traitlets.Int(500).tag(sync=True)
     selected_reaction   = traitlets.Unicode('').tag(sync=True)
     selected_metabolite = traitlets.Unicode('').tag(sync=True)
+    selected_reaction_event   = traitlets.Dict({}).tag(sync=True)
+    selected_metabolite_event = traitlets.Dict({}).tag(sync=True)
     _escher_version     = traitlets.Unicode(__version__).tag(sync=True)
     _options_json       = traitlets.Unicode('{}').tag(sync=True)
 

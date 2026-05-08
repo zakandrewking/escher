@@ -25,6 +25,37 @@ export function render ({ model, el }) {
 
   const optionsJson = model.get('_options_json')
   const extraOptions = optionsJson ? JSON.parse(optionsJson) : {}
+  let selectionEventId = 0
+
+  const selectionPayload = biggId => ({
+    bigg_id: biggId,
+    event_id: ++selectionEventId
+  })
+
+  const emitSelection = (kind, biggId) => {
+    if (!biggId) return
+    model.set(`selected_${kind}`, biggId)
+    model.set(`selected_${kind}_event`, selectionPayload(biggId))
+    model.save_changes()
+  }
+
+  const reactionDatumForElement = element => {
+    let node = element
+    while (node) {
+      if (node.__data__ && node.__data__.bigg_id) return node.__data__
+      node = node.parentNode
+    }
+    return null
+  }
+
+  const wireReactionClickEvents = b => {
+    if (!b.map || !b.map.sel) return
+    b.map.sel.selectAll('.reaction-label,.segment')
+      .on('click.escher_widget', function (d) {
+        const reaction = (d && d.bigg_id) ? d : reactionDatumForElement(this)
+        if (reaction) emitSelection('reaction', reaction.bigg_id)
+      })
+  }
 
   const builder = new Builder(
     parseJson(model.get('map_json')),
@@ -55,17 +86,22 @@ export function render ({ model, el }) {
         // Wire metabolite selection: fires when a node is clicked
         b.map.callback_manager.set('select_selectable', (nodeCount, node) => {
           if (node && node.node_type === 'metabolite' && node.bigg_id) {
-            model.set('selected_metabolite', node.bigg_id)
-            model.save_changes()
+            emitSelection('metabolite', node.bigg_id)
           }
         })
-        // Wire reaction hover: fires when tooltip is shown for a reaction
-        // (no dedicated click event exists for reactions in the current map)
+        // Wire reaction hover: fires when tooltip is shown for a reaction.
         b.map.callback_manager.set('show_tooltip.escher_widget', (type, d) => {
           if ((type === 'reaction_object' || type === 'reaction_label') && d && d.bigg_id) {
-            model.set('selected_reaction', d.bigg_id)
-            model.save_changes()
+            emitSelection('reaction', d.bigg_id)
           }
+        })
+        // Also wire explicit reaction clicks for notebook callbacks.
+        wireReactionClickEvents(b)
+        b.map.draw.callback_manager.set('update_reaction.escher_widget', () => {
+          wireReactionClickEvents(b)
+        })
+        b.map.draw.callback_manager.set('update_reaction_label.escher_widget', () => {
+          wireReactionClickEvents(b)
         })
       }
     }
@@ -87,6 +123,7 @@ export function render ({ model, el }) {
     builder.load_map(parseJson(model.get('map_json')))
     requestAnimationFrame(() => {
       if (builder.map) builder.map.zoom_extent_canvas()
+      wireReactionClickEvents(builder)
     })
   })
   model.on('change:reaction_data', () => {

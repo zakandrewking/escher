@@ -63,7 +63,10 @@ builder
 builder.reaction_data = {'PFK': 1.5, 'PYK': 0.8}
 
 # React to map clicks in Python
-builder.observe(lambda change: print(change['new']), names='selected_reaction')
+builder.observe(
+    lambda change: print(change['new']['bigg_id']),
+    names='selected_reaction_event',
+)
 ```
 
 To overlay flux from a [COBRApy](https://github.com/opencobra/cobrapy) model:
