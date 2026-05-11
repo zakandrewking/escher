@@ -417,6 +417,7 @@ class Builder(anywidget.AnyWidget):
                             if self._embedded_css is not None else None)
         html = template.render(
             escher_url=get_url('escher_min'),
+            escher_css=(pathlib.Path(__file__).parent / 'static' / 'escher.css').read_text(encoding='utf-8'),
             embedded_css_b64=embedded_css_b64,
             map_data_json_b64=b64dump(self.map_json) if self.map_json else None,
             model_data_json_b64=b64dump(self._loaded_model_json),
