@@ -1,4 +1,4 @@
-import PlacedDiv from './PlacedDiv'
+import PlacedDiv from './PlacedDiv.js'
 
 /**
  * TextEditInput

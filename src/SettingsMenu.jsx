@@ -1,11 +1,11 @@
 /** @jsx h */
 import { h, Component } from 'preact'
-import ScaleSelector from './ScaleSelector'
-import ScaleSlider from './ScaleSlider'
-import ScaleSelection from './ScaleSelection'
+import ScaleSelector from './ScaleSelector.jsx'
+import ScaleSlider from './ScaleSlider.jsx'
+import ScaleSelection from './ScaleSelection.jsx'
 import _ from 'underscore'
 import './SettingsMenu.css'
-import scalePresets from './scalePresets'
+import scalePresets from './scalePresets.js'
 
 /**
  * SettingsMenu. Handles the functions associated with the UI for changing

@@ -1,6 +1,6 @@
 const Map = require('../Map').default
 const Settings = require('../Settings').default
-const CobraModel = require('../CobraModel')
+const CobraModel = require('../CobraModel').default
 
 const describe = require('mocha').describe
 const it = require('mocha').it

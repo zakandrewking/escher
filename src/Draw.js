@@ -28,10 +28,10 @@
  *
  */
 
-var utils = require('./utils')
-var dataStyles = require('./dataStyles')
-var CallbackManager = require('./CallbackManager').default
-var d3_format = require('d3-format').format
+import utils from './utils.js'
+import * as dataStyles from './dataStyles.js'
+import CallbackManager from './CallbackManager.js'
+import { format as d3_format } from 'd3-format'
 
 var Draw = utils.make_class()
 // instance methods
@@ -52,7 +52,7 @@ Draw.prototype = {
   create_segment: create_segment,
   update_segment: update_segment
 }
-module.exports = Draw
+export default Draw
 
 function init (behavior, settings, map) {
   this.behavior = behavior
@@ -783,6 +783,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return null
     })
+    .attr('data-bigg-id', function(d) { return d.bigg_id !== undefined ? d.bigg_id : null })
     .call(this.behavior.turnOffDrag)
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)

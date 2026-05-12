@@ -1,5 +1,5 @@
-import utils from './utils'
-import * as build from './build'
+import utils from './utils.js'
+import * as build from './build.js'
 import { drag as d3Drag } from 'd3-drag'
 import * as d3Selection from 'd3-selection'
 
@@ -506,6 +506,9 @@ export default class Behavior {
     let reactionIds = null
     // for text labels
     let textLabelIdsToDrag = null
+    // for node combining (shared between start/drag/end handlers)
+    let draggedBiggId = null
+    let draggedNodeId = null
     const moveLabel = (textLabelId, displacement) => {
       const textLabel = map.text_labels[textLabelId]
       textLabel.x = textLabel.x + displacement.x
@@ -536,18 +539,9 @@ export default class Behavior {
         theTimeout = setTimeout(() => {
           nodeGroup.parentNode.insertBefore(nodeGroup, nodeGroup.parentNode.firstChild)
         }, 200)
-        // prepare to combine metabolites
-        map.sel.selectAll('.metabolite-circle')
-          .on('mouseover.combine', function (d) {
-            if (d.bigg_id === biggId && d.node_id !== data.node_id) {
-              d3Select(this).classed('node-to-combine', true)
-            }
-          })
-          .on('mouseout.combine', d => {
-            if (d.bigg_id === biggId) {
-              map.sel.selectAll('.node-to-combine').classed('node-to-combine', false)
-            }
-          })
+        // record the dragged node's identity for hit-testing in the drag handler
+        draggedBiggId = biggId
+        draggedNodeId = data.node_id
       }
     })
 
@@ -611,6 +605,28 @@ export default class Behavior {
       map.draw_these_nodes(nodeIdsToDrag)
       map.draw_these_reactions(reactionIds)
       map.draw_these_text_labels(textLabelIdsToDrag)
+
+      // Hit-test: detect a combinable metabolite under the cursor.
+      // mouseover events never fire during a D3 drag (setPointerCapture captures
+      // the pointer on the dragged element), so we use elementFromPoint instead.
+      if (grabbed['type'] === 'node' && draggedBiggId) {
+        const sourceEvent = d3Selection.event.sourceEvent
+        // Temporarily disable pointer events on the dragged circle so
+        // elementFromPoint sees through it to whatever is below.
+        this.style.pointerEvents = 'none'
+        const el = document.elementFromPoint(sourceEvent.clientX, sourceEvent.clientY)
+        this.style.pointerEvents = ''
+        // Clear any previous combine highlight
+        map.sel.selectAll('.node-to-combine').classed('node-to-combine', false)
+        // Highlight if target is the same metabolite species
+        if (el && el.classList.contains('metabolite-circle')) {
+          const targetBiggId = el.getAttribute('data-bigg-id')
+          const targetNodeId = el.parentNode.__data__ && el.parentNode.__data__.node_id
+          if (targetBiggId === draggedBiggId && targetNodeId !== draggedNodeId) {
+            d3Select(el).classed('node-to-combine', true)
+          }
+        }
+      }
     })
 
     const combineNodesAndDraw = this.combineNodesAndDraw.bind(this)
@@ -625,6 +641,8 @@ export default class Behavior {
         textLabelIdsToDrag = null
         reactionIds = null
         theTimeout = null
+        draggedBiggId = null
+        draggedNodeId = null
         return
       }
 
@@ -734,11 +752,6 @@ export default class Behavior {
         })
       }
 
-      // stop combining metabolites
-      map.sel.selectAll('.metabolite-circle')
-        .on('mouseover.combine', null)
-        .on('mouseout.combine', null)
-
       // clear the timeout
       clearTimeout(theTimeout)
 
@@ -748,6 +761,8 @@ export default class Behavior {
       textLabelIdsToDrag = null
       reactionIds = null
       theTimeout = null
+      draggedBiggId = null
+      draggedNodeId = null
     })
 
     return behavior

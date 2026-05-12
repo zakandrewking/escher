@@ -1,4 +1,4 @@
-import * as utils from './utils'
+import * as utils from './utils.js'
 import _ from 'underscore'
 import { format as d3Format } from 'd3-format'
 

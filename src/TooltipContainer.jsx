@@ -1,7 +1,7 @@
 /** @jsx h */
-import CallbackManager from './CallbackManager'
-import PlacedDiv from './PlacedDiv'
-import renderWrapper from './renderWrapper'
+import CallbackManager from './CallbackManager.js'
+import PlacedDiv from './PlacedDiv.js'
+import renderWrapper from './renderWrapper.jsx'
 import _ from 'underscore'
 
 /**

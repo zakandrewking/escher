@@ -1,4 +1,4 @@
-import scalePresets from './scalePresets'
+import scalePresets from './scalePresets.js'
 import { scaleLinear } from 'd3-scale'
 
 export default class Scale {

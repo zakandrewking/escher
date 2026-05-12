@@ -1,7 +1,7 @@
 /** @jsx h */
 
 import { h, Component } from 'preact'
-import Picker from './Picker'
+import Picker from './Picker.jsx'
 import update from 'immutability-helper'
 import _ from 'underscore'
 

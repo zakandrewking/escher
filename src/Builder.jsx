@@ -3,23 +3,23 @@
  */
 
 /** @jsx h */
-import * as utils from './utils'
-import BuildInput from './BuildInput'
-import ZoomContainer from './ZoomContainer'
-import Map from './Map'
-import CobraModel from './CobraModel'
-import Brush from './Brush'
-import CallbackManager from './CallbackManager'
-import Settings from './Settings'
-import TextEditInput from './TextEditInput'
-import * as dataStyles from './dataStyles'
-import renderWrapper from './renderWrapper'
-import SettingsMenu from './SettingsMenu'
-import MenuBar from './MenuBar'
-import SearchBar from './SearchBar'
-import ButtonPanel from './ButtonPanel'
-import TooltipContainer from './TooltipContainer'
-import DefaultTooltip from './DefaultTooltip'
+import * as utils from './utils.js'
+import BuildInput from './BuildInput.js'
+import ZoomContainer from './ZoomContainer.js'
+import Map from './Map.js'
+import CobraModel from './CobraModel.js'
+import Brush from './Brush.js'
+import CallbackManager from './CallbackManager.js'
+import Settings from './Settings.js'
+import TextEditInput from './TextEditInput.js'
+import * as dataStyles from './dataStyles.js'
+import renderWrapper from './renderWrapper.jsx'
+import SettingsMenu from './SettingsMenu.jsx'
+import MenuBar from './MenuBar.jsx'
+import SearchBar from './SearchBar.jsx'
+import ButtonPanel from './ButtonPanel.jsx'
+import TooltipContainer from './TooltipContainer.jsx'
+import DefaultTooltip from './DefaultTooltip.jsx'
 import _ from 'underscore'
 import {
   select as d3Select,
@@ -35,7 +35,7 @@ import './Builder.css'
 // Import CSS as a string to embed. This also works from lib because css/src get
 // uploaded to NPM.
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import builderEmbed from '!!raw-loader!./Builder-embed.css'
+import builderEmbed from './Builder-embed.css?raw'
 
 class Builder {
   constructor (mapData, modelData, embeddedCss, selection, options) {

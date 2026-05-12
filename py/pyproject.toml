@@ -1,0 +1,53 @@
+# NOTE: If installing from source (not PyPI), run `yarn build && yarn copy` first
+# to populate py/escher/static/ before `uv sync` or `pip install -e .`
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "escher"
+version = "2.0.0"
+description = "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Metabolic Pathways"
+authors = [{name = "Zachary King"}]
+license = {text = "MIT"}
+keywords = ["visualization", "pathway map", "metabolism", "genome-scale-model", "web application", "D3.js", "biojs"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "Jinja2>=3.0",
+    "jsonschema>=4.0",
+    "pandas>=1.0",
+    "cobra>=0.26",
+    "anywidget>=0.9",
+]
+
+[project.urls]
+Homepage = "https://escher.github.io"
+Repository = "https://github.com/zakandrewking/escher"
+Documentation = "https://escher.readthedocs.io"
+Issues = "https://github.com/zakandrewking/escher/issues"
+Changelog = "https://github.com/zakandrewking/escher/blob/master/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+docs = [
+    "sphinx>=5.0",
+    "sphinx-rtd-theme>=1.0",
+    "nbsphinx>=0.8",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"escher" = ["static/**/*", "templates/**/*"]

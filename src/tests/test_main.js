@@ -1,4 +1,4 @@
-import Builder, * as escher from '../main'
+import Builder, * as escher from '../main.js'
 
 import {describe, it} from 'mocha'
 import {assert} from 'chai'

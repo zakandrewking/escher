@@ -1,4 +1,4 @@
-import SearchIndex from '../SearchIndex'
+import SearchIndex from '../SearchIndex.js'
 
 import { describe, it, beforeEach } from 'mocha'
 import { assert } from 'chai'

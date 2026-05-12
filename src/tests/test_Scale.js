@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from 'mocha'
 import { assert } from 'chai'
-import Scale from '../Scale'
+import Scale from '../Scale.js'
 
 describe('Scale', () => {
   let scale

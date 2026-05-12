@@ -1,5 +1,5 @@
-import utils from './utils'
-import CallbackManager from './CallbackManager'
+import utils from './utils.js'
+import CallbackManager from './CallbackManager.js'
 
 import _ from 'underscore'
 import { event } from 'd3-selection'

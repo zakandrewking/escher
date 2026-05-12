@@ -1,4 +1,4 @@
-const Draw = require('../Draw')
+const Draw = require('../Draw').default
 
 const describe = require('mocha').describe
 const it = require('mocha').it

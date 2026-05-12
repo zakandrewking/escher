@@ -1,6 +1,6 @@
-import d3Body from './helpers/d3Body'
-import triggerKeyEvent from './helpers/triggerKeyEvent'
-import KeyManager from '../KeyManager'
+import d3Body from './helpers/d3Body.js'
+import triggerKeyEvent from './helpers/triggerKeyEvent.js'
+import KeyManager from '../KeyManager.js'
 
 import { describe, it, afterEach } from 'mocha'
 import { assert } from 'chai'

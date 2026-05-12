@@ -2,8 +2,8 @@
  * CobraModel
  */
 
-var utils = require('./utils')
-var dataStyles = require('./dataStyles')
+import utils from './utils.js'
+import * as dataStyles from './dataStyles.js'
 
 var CobraModel = utils.make_class()
 // class methods
@@ -16,7 +16,7 @@ CobraModel.prototype = {
   apply_metabolite_data: apply_metabolite_data,
   apply_gene_data: apply_gene_data
 }
-module.exports = CobraModel
+export default CobraModel
 
 // class methods
 

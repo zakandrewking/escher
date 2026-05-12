@@ -1,8 +1,8 @@
-import utils from './utils'
-import PlacedDiv from './PlacedDiv'
-import completely from './completely'
-import DirectionArrow from './DirectionArrow'
-import CobraModel from './CobraModel'
+import utils from './utils.js'
+import PlacedDiv from './PlacedDiv.js'
+import completely from './completely.js'
+import DirectionArrow from './DirectionArrow.js'
+import CobraModel from './CobraModel.js'
 import _ from 'underscore'
 import { mouse as d3Mouse } from 'd3-selection'
 

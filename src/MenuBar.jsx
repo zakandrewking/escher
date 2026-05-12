@@ -1,7 +1,7 @@
 /** @jsx h */
 import { h, Component } from 'preact'
-import Dropdown from './Dropdown'
-import MenuButton from './MenuButton'
+import Dropdown from './Dropdown.jsx'
+import MenuButton from './MenuButton.jsx'
 
 /**
  * MenuBar implements generic Dropdown and MenuButton objects to create the

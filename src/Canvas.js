@@ -1,5 +1,5 @@
-import * as utils from './utils'
-import CallbackManager from './CallbackManager'
+import * as utils from './utils.js'
+import CallbackManager from './CallbackManager.js'
 
 import { drag as d3Drag } from 'd3-drag'
 import { selection as d3Selection, event } from 'd3-selection'

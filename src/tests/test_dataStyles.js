@@ -1,4 +1,4 @@
-import * as dataStyles from '../dataStyles'
+import * as dataStyles from '../dataStyles.js'
 
 import { describe, it } from 'mocha'
 import { assert } from 'chai'
