@@ -4,6 +4,13 @@
 [![Documentation Status](https://readthedocs.org/projects/escher/badge/?version=latest)](https://escher.readthedocs.io/en/latest/?badge=latest)
 [![MIT](https://img.shields.io/pypi/l/escher.svg?color=blueviolet)](https://github.com/zakandrewking/escher/blob/master/LICENSE)
 
+> **Please use [opencobra/escher](https://github.com/opencobra/escher) for
+> current Escher development.** That repository is the preferred home for the
+> latest community-maintained version of Escher and is aligned with the npm
+> package, PyPI package, and website deployments.
+
+---
+
 # Escher
 
 Escher is a web-based tool to build, view, share, and embed metabolic maps. The
