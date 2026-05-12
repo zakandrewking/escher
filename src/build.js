@@ -221,8 +221,9 @@ export function newReaction (biggId, cobraReaction, cobraMetabolites,
     [ anchorIds['anchor_products'], anchorIds['center'], 'products' ]
   ]
   newAnchorGroups.map(l => {
-    const fromId = l[0]
-    const toId = l[1]
+    // Flux flows from reactants toward products.
+    const fromId = l[2] === 'products' ? l[0] : l[1]
+    const toId = l[2] === 'products' ? l[1] : l[0]
     const newSegmentId = String(++largestIds.segments)
     const unconnectedSeg = (
       (reactantCount === 0 && l[2] === 'reactants' && newReaction.reversibility) ||
@@ -277,13 +278,16 @@ export function newReaction (biggId, cobraReaction, cobraMetabolites,
     // if this is the existing metabolite
     if (selectedNode.bigg_id === metabolite.bigg_id) {
       const newSegmentId = String(++largestIds.segments)
+      const isProduct = metabolite.coefficient > 0
+      const fromNodeIdForSegment = isProduct ? fromNodeId : selectedNodeId
+      const toNodeIdForSegment = isProduct ? selectedNodeId : fromNodeId
       newReaction.segments[newSegmentId] = {
         b1: metLoc.b1,
         b2: metLoc.b2,
-        from_node_id: fromNodeId,
-        to_node_id: selectedNodeId,
-        from_node_coefficient: null,
-        to_node_coefficient: metabolite.coefficient,
+        from_node_id: fromNodeIdForSegment,
+        to_node_id: toNodeIdForSegment,
+        from_node_coefficient: isProduct ? null : metabolite.coefficient,
+        to_node_coefficient: isProduct ? metabolite.coefficient : null,
         reversibility: newReaction.reversibility
       }
       // Update the existing node
@@ -299,13 +303,16 @@ export function newReaction (biggId, cobraReaction, cobraMetabolites,
       // save new metabolite
       const newSegmentId = String(++largestIds.segments)
       const newNodeId = String(++largestIds.nodes)
+      const isProduct = metabolite.coefficient > 0
+      const fromNodeIdForSegment = isProduct ? fromNodeId : newNodeId
+      const toNodeIdForSegment = isProduct ? newNodeId : fromNodeId
       newReaction.segments[newSegmentId] = {
         b1: metLoc.b1,
         b2: metLoc.b2,
-        from_node_id: fromNodeId,
-        to_node_id: newNodeId,
-        from_node_coefficient: null,
-        to_node_coefficient: metabolite.coefficient,
+        from_node_id: fromNodeIdForSegment,
+        to_node_id: toNodeIdForSegment,
+        from_node_coefficient: isProduct ? null : metabolite.coefficient,
+        to_node_coefficient: isProduct ? metabolite.coefficient : null,
         reversibility: newReaction.reversibility
       }
       // save new node
