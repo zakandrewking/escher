@@ -39,6 +39,14 @@ export function render ({ model, el }) {
     model.save_changes()
   }
 
+  // Hover updates the legacy string trait only — the *_event trait is
+  // reserved for click so observers fire on intentional selection.
+  const setLegacySelection = (kind, biggId) => {
+    if (!biggId) return
+    model.set(`selected_${kind}`, biggId)
+    model.save_changes()
+  }
+
   const reactionDatumForElement = element => {
     let node = element
     while (node) {
@@ -89,10 +97,11 @@ export function render ({ model, el }) {
             emitSelection('metabolite', node.bigg_id)
           }
         })
-        // Wire reaction hover: fires when tooltip is shown for a reaction.
+        // Reaction hover updates the legacy string trait only; the click
+        // path below emits the *_event trait that observers watch.
         b.map.callback_manager.set('show_tooltip.escher_widget', (type, d) => {
           if ((type === 'reaction_object' || type === 'reaction_label') && d && d.bigg_id) {
-            emitSelection('reaction', d.bigg_id)
+            setLegacySelection('reaction', d.bigg_id)
           }
         })
         // Also wire explicit reaction clicks for notebook callbacks.
