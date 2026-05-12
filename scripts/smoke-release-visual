@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION="${1:-$(sed -n 's/^  "version": "\(.*\)",$/\1/p' "$ROOT_DIR/package.json" | head -n 1)}"
+
+if [[ -z "$VERSION" ]]; then
+  echo "Could not determine version from package.json" >&2
+  exit 1
+fi
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv is required for this smoke test" >&2
+  exit 1
+fi
+
+cd "$ROOT_DIR/py"
+rm -rf dist build
+uv build
+uvx twine check dist/*
+
+WHEEL="$ROOT_DIR/py/dist/escher-${VERSION}-py3-none-any.whl"
+if [[ ! -f "$WHEEL" ]]; then
+  echo "Expected wheel not found: $WHEEL" >&2
+  exit 1
+fi
+
+TMPDIR="$(mktemp -d)"
+OUT_HTML="$TMPDIR/escher-${VERSION}-smoke.html"
+VENV="$TMPDIR/env"
+
+uv venv "$VENV"
+uv pip install --python "$VENV/bin/python" "$WHEEL"
+
+"$VENV/bin/python" - "$ROOT_DIR" "$VERSION" "$OUT_HTML" <<'PY'
+import importlib.resources
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+version = sys.argv[2]
+out_html = pathlib.Path(sys.argv[3])
+
+import escher
+from escher import Builder
+
+assert escher.__version__ == version, (escher.__version__, version)
+
+map_path = root / "docs/_static/example_data/S5_iJO1366.Glycolysis_PPP_AA_Nucleotides.json"
+model_path = root / "docs/_static/example_data/iJO1366.json"
+
+builder = Builder(
+    map_json=str(map_path),
+    model_json=str(model_path),
+    height=700,
+    menu="all",
+    enable_editing=True,
+    enable_keys=True,
+)
+
+builder.save_html(out_html)
+
+static_dir = importlib.resources.files("escher") / "static"
+js = (static_dir / "escher.min.js").read_text(encoding="utf-8")
+css_path = static_dir / "escher.css"
+widget_path = static_dir / "escher-widget.js"
+
+assert css_path.exists(), css_path
+assert widget_path.exists(), widget_path
+assert "function" in js and "Builder" in js
+
+html = out_html.read_text(encoding="utf-8")
+html = html.replace(
+    f'<script src="https://unpkg.com/escher@{version}/dist/escher.min.js"></script>',
+    f"<script>\n{js}\n</script>",
+)
+out_html.write_text(html, encoding="utf-8")
+
+print(out_html)
+PY
+
+cat <<EOF
+
+Visual smoke test HTML:
+  $OUT_HTML
+
+Open that file in a browser. Confirm that:
+  - The Escher map renders.
+  - Pan and zoom work.
+  - Reaction selection/search/menu interactions respond.
+  - No obvious errors appear in the browser console.
+
+Temporary virtual environment:
+  $VENV
+
+Remove the temp directory after inspection:
+  rm -rf "$TMPDIR"
+EOF
