@@ -5,7 +5,7 @@ All notable changes to Escher will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.0.0] — Unreleased
+## [2.0.0] — 2026-05-12
 
 This release modernizes the Escher toolchain so the package installs and
 runs cleanly in current Python and notebook environments. The widget
