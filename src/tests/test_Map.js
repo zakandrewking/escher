@@ -24,6 +24,18 @@ function matching_reaction (reactions, id) {
   return match
 }
 
+function matching_node (nodes, id) {
+  let match = null
+  for (let n_id in nodes) {
+    const n = nodes[n_id]
+    if (n.bigg_id === id) {
+      match = n
+      break
+    }
+  }
+  return match
+}
+
 describe('Map', () => {
   let map, svg
 
@@ -229,6 +241,16 @@ describe('Map', () => {
     // gene reaction rule
     assert.strictEqual(match.gene_reaction_rule,
                        model_data.reactions[0].gene_reaction_rule)
+
+    const productNode = matching_node(map.nodes, 'acc_c')
+    const reactantNode = matching_node(map.nodes, 'acc_p')
+    const productSegment = _.find(match.segments, segment => segment.to_node_id === productNode.node_id)
+    const reactantSegment = _.find(match.segments, segment => segment.from_node_id === reactantNode.node_id)
+
+    assert.strictEqual(productSegment.to_node_coefficient, 1)
+    assert.strictEqual(productSegment.from_node_coefficient, null)
+    assert.strictEqual(reactantSegment.from_node_coefficient, -1)
+    assert.strictEqual(reactantSegment.to_node_coefficient, null)
   })
 
   it('new_reaction_from_scratch exchanges', () => {
