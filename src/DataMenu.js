@@ -1,9 +1,9 @@
 /** DataMenu */
 
-var utils = require('./utils');
-var d3_json = require('d3-request').json
+import utils from './utils.js'
+import { json as d3_json } from 'd3-request'
 
-module.exports = function(options) {
+export default function(options) {
     var o = utils.set_options(options, {
         selection: null,
         getdatafiles: null,

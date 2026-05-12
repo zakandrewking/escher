@@ -1,4 +1,4 @@
-var CobraModel = require('../CobraModel')
+var CobraModel = require('../CobraModel').default
 
 var describe = require('mocha').describe
 var it = require('mocha').it

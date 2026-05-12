@@ -56,14 +56,26 @@ Jupyter Notebook 7, VS Code, Cursor, Google Colab, and Marimo.
 import escher
 
 # Display a map in a notebook
-builder = escher.Builder(map_name='e_coli_core')
+builder = escher.Builder(map_name='e_coli_core.Core metabolism')
 builder
 
 # Overlay reaction flux data
 builder.reaction_data = {'PFK': 1.5, 'PYK': 0.8}
 
 # React to map clicks in Python
-builder.observe(lambda change: print(change['new']), names='selected_reaction')
+import ipywidgets as widgets
+
+out = widgets.Output()
+display(out)
+
+def on_reaction_click(change):
+    with out:
+        print(change['new']['bigg_id'])
+
+builder.observe(
+    on_reaction_click,
+    names='selected_reaction_event',
+)
 ```
 
 To overlay flux from a [COBRApy](https://github.com/opencobra/cobrapy) model:
@@ -76,7 +88,7 @@ model = cobra.io.load_model('textbook')
 solution = model.optimize()
 
 builder = escher.Builder(
-    map_name='e_coli_core',
+    map_name='e_coli_core.Core metabolism',
     model=model,
     reaction_data=solution.fluxes.to_dict(),
 )
@@ -85,6 +97,13 @@ builder
 
 The COBRA model is synced into the widget so build mode can add reactions
 directly from it. FBA itself runs in Python.
+
+Map names must match the names in the Escher map index. To inspect available
+maps:
+
+```python
+escher.list_available_maps()
+```
 
 # Building and testing Escher
 
@@ -98,6 +117,7 @@ bundles, [Vitest](https://vitest.dev) for JS tests, and
 - [Yarn](https://yarnpkg.com) (classic / v1) — `yarn.lock` is checked in
 - Python 3.8+
 - [uv](https://github.com/astral-sh/uv)
+- [Pandoc](https://pandoc.org/installing.html) for building the docs notebooks
 
 ## JavaScript
 
@@ -127,6 +147,31 @@ uv sync --extra dev   # install package and dev dependencies
 uv run pytest         # run Python tests
 ```
 
+## Jupyter
+
+For notebook use, run Jupyter from the Python package directory so `uv` uses the
+Escher project environment:
+
+```bash
+cd py
+uv run --with jupyter jupyter lab
+```
+
+For local development, first rebuild and copy the JavaScript assets into the
+Python package, then run Jupyter with the local package installed in editable
+mode:
+
+```bash
+yarn build && yarn copy
+cd py
+uv run --with-editable . --with jupyter jupyter lab
+```
+
+That Jupyter session imports Escher from the local `py/escher/` source tree, so
+Python changes are picked up from the checkout. When changing JavaScript or CSS,
+rerun `yarn build && yarn copy` before restarting or refreshing the notebook
+widget.
+
 ## Full clean build from a fresh checkout
 
 ```bash
@@ -136,9 +181,20 @@ cd py && uv sync --extra dev && uv run pytest
 
 ## Docs
 
+The docs are built with Sphinx and nbsphinx. The Python docs dependencies are
+declared in `py/pyproject.toml` under the `docs` extra, and `docs/build_docs`
+will run Sphinx through `uv` when `uv` is available.
+
+Pandoc must also be installed separately because nbsphinx uses it to convert
+notebooks. On macOS:
+
+```bash
+brew install pandoc
+```
+
 ```bash
 cd docs
-./build_docs
+./build_docs          # installs/uses py[docs] through uv, then builds HTML
 cd _build/html
-python -m http.server
+python3 -m http.server
 ```

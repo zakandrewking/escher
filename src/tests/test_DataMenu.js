@@ -1,4 +1,4 @@
-var DataMenu = require('../DataMenu')
+var DataMenu = require('../DataMenu').default
 var d3Body = require('./helpers/d3Body')
 
 var describe = require('mocha').describe

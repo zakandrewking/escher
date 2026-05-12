@@ -1,9 +1,46 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import platform
-from subprocess import call
+import shutil
+import sys
+from pathlib import Path
+from subprocess import check_call
+
+
+DOCS_DIR = Path(__file__).resolve().parent
+REPO_DIR = DOCS_DIR.parent
+PY_DIR = REPO_DIR / 'py'
+
+
+def sphinx_build():
+    if shutil.which('uv'):
+        return [
+            'uv',
+            'run',
+            '--project',
+            str(PY_DIR),
+            '--extra',
+            'docs',
+            'sphinx-build',
+        ]
+    return ['sphinx-build']
+
+
+if not shutil.which('pandoc'):
+    sys.exit(
+        'Pandoc is required to build notebooks in the docs. '
+        'Install it with `brew install pandoc` on macOS, or see '
+        'https://pandoc.org/installing.html.'
+    )
 
 if platform.system() == 'Windows':
-    call('make.bat html', shell=True)
+    check_call('make.bat html', shell=True)
 else:
-    call(['make', 'html'])
+    check_call(sphinx_build() + [
+        '-b',
+        'html',
+        '-d',
+        str(DOCS_DIR / '_build' / 'doctrees'),
+        str(DOCS_DIR),
+        str(DOCS_DIR / '_build' / 'html'),
+    ])
