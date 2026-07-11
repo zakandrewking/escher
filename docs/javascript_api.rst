@@ -432,5 +432,25 @@ JavaScript API
                                        internally to set the data from the
                                        Settings class.
 
+    .. js:function:: map.new_reaction_from_scratch(?)
+
+    .. js:function:: map.new_reaction_for_metabolite(?)
+
+    .. js:function:: map.zoom_extent_nodes(?)
+
+    .. js:function:: map.zoom_extent_canvas(?)
+
+    .. js:function:: map.zoom_to_reaction(?)
+
+    .. js:function:: map.zoom_to_node(?)
+
+    .. js:function:: map.select_none(?)
+
+    .. js:function:: map.select_all(?)
+
+    .. js:function:: map.invert_selection(?)
+
+    .. js:function:: map.get_size(?)
+
 .. _`support the 3D transforms`: http://caniuse.com/#feat=transforms3d
 .. _`Preact`: https://preactjs.com/
